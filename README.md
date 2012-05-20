@@ -1,4 +1,4 @@
 Code
 ====
 
-Scripts, sqls and other codes
+Scripts, sqls and other code.
