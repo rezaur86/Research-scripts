@@ -1,0 +1,8 @@
+open("/home/rezaur/Downloads/all_followers_followees.txt, "w").close() #To empty the file
+FILE = open (sys.argv[1]+"temp.json", "a")
+#                        print (sys.argv[1]+dir+'/'+each_file)
+json_strings = open (sys.argv[1]+dir+'/'+each_file)
+working_json_file_name = dir+'/'+each_file
+#raw_input('press a key')
+describe_this(json_strings)
+FILE.close()

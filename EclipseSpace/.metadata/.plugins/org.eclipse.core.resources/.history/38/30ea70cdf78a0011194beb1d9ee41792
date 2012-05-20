@@ -1,0 +1,17 @@
+import json
+import sys
+
+def describe_this (json_file):
+    json_strings = open (json_file)
+    for oneline in json_strings:
+        if oneline != '\n':
+            onedata = json.loads(oneline)
+            print(json.dumps(onedata))
+            raw_input('press a key')
+            print(onedata)
+            
+    
+if(len(sys.argv) > 1):
+    describe_this(sys.argv[1])
+else:
+    print('Give a Json file name')

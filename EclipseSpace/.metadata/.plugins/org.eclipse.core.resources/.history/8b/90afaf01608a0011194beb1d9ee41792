@@ -1,0 +1,13 @@
+import json
+import sys
+from pprint import pprint
+
+def describe_this (json_file):
+    if(len(sys.argv) > 1):
+        json_strings = open (sys.argv[1])
+        for oneline in json_strings:
+            if oneline != '\n':
+                onedata = json.loads(oneline)
+                print(json.dumps(onedata, sort_keys=false, indent = 4))
+    else:
+        print('Give a Json file name')
