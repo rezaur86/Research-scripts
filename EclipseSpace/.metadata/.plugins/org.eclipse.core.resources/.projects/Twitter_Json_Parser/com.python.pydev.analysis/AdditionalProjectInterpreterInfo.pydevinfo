@@ -1,9 +1,9 @@
 -- VERSION_3
 -- START DISKCACHE
-/home/rezaur/Dropbox/workspace/.metadata/.plugins/org.eclipse.core.resources/.projects/Twitter_Json_Parser/com.python.pydev.analysis/v1_indexcache
+/home/rezaur/Documents/Code/EclipseSpace/.metadata/.plugins/org.eclipse.core.resources/.projects/Twitter_Json_Parser/com.python.pydev.analysis/v1_indexcache
 .v1_indexcache
-db_connection|0|/home/rezaur/Dropbox/workspace/Twitter_Json_Parser/src/db_connection.py
-follower_dist|0|/home/rezaur/Dropbox/workspace/Twitter_Json_Parser/src/follower_dist.py
+db_connection|0|/home/rezaur/Documents/Code/EclipseSpace/Twitter_Json_Parser/src/db_connection.py
+follower_dist|0|/home/rezaur/Documents/Code/EclipseSpace/Twitter_Json_Parser/src/follower_dist.py
 -- END DISKCACHE
 -- START DICTIONARY
 2

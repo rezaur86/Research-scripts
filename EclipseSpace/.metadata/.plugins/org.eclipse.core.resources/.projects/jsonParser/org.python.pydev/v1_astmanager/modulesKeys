@@ -1,4 +1,4 @@
 MODULES_MANAGER_V2
-db_connection|/home/rezaur/Dropbox/workspace/jsonParser/src/db_connection.py
-json_describer|/home/rezaur/Dropbox/workspace/jsonParser/src/json_describer.py
-print_json_file|/home/rezaur/Dropbox/workspace/jsonParser/src/print_json_file.py
+db_connection|/home/rezaur/Documents/Code/EclipseSpace/jsonParser/src/db_connection.py
+json_describer|/home/rezaur/Documents/Code/EclipseSpace/jsonParser/src/json_describer.py
+print_json_file|/home/rezaur/Documents/Code/EclipseSpace/jsonParser/src/print_json_file.py
