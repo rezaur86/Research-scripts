@@ -22,7 +22,7 @@ CREATE TABLE fb_wall(
 CREATE TABLE fb_user (
 	row_id BIGSERIAL,
 	id BIGINT NOT NULL,
-	name VARCHAR(1000),
+	name TEXT,
 	category VARCHAR(100),
 	PRIMARY KEY (row_id),
 	UNIQUE(id)
@@ -90,10 +90,10 @@ CREATE TABLE link (
 );
 
 
-\COPY fb_user(row_id, id, name, category) from '/home/rezaur/Downloads/FB_data/fb_user.csv' with delimiter ',' CSV quote '"';
-\COPY message(row_id, id, parent_message_row_id, fb_wall_row_id, name, type, description, caption, from_user_row_id, created_time, updated_time, can_remove, shares_count) from '/home/rezaur/Downloads/FB_data/message.csv' with delimiter ',' CSV quote '"';
-\COPY message_to(row_id, message_row_id, to_user_row_id) from '/home/rezaur/Downloads/FB_data/message_to.csv' with delimiter ',' CSV quote '"';
-\COPY likedby(row_id, what_message_row_id, who_user_row_id) from '/home/rezaur/Downloads/FB_data/likedby.csv' with delimiter ',' CSV quote '"';
-\COPY tag(row_id, message_row_id, user_row_id, type, starting_offset, length) from '/home/rezaur/Downloads/FB_data/tag.csv' with delimiter ',' CSV quote '"';
-\COPY link(row_id, message_row_id, address, type, name, text) from '/home/rezaur/Downloads/FB_data/link.csv' with delimiter ',' CSV quote '"';
+\COPY fb_user(row_id, id, name, category) from '/home/rezaur/Documents/fb_user.csv' with delimiter ',' CSV quote '"';
+\COPY message(row_id, id, parent_message_row_id, fb_wall_row_id, name, type, description, caption, from_user_row_id, created_time, updated_time, can_remove, shares_count) from '/home/rezaur/Documents/FB_dmessage.csv' with delimiter ',' CSV quote '"';
+\COPY message_to(row_id, message_row_id, to_user_row_id) from '/home/rezaur/Documents/message_to.csv' with delimiter ',' CSV quote '"';
+\COPY likedby(row_id, what_message_row_id, who_user_row_id) from '/home/rezaur/Documents/likedby.csv' with delimiter ',' CSV quote '"';
+\COPY tag(row_id, message_row_id, user_row_id, type, starting_offset, length) from '/home/rezaur/Documents/FB_data/tag.csv' with delimiter ',' CSV quote '"';
+\COPY link(row_id, message_row_id, address, type, name, text) from '/home/rezaur/Documents/link.csv' with delimiter ',' CSV quote '"';
 
