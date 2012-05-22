@@ -243,8 +243,7 @@ def describe_this (json_strings):
     comments_count = 0
     likes_of_comments_count_queue = deque([])
     comment_message_row_id_queue = deque([])
-    for unicoded_oneline in json_strings:
-        oneline = unidecode((unicode(unicoded_oneline, encoding='utf-8', errors='ignore')).decode('utf-8'))
+    for oneline in json_strings:
 #        print oneline
         if oneline != '\n':
             try:
