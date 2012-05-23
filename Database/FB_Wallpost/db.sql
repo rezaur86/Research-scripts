@@ -10,7 +10,7 @@ create schema fb_wallpost;
 set search_path to fb_wallpost;
 
 CREATE TABLE fb_wall(
-	row_id BIGSERIAL,
+	row_id BIGINT,
 	id BIGINT NOT NULL,
 	name varchar(1000),
 	link varchar(1000),
@@ -20,7 +20,7 @@ CREATE TABLE fb_wall(
 );
 
 CREATE TABLE fb_user (
-	row_id BIGSERIAL,
+	row_id BIGINT,
 	id BIGINT NOT NULL,
 	name TEXT,
 	category VARCHAR(100),
@@ -29,7 +29,7 @@ CREATE TABLE fb_user (
 );
 
 CREATE TABLE message (
-	row_id BIGSERIAL,
+	row_id BIGINT,
 	id VARCHAR(100) NOT NULL,
 	parent_message_row_id INT,
 	fb_wall_row_id INT,
@@ -50,7 +50,7 @@ CREATE TABLE message (
 );
 
 CREATE TABLE message_to (
-	row_id BIGSERIAL,
+	row_id BIGINT,
 	message_row_id INT NOT NULL,
 	to_user_row_id INT NOT NULL,
 	PRIMARY KEY (row_id),
@@ -59,7 +59,7 @@ CREATE TABLE message_to (
 );
 
 CREATE TABLE likedby (
-	row_id BIGSERIAL,
+	row_id BIGINT,
 	what_message_row_id INT NOT NULL,
 	who_user_row_id INT NOT NULL,
 	PRIMARY KEY (row_id),
@@ -68,7 +68,7 @@ CREATE TABLE likedby (
 );
 
 CREATE TABLE tag (
-	row_id BIGSERIAL,
+	row_id BIGINT,
 	message_row_id INT NOT NULL,
 	user_row_id INT NOT NULL,
 	type VARCHAR(30),
@@ -80,7 +80,7 @@ CREATE TABLE tag (
 );
 
 CREATE TABLE link (
-	row_id BIGSERIAL,
+	row_id BIGINT,
 	message_row_id INT NOT NULL,
 	address TEXT,
 	type varchar(10),

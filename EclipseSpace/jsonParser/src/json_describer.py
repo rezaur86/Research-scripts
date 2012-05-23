@@ -5,7 +5,6 @@ import dateutil.parser
 from collections import deque
 import csv
 import psycopg2
-from unidecode import unidecode
 #import threading
 from db_connection import openDb, closeDB
 from time import gmtime, strftime
