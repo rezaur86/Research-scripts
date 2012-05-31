@@ -1,0 +1,16 @@
+INSTUPjson_parser
+/home/rezaur/Documents/Code/EclipseSpace/FbCrawler/src/json_parser.py
+INFOS:&&3|1|2|0&&3|3|2|0&&3|4|2|0&&3|5|2|0&&3|6|2|0&&3|7|2|0&&3|8|2|0&&3|1|2|0&&2|9|2|0&&2|10|2|0&&3|11|2|0&&3|12|2|0&&3|13|2|0
+describe_this=9
+wall_id_of_files=5
+worker_list=6
+csv_lock=12
+num_threads=3
+json_files=4
+message_ids=8
+fb_wall_last_value=1
+json_parser=2
+worker=10
+csv=7
+worker_id=13
+json_files_lock=11
