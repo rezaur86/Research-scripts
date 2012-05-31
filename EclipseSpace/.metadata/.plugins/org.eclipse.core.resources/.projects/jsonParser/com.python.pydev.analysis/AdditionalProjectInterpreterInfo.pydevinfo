@@ -13,7 +13,7 @@ json_describer|0|/home/rezaur/Documents/Code/EclipseSpace/jsonParser/src/json_de
 2=json_describer
 -- END DICTIONARY
 -- START TREE 1
-24
+26
 clo|1|closeDB!10@
 con|1|conn!19@
 csv|1|csv_writing_mode!19@
@@ -31,11 +31,13 @@ lin|2|link_last_value!19@link_file!19@
 log|1|LOG_FILE!19@
 mes|5|message_file!19@message_last_value!19@message_to_file!19@message_to_last_value!19@message_ids!19@
 new|7|new_tags!19@new_fb_users!19@new_likedbys!19@new_links!19@new_fb_wall!19@new_messages!19@new_message_tos!19@
+num|0|
 one|1|onedata!27@
 ope|1|openDb!10@
 reg|3|register_message!18@register_tag!18@register_user!18@
 tag|2|tag_file!19@tag_last_value!19@
 tem|1|temp!27@
+wal|0|
 wor|1|working_json_file_name!19@
 wri|1|writer!19@
 -- END TREE

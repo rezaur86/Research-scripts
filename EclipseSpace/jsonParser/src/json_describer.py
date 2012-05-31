@@ -19,6 +19,13 @@ def data_initializer ():
         else:
             return 0
 
+        cursor.execute('select row_id, id from message')
+        if cursor.rowcount > 0:
+            for record in cursor:
+                message_ids[record[1]] = record[0]
+        else:
+            return 0
+
         global fb_wall_last_value
         cursor.execute('select max(fb_wall_row_id) from message')
         fb_wall_last_value = cursor.fetchone()[0]
@@ -61,6 +68,8 @@ def find_user (fb_id):
     
 # Return row_id if already exists or successful, else return -1 if exception occurs
 def register_user (jsonObj):
+    if jsonObj is None:
+        return -1
     if jsonObj.has_key("id"):
         fb_id = json.dumps(jsonObj["id"]).replace('\"','')
         row_id = find_user(long(fb_id.split('.')[0]))
@@ -257,7 +266,7 @@ def describe_this (json_strings):
                 continue
             if onedata.has_key("id"):
                 if message_ids.has_key(onedata["id"]):
-                    ERROR_FILE.write("*********Duplicate crawling %s************\n" % (working_json_file_name))
+#                    ERROR_FILE.write("*********Duplicate crawling %s************\n" % (working_json_file_name))
                     return -1
                 message_row_id = register_message(onedata, None)
                 if onedata.has_key("likes"):
@@ -342,6 +351,7 @@ ERROR_FILE = None
 working_json_file_name = None
 
 fb_user_ids = {}
+message_ids = {}
 fb_wall_last_value = 0
 fb_user_last_value = 0
 message_last_value = 0
@@ -373,7 +383,7 @@ try:
         for root, dirs, files in os.walk(sys.argv[1]):
             os.chdir(sys.argv[1])
             for dir in dirs:
-                message_ids = {}
+#                message_ids = {}
                 fb_wall_last_value = fb_wall_last_value + 1
                 for root_next, dirs_next, files_next in os.walk(dir):
                     for each_file in files_next:
