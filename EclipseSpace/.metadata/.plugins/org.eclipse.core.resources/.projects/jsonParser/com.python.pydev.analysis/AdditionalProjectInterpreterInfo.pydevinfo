@@ -10,76 +10,47 @@ data_organizer|0|/home/rezaur/Documents/Code/EclipseSpace/jsonParser/src/data_or
 -- END DISKCACHE
 -- START DICTIONARY
 5
-<<<<<<< HEAD
-4=print_json_file
-1=db_connection
-3=json_parser
-2=json_describer
-5=data_organizer
--- END DICTIONARY
--- START TREE 1
-27
-=======
 5=print_json_file
 1=db_connection
-3=json_parser
-2=json_describer
-4=data_organizer
+4=json_parser
+3=json_describer
+2=data_organizer
 -- END DICTIONARY
 -- START TREE 1
 33
->>>>>>> b76dc75f15cbd64a5d437b75c376cc4550ece69f
 clo|1|closeDB!10@
-con|1|conn!19@
-csv|4|csv!27@csv_writing_mode!19@csv_lock!27@csv_counter!27@
-cur|1|cursor!19@
-dat|1|data_initializer!18@
+com|2|compress_file_format!19@compress_mode!19@
+con|1|conn!27@
+csv|4|csv!35@csv_writing_mode!27@csv_lock!35@csv_counter!35@
+cur|1|cursor!27@
+dat|1|data_initializer!26@
 db_|3|db_namespace!11@db_server!11@db_name!11@
-des|2|describe_this!18@describe_this!26@
-<<<<<<< HEAD
-err|1|ERROR_FILE!19@
-fb_|5|fb_user_last_value!19@fb_user_ids!19@fb_user_file!19@fb_wall_last_value!19@fb_wall_last_value!27@
-fil|2|FILE!19@FILE!35@
-fin|1|find_user!18@
-jso|4|json_files_lock!27@json_file_pattern!43@json_strings!19@json_files!27@
-=======
-ent|1|entries!35@
-err|1|ERROR_FILE!19@
-fb_|5|fb_user_last_value!19@fb_user_ids!19@fb_user_file!19@fb_wall_last_value!19@fb_wall_last_value!27@
-fil|2|FILE!19@FILE!43@
-fin|1|find_user!18@
-fou|0|
-jso|5|json_files_lock!27@json_file_pattern!35@json_strings!19@json_files!27@json_strings!35@
->>>>>>> b76dc75f15cbd64a5d437b75c376cc4550ece69f
-lik|2|likedby_file!19@likedby_last_value!19@
-lin|2|link_last_value!19@link_file!19@
-log|1|LOG_FILE!19@
-mes|6|message_file!19@message_last_value!19@message_ids!27@message_to_file!19@message_to_last_value!19@message_ids!19@
-new|7|new_tags!19@new_fb_users!19@new_likedbys!19@new_links!19@new_fb_wall!19@new_messages!19@new_message_tos!19@
-num|1|num_threads!27@
-<<<<<<< HEAD
-one|1|onedata!35@
-ope|1|openDb!10@
-rec|1|recursive_directory_content_move!42@
-=======
+des|2|describe_this!26@describe_this!34@
+ent|0|
+err|1|ERROR_FILE!27@
+ext|0|
+fb_|5|fb_user_last_value!27@fb_user_ids!27@fb_user_file!27@fb_wall_last_value!27@fb_wall_last_value!35@
+fil|2|FILE!27@FILE!43@
+fin|1|find_user!26@
+jso|4|json_files_lock!35@json_file_pattern!19@json_strings!27@json_files!35@
+lik|2|likedby_file!27@likedby_last_value!27@
+lin|2|link_last_value!27@link_file!27@
+log|1|LOG_FILE!27@
+mes|6|message_file!27@message_last_value!27@message_ids!35@message_to_file!27@message_to_last_value!27@message_ids!27@
+new|7|new_tags!27@new_fb_users!27@new_likedbys!27@new_links!27@new_fb_wall!27@new_messages!27@new_message_tos!27@
+num|1|num_threads!35@
 one|1|onedata!43@
 ope|1|openDb!10@
-rec|1|recursive_directory_content_move!34@
->>>>>>> b76dc75f15cbd64a5d437b75c376cc4550ece69f
-reg|3|register_message!18@register_tag!18@register_user!18@
-str|0|
-tag|2|tag_file!19@tag_last_value!19@
-<<<<<<< HEAD
-tem|1|temp!35@
-=======
-tar|1|tar!35@
+par|0|
+rec|1|recursive_directory_content_move!18@
+reg|3|register_message!26@register_tag!26@register_user!26@
+tag|2|tag_file!27@tag_last_value!27@
+tar|0|
 tem|1|temp!43@
-tfi|0|
-tmp|1|tmp_dir!35@
->>>>>>> b76dc75f15cbd64a5d437b75c376cc4550ece69f
-wal|1|wall_id_of_files!27@
-wor|4|working_json_file_name!19@worker!26@worker_id!27@worker_list!27@
-wri|1|writer!19@
+tmp|0|
+wal|1|wall_id_of_files!35@
+wor|4|working_json_file_name!27@worker!34@worker_id!35@worker_list!35@
+wri|1|writer!27@
 -- END TREE
 -- START TREE 2
 0

@@ -1,6 +1,11 @@
-INSTUPdata_organizer
-/home/rezaur/Documents/Code/EclipseSpace/jsonParser/src/data_organizer.py
-INFOS:&&3|1|2|0&&2|3|2|0
-data_organizer=2
-json_file_pattern=1
-recursive_directory_content_move=3
+INSTUPjson_describer
+/home/rezaur/Documents/Code/EclipseSpace/jsonParser/src/json_describer.py
+INFOS:&&2|1|2|0&&2|3|2|0&&2|4|2|0&&2|5|2|0&&2|6|2|0&&2|7|2|0&&2|8|2|0
+register_tag=5
+data_initializer=1
+describe_this_group=8
+parse_this_post=7
+register_message=6
+json_describer=2
+register_user=4
+find_user=3

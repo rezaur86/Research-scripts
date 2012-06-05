@@ -242,7 +242,7 @@ def register_message (onedata, parent_message_row_id):
 
     return message_row_id
 
-def describe_this (json_strings):
+def parse_this_post (json_strings):
     comment_message_ids = {}
     likedby_row_ids = {}
     global likedby_last_value                                
@@ -342,6 +342,7 @@ def describe_this (json_strings):
                         except:
                             LOG_FILE.write('Inconsistency of UNKNOWN likes within comments at %s \n' %(working_json_file_name))
 
+
 print(strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()))
 conn = None
 cursor = None
@@ -393,7 +394,7 @@ try:
                         json_strings = open (sys.argv[1]+dir+'/'+each_file)
                         working_json_file_name = dir+'/'+each_file
                         #raw_input('press a key')
-                        describe_this(json_strings)
+                        parse_this_post(json_strings)
                         FILE.close()
     else:
         print('Give a path for Json directories')
