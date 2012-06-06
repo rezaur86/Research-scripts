@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<workbench progressCount="2" version="2.0">
+<workbench progressCount="26" version="2.0">
 <workbenchAdvisor/>
 <window height="764" maximized="true" width="1014" x="78" y="82">
 <fastViewData fastViewLocation="1024"/>
@@ -10,7 +10,7 @@
 <coolItem id="group.file" itemType="typeGroupMarker"/>
 <coolItem id="org.eclipse.ui.workbench.file" itemType="typeToolBarContribution" x="132" y="30"/>
 <coolItem id="additions" itemType="typeGroupMarker"/>
-<coolItem id="com.python.pydev.navigate.actionSet" itemType="typeToolBarContribution" x="44" y="34"/>
+<coolItem id="com.python.pydev.navigate.actionSet" itemType="typeToolBarContribution" x="40" y="30"/>
 <coolItem id="org.eclipse.debug.ui.launchActionSet" itemType="typeToolBarContribution" x="120" y="30"/>
 <coolItem id="org.eclipse.search.searchActionSet" itemType="typeToolBarContribution" x="48" y="30"/>
 <coolItem id="org.eclipse.ui.DefaultTextEditor" itemType="typePlaceholder" x="-1" y="-1"/>
@@ -34,16 +34,22 @@
 <presentation id="org.eclipse.ui.presentations.WorkbenchPresentationFactory">
 <part id="0"/>
 <part id="1"/>
+<part id="2"/>
 </presentation>
 </folder>
 </info>
 </editorArea>
-<editor activePart="true" focus="true" id="org.python.pydev.editor.PythonEditor" name="json_describer.py" partName="json_describer.py" path="/home/rezaur/Documents/Code/EclipseSpace/jsonParser/src/json_describer.py" title="json_describer.py" tooltip="jsonParser/src/json_describer.py" workbook="DefaultEditorWorkbook">
+<editor activePart="true" focus="true" id="org.python.pydev.editor.PythonEditor" name="json_describer.py" partName="json_describer" path="/home/rezaur/Documents/Code/EclipseSpace/jsonParser/src/json_describer.py" title="json_describer" tooltip="jsonParser/src/json_describer.py" workbook="DefaultEditorWorkbook">
 <input factoryID="org.eclipse.ui.part.FileEditorInputFactory" path="/jsonParser/src/json_describer.py"/>
+<editorState selectionHorizontalPixel="0" selectionLength="22" selectionOffset="5845" selectionTopPixel="587"/>
 </editor>
-<editor id="org.python.pydev.editor.PythonEditor" name="fb_post_crawler.py" partName="fb_post_crawler" path="/home/rezaur/Documents/Code/EclipseSpace/FbCrawler/src/fb_post_crawler.py" title="fb_post_crawler" tooltip="FbCrawler/src/fb_post_crawler.py" workbook="DefaultEditorWorkbook">
-<input factoryID="org.eclipse.ui.part.FileEditorInputFactory" path="/FbCrawler/src/fb_post_crawler.py"/>
-<editorState selectionHorizontalPixel="0" selectionLength="21" selectionOffset="130" selectionTopPixel="2154"/>
+<editor id="org.python.pydev.editor.PythonEditor" name="data_organizer.py" partName="data_organizer" path="/home/rezaur/Documents/Code/EclipseSpace/jsonParser/src/data_organizer.py" title="data_organizer" tooltip="jsonParser/src/data_organizer.py" workbook="DefaultEditorWorkbook">
+<input factoryID="org.eclipse.ui.part.FileEditorInputFactory" path="/jsonParser/src/data_organizer.py"/>
+<editorState selectionHorizontalPixel="0" selectionLength="0" selectionOffset="5588" selectionTopPixel="473"/>
+</editor>
+<editor id="org.python.pydev.editor.PythonEditor" name="db_connection.py" partName="db_connection" path="/home/rezaur/Documents/Code/EclipseSpace/jsonParser/src/db_connection.py" title="db_connection" tooltip="jsonParser/src/db_connection.py" workbook="DefaultEditorWorkbook">
+<input factoryID="org.eclipse.ui.part.FileEditorInputFactory" path="/jsonParser/src/db_connection.py"/>
+<editorState selectionHorizontalPixel="0" selectionLength="0" selectionOffset="0" selectionTopPixel="0"/>
 </editor>
 </editors>
 <views>
@@ -52,21 +58,27 @@
 </view>
 <view id="org.eclipse.ui.views.ResourceNavigator" partName="Navigator">
 <viewState LINK_NAVIGATOR_TO_EDITOR="0" sorter="1">
-<filters>&#x0A;<filter element=".*" isEnabled="false"/>
+<filters>
+<filter element=".*" isEnabled="false"/>
 <filter element="*.class" isEnabled="true"/>
 <filter element="*.pyc" isEnabled="true"/>
 <filter element="*.class" isEnabled="true"/>
 <filter element="*.pyo" isEnabled="true"/>
 </filters>
-<expanded>&#x0A;<element path="/FbCrawler"/>
-<element path="/FbCrawler/src"/>
+<expanded>
+<element path="/jsonParser"/>
+<element path="/jsonParser/src"/>
 </expanded>
-<selection>&#x0A;<element path="/FbCrawler/src/fb_post_crawler.py"/>
+<selection>
+<element path="/jsonParser/src/db_connection.py"/>
 </selection>
 </viewState>
 </view>
 <view id="org.eclipse.ui.views.ProblemView" partName="Problems">
 <viewState PRIMARY_SORT_FIELD="org.eclipse.ui.ide.severityAndDescriptionField" categoryGroup="org.eclipse.ui.ide.severity" markerContentGenerator="org.eclipse.ui.ide.problemsGenerator" partName="Problems">
+<expanded>
+<category IMemento.internal.id="Warnings (7 items)"/>
+</expanded>
 <columnWidths org.eclipse.ui.ide.locationField="105" org.eclipse.ui.ide.markerType="852" org.eclipse.ui.ide.pathField="140" org.eclipse.ui.ide.resourceField="105" org.eclipse.ui.ide.severityAndDescriptionField="350"/>
 <visible IMemento.internal.id="org.eclipse.ui.ide.severityAndDescriptionField"/>
 <visible IMemento.internal.id="org.eclipse.ui.ide.resourceField"/>
@@ -310,7 +322,7 @@
 </mainWindow>
 </layout>
 </perspective>
-<perspective editorAreaTrimState="1" editorAreaVisible="1" fixed="0" version="0.016">
+<perspective editorAreaTrimState="2" editorAreaVisible="1" fixed="0" version="0.016">
 <descriptor descriptor="org.python.pydev.ui.PythonPerspective" id="&lt;&lt;PyDev&gt;&gt;" label="&lt;&lt;PyDev&gt;&gt;"/>
 <alwaysOnActionSet id="org.eclipse.ui.cheatsheets.actionSet"/>
 <alwaysOnActionSet id="org.eclipse.search.searchActionSet"/>
@@ -322,6 +334,7 @@
 <alwaysOnActionSet id="org.eclipse.ui.actionSet.openFiles"/>
 <alwaysOnActionSet id="org.eclipse.debug.ui.launchActionSet"/>
 <alwaysOnActionSet id="org.eclipse.ui.NavigateActionSet"/>
+<alwaysOnActionSet id="com.python.pydev.navigate.actionSet"/>
 <show_view_action id="org.python.pydev.views.PyCodeCoverageView"/>
 <show_view_action id="org.python.pydev.navigator.view"/>
 <show_view_action id="org.python.pydev.debug.pyunit.pyUnitView"/>
@@ -341,20 +354,11 @@
 <new_wizard_action id="org.eclipse.ui.editors.wizards.UntitledTextFileWizard"/>
 <hide_toolbar_item_id id="org.eclipse.jdt.ui.actions.OpenProjectWizard"/>
 <hide_toolbar_item_id id="org.eclipse.ui.edit.text.toggleShowSelectedElementOnly"/>
-<fastViewBars>
-<fastViewBar fastViewLocation="1024" id="org.eclipse.ui.internal.ViewStack@76841a5c" orientation="256" selectedTabId="org.eclipse.ui.console.ConsoleView" style="1">
-<fastViews>
-<view id="org.eclipse.ui.views.ProblemView" ratio="0.3"/>
-<view id="org.eclipse.ui.console.ConsoleView" ratio="0.3"/>
-</fastViews>
-</fastViewBar>
-<fastViewBar fastViewLocation="131072" id="org.eclipse.ui.internal.ViewStack@1cf9bb77" orientation="512" selectedTabId="org.eclipse.ui.views.ResourceNavigator" style="1">
-<fastViews>
-<view id="org.eclipse.ui.views.ContentOutline" ratio="0.3"/>
-<view id="org.eclipse.ui.views.ResourceNavigator" ratio="0.3"/>
-</fastViews>
-</fastViewBar>
-</fastViewBars>
+<view id="org.eclipse.ui.views.ContentOutline"/>
+<view id="org.eclipse.ui.views.ResourceNavigator"/>
+<view id="org.eclipse.ui.views.ProblemView"/>
+<view id="org.eclipse.ui.console.ConsoleView"/>
+<fastViewBars/>
 <layout>
 <mainWindow>
 <info folder="true" part="topLeft">
@@ -382,18 +386,24 @@
 </folder>
 </info>
 <info folder="true" part="org.eclipse.ui.internal.ViewStack@1cf9bb77" ratio="0.7497879" ratioLeft="884" ratioRight="295" relationship="2" relative="org.eclipse.ui.editorss">
-<folder appearance="2" expanded="2">
-<page content="org.eclipse.ui.views.ContentOutline" label="LabelNotFound"/>
-<page content="org.eclipse.ui.views.ResourceNavigator" label="LabelNotFound"/>
-<presentation id="org.eclipse.ui.presentations.WorkbenchPresentationFactory"/>
+<folder activePageID="org.eclipse.ui.views.ResourceNavigator" appearance="2" expanded="2">
+<page content="org.eclipse.ui.views.ContentOutline" label="Outline"/>
+<page content="org.eclipse.ui.views.ResourceNavigator" label="Navigator"/>
+<presentation id="org.eclipse.ui.presentations.WorkbenchPresentationFactory">
+<part id="0"/>
+<part id="1"/>
+</presentation>
 </folder>
 </info>
 <info folder="true" part="org.eclipse.ui.internal.ViewStack@76841a5c" ratio="0.74953616" ratioLeft="808" ratioRight="270" relationship="4" relative="org.eclipse.ui.editorss">
-<folder appearance="2" expanded="2">
-<page content="org.eclipse.ui.views.ProblemView" label="LabelNotFound"/>
-<page content="org.eclipse.ui.console.ConsoleView" label="LabelNotFound"/>
+<folder activePageID="org.eclipse.ui.console.ConsoleView" appearance="2" expanded="2">
+<page content="org.eclipse.ui.views.ProblemView" label="Problems"/>
+<page content="org.eclipse.ui.console.ConsoleView" label="Console"/>
 <page content="com.python.pydev.ui.hierarchy.PyHierarchyView" label="LabelNotFound"/>
-<presentation id="org.eclipse.ui.presentations.WorkbenchPresentationFactory"/>
+<presentation id="org.eclipse.ui.presentations.WorkbenchPresentationFactory">
+<part id="0"/>
+<part id="1"/>
+</presentation>
 </folder>
 </info>
 </mainWindow>
@@ -403,163 +413,159 @@
 <workingSets/>
 <navigationHistory>
 <editors>
+<editor factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.python.pydev.editor.PythonEditor" path="/jsonParser/src/data_organizer.py"/>
 <editor factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.python.pydev.editor.PythonEditor" path="/jsonParser/src/json_describer.py"/>
-<editor factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.python.pydev.editor.PythonEditor" path="/Twitter_Json_Parser/src/follower_dist.py"/>
-<editor factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.python.pydev.editor.PythonEditor" path="/jsonParser/src/print_json_file.py"/>
-<editor factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.python.pydev.editor.PythonEditor" path="/jsonParser/src/json_describer.py"/>
-<editor factoryID="org.eclipse.ui.ide.FileStoreEditorInputFactory" id="org.python.pydev.editor.PythonEditor" uri="file:/home/rezaur/.eclipse/org.eclipse.platform_3.7.0_155965261/plugins/org.python.pydev_2.5.0.2012040618/PySrc/pydev_sitecustomize/sitecustomize.py"/>
-<editor factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.python.pydev.editor.PythonEditor" path="/Twitter_Json_Parser/src/follower_dist.py"/>
-<editor factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.python.pydev.editor.PythonEditor" path="/FbCrawler/src/fb_post_crawler.py"/>
+<editor factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.python.pydev.editor.PythonEditor" path="/jsonParser/src/db_connection.py"/>
 </editors>
-<item historyLabel="json_describer" index="0">
-<position info="not_deleted" x="6367" y="34"/>
-</item>
-<item historyLabel="json_describer" index="0">
-<position info="not_deleted" x="8701" y="0"/>
-</item>
-<item historyLabel="json_describer" index="0">
-<position info="not_deleted" x="8547" y="0"/>
-</item>
-<item historyLabel="json_describer" index="0">
-<position info="not_deleted" x="8640" y="0"/>
-</item>
-<item historyLabel="json_describer" index="0">
-<position info="not_deleted" x="10457" y="71"/>
-</item>
-<item historyLabel="json_describer" index="0">
-<position info="not_deleted" x="13616" y="127"/>
-</item>
-<item historyLabel="json_describer" index="0">
-<position info="not_deleted" x="7962" y="22"/>
-</item>
-<item historyLabel="json_describer" index="0">
-<position info="not_deleted" x="14880" y="62"/>
-</item>
-<item historyLabel="follower_dist" index="1">
-<position info="not_deleted" x="161" y="0"/>
-</item>
-<item historyLabel="json_describer" index="0">
-<position info="not_deleted" x="14678" y="547"/>
-</item>
-<item historyLabel="follower_dist" index="1">
-<position/>
-</item>
-<item historyLabel="json_describer" index="0">
-<position info="not_deleted" x="14726" y="0"/>
-</item>
-<item historyLabel="follower_dist" index="1">
-<position/>
-</item>
-<item historyLabel="json_describer" index="0">
-<position info="not_deleted" x="14726" y="0"/>
-</item>
-<item historyLabel="follower_dist" index="1">
-<position info="not_deleted" x="99" y="0"/>
-</item>
-<item historyLabel="print_json_file" index="2">
-<position info="not_deleted" x="273" y="46"/>
-</item>
-<item historyLabel="follower_dist" index="1">
-<position info="not_deleted" x="147" y="0"/>
-</item>
-<item historyLabel="print_json_file" index="2">
-<position info="not_deleted" x="273" y="46"/>
-</item>
-<item historyLabel="follower_dist" index="1">
-<position info="not_deleted" x="147" y="0"/>
-</item>
-<item historyLabel="json_describer" index="0">
-<position info="not_deleted" x="14726" y="0"/>
-</item>
-<item historyLabel="print_json_file" index="2">
-<position info="not_deleted" x="319" y="0"/>
-</item>
-<item historyLabel="follower_dist" index="1">
-<position info="not_deleted" x="147" y="0"/>
-</item>
-<item historyLabel="print_json_file" index="2">
-<position info="not_deleted" x="319" y="0"/>
-</item>
-<item historyLabel="json_describer" index="3">
-<position info="not_deleted" x="14040" y="0"/>
-</item>
-<item historyLabel="sitecustomize" index="4">
-<position info="not_deleted" x="8481" y="0"/>
-</item>
-<item historyLabel="json_describer" index="3">
-<position info="not_deleted" x="14040" y="0"/>
-</item>
-<item historyLabel="json_describer" index="3">
-<position info="not_deleted" x="5097" y="0"/>
-</item>
-<item historyLabel="json_describer" index="3">
-<position info="not_deleted" x="3792" y="4"/>
-</item>
-<item historyLabel="json_describer" index="3">
-<position info="not_deleted" x="3853" y="4"/>
-</item>
-<item historyLabel="json_describer" index="3">
-<position info="not_deleted" x="16183" y="3"/>
-</item>
-<item historyLabel="json_describer" index="3">
-<position info="not_deleted" x="1510" y="28"/>
-</item>
-<item historyLabel="json_describer" index="3">
-<position info="not_deleted" x="18206" y="60"/>
-</item>
-<item historyLabel="json_describer" index="3">
-<position info="not_deleted" x="15221" y="56"/>
-</item>
-<item historyLabel="json_describer" index="3">
-<position info="not_deleted" x="15774" y="78"/>
-</item>
-<item historyLabel="json_describer" index="3">
-<position info="not_deleted" x="1510" y="28"/>
-</item>
-<item historyLabel="json_describer" index="3">
-<position info="not_deleted" x="9538" y="0"/>
-</item>
-<item historyLabel="json_describer" index="3">
-<position info="not_deleted" x="9462" y="30"/>
-</item>
-<item historyLabel="json_describer" index="3">
-<position info="not_deleted" x="9386" y="0"/>
-</item>
-<item historyLabel="json_describer" index="3">
-<position info="not_deleted" x="9416" y="0"/>
-</item>
-<item historyLabel="json_describer" index="3">
-<position info="not_deleted" x="9462" y="0"/>
-</item>
-<item historyLabel="json_describer" index="3">
-<position info="not_deleted" x="9302" y="22"/>
-</item>
-<item historyLabel="json_describer" index="3">
-<position info="not_deleted" x="145" y="17"/>
-</item>
-<item historyLabel="follower_dist" index="5">
+<item historyLabel="db_connection" index="2">
 <position info="not_deleted" x="0" y="0"/>
 </item>
-<item historyLabel="json_describer" index="3">
-<position info="not_deleted" x="190" y="0"/>
+<item historyLabel="data_organizer" index="0">
+<position info="not_deleted" x="6470" y="0"/>
 </item>
-<item historyLabel="fb_post_crawler" index="6">
-<position info="not_deleted" x="130" y="21"/>
+<item historyLabel="json_describer" index="1">
+<position info="not_deleted" x="14111" y="0"/>
 </item>
-<item historyLabel="json_describer" index="3">
-<position info="not_deleted" x="190" y="0"/>
+<item historyLabel="data_organizer" index="0">
+<position info="not_deleted" x="3957" y="0"/>
 </item>
-<item historyLabel="fb_post_crawler" index="6">
-<position info="not_deleted" x="130" y="21"/>
+<item historyLabel="json_describer" index="1">
+<position info="not_deleted" x="14859" y="0"/>
 </item>
-<item historyLabel="json_describer" index="3">
-<position info="not_deleted" x="190" y="0"/>
+<item historyLabel="data_organizer" index="0">
+<position info="not_deleted" x="6407" y="0"/>
 </item>
-<item historyLabel="fb_post_crawler" index="6">
-<position info="not_deleted" x="130" y="21"/>
+<item historyLabel="json_describer" index="1">
+<position info="not_deleted" x="83" y="0"/>
 </item>
-<item active="true" historyLabel="json_describer" index="3">
-<position info="not_deleted" x="190" y="0"/>
+<item historyLabel="data_organizer" index="0">
+<position info="not_deleted" x="156" y="0"/>
+</item>
+<item historyLabel="json_describer" index="1">
+<position info="not_deleted" x="12" y="0"/>
+</item>
+<item historyLabel="data_organizer" index="0">
+<position info="not_deleted" x="126" y="0"/>
+</item>
+<item historyLabel="json_describer" index="1">
+<position info="not_deleted" x="65" y="0"/>
+</item>
+<item historyLabel="data_organizer" index="0">
+<position info="not_deleted" x="126" y="0"/>
+</item>
+<item historyLabel="json_describer" index="1">
+<position info="not_deleted" x="65" y="0"/>
+</item>
+<item historyLabel="data_organizer" index="0">
+<position info="not_deleted" x="126" y="0"/>
+</item>
+<item historyLabel="json_describer" index="1">
+<position info="not_deleted" x="10180" y="131"/>
+</item>
+<item historyLabel="data_organizer" index="0">
+<position info="not_deleted" x="3930" y="0"/>
+</item>
+<item historyLabel="json_describer" index="1">
+<position info="not_deleted" x="10180" y="131"/>
+</item>
+<item historyLabel="data_organizer" index="0">
+<position info="not_deleted" x="3930" y="0"/>
+</item>
+<item historyLabel="json_describer" index="1">
+<position info="not_deleted" x="396" y="0"/>
+</item>
+<item historyLabel="data_organizer" index="0">
+<position info="not_deleted" x="4316" y="0"/>
+</item>
+<item historyLabel="json_describer" index="1">
+<position info="not_deleted" x="475" y="0"/>
+</item>
+<item historyLabel="data_organizer" index="0">
+<position info="not_deleted" x="4316" y="0"/>
+</item>
+<item historyLabel="data_organizer" index="0">
+<position info="not_deleted" x="4895" y="0"/>
+</item>
+<item historyLabel="data_organizer" index="0">
+<position info="not_deleted" x="1954" y="0"/>
+</item>
+<item historyLabel="json_describer" index="1">
+<position info="not_deleted" x="475" y="0"/>
+</item>
+<item historyLabel="data_organizer" index="0">
+<position info="not_deleted" x="4408" y="0"/>
+</item>
+<item historyLabel="json_describer" index="1">
+<position info="not_deleted" x="475" y="0"/>
+</item>
+<item historyLabel="data_organizer" index="0">
+<position info="not_deleted" x="4408" y="0"/>
+</item>
+<item historyLabel="json_describer" index="1">
+<position info="not_deleted" x="475" y="0"/>
+</item>
+<item historyLabel="data_organizer" index="0">
+<position info="not_deleted" x="4408" y="0"/>
+</item>
+<item historyLabel="json_describer" index="1">
+<position info="not_deleted" x="354" y="0"/>
+</item>
+<item historyLabel="data_organizer" index="0">
+<position info="not_deleted" x="4408" y="0"/>
+</item>
+<item historyLabel="json_describer" index="1">
+<position info="not_deleted" x="354" y="0"/>
+</item>
+<item historyLabel="data_organizer" index="0">
+<position info="not_deleted" x="5588" y="0"/>
+</item>
+<item historyLabel="json_describer" index="1">
+<position info="not_deleted" x="1678" y="0"/>
+</item>
+<item historyLabel="data_organizer" index="0">
+<position info="not_deleted" x="5588" y="0"/>
+</item>
+<item historyLabel="json_describer" index="1">
+<position/>
+</item>
+<item historyLabel="data_organizer" index="0">
+<position info="not_deleted" x="5588" y="0"/>
+</item>
+<item historyLabel="json_describer" index="1">
+<position info="not_deleted" x="6120" y="0"/>
+</item>
+<item historyLabel="data_organizer" index="0">
+<position info="not_deleted" x="5588" y="0"/>
+</item>
+<item historyLabel="json_describer" index="1">
+<position info="not_deleted" x="5867" y="0"/>
+</item>
+<item historyLabel="data_organizer" index="0">
+<position info="not_deleted" x="5588" y="0"/>
+</item>
+<item historyLabel="json_describer" index="1">
+<position info="not_deleted" x="5867" y="0"/>
+</item>
+<item historyLabel="data_organizer" index="0">
+<position info="not_deleted" x="5588" y="0"/>
+</item>
+<item historyLabel="json_describer" index="1">
+<position info="not_deleted" x="5867" y="0"/>
+</item>
+<item historyLabel="data_organizer" index="0">
+<position info="not_deleted" x="5588" y="0"/>
+</item>
+<item historyLabel="json_describer" index="1">
+<position info="not_deleted" x="5845" y="22"/>
+</item>
+<item historyLabel="db_connection" index="2">
+<position info="not_deleted" x="0" y="0"/>
+</item>
+<item historyLabel="data_organizer" index="0">
+<position info="not_deleted" x="5588" y="0"/>
+</item>
+<item active="true" historyLabel="json_describer" index="1">
+<position info="not_deleted" x="5845" y="22"/>
 </item>
 </navigationHistory>
 <input factoryID="org.eclipse.ui.internal.model.ResourceFactory" path="/" type="8"/>
@@ -582,6 +588,12 @@
 </trimLayout>
 </window>
 <mruList>
+<file factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.python.pydev.editor.PythonEditor" name="db_connection.py" tooltip="jsonParser/src/db_connection.py">
+<persistable path="/jsonParser/src/db_connection.py"/>
+</file>
+<file factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.python.pydev.editor.PythonEditor" name="data_organizer.py" tooltip="jsonParser/src/data_organizer.py">
+<persistable path="/jsonParser/src/data_organizer.py"/>
+</file>
 <file factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.python.pydev.editor.PythonEditor" name="fb_post_crawler.py" tooltip="FbCrawler/src/fb_post_crawler.py">
 <persistable path="/FbCrawler/src/fb_post_crawler.py"/>
 </file>
@@ -599,9 +611,6 @@
 </file>
 <file factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.python.pydev.editor.PythonEditor" name="print_json_file.py" tooltip="jsonParser/src/print_json_file.py">
 <persistable path="/jsonParser/src/print_json_file.py"/>
-</file>
-<file factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.python.pydev.editor.PythonEditor" name="db_connection.py" tooltip="jsonParser/src/db_connection.py">
-<persistable path="/jsonParser/src/db_connection.py"/>
 </file>
 <file factoryID="org.eclipse.ui.part.FileEditorInputFactory" id="org.python.pydev.editor.PythonEditor" name="json_describer.py" tooltip="jsonParser/src/json_describer.py">
 <persistable path="/jsonParser/src/json_describer.py"/>

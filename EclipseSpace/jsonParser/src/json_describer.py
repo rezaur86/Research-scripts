@@ -1,63 +1,30 @@
 import json
-import sys
-import os
 import dateutil.parser
 from collections import deque
-import csv
-import psycopg2
 #import threading
-from db_connection import openDb, closeDB
-from time import gmtime, strftime
+conn = None
+cursor = None
+FILE = None
+LOG_FILE = None
+ERROR_FILE = None
+working_json_file_name = None
 
-# Initialize variables by reading from Database
-def data_initializer ():
-    try:
-        cursor.execute('select row_id, id from fb_user')
-        if cursor.rowcount > 0:
-            for record in cursor:
-                fb_user_ids[record[1]] = record[0]
-        else:
-            return 0
+fb_user_ids = {}
+message_ids = {}
+fb_user_last_value = 0
+message_last_value = 0
+message_to_last_value = 0
+likedby_last_value = 0
+tag_last_value = 0
+link_last_value = 0
 
-        cursor.execute('select row_id, id from message')
-        if cursor.rowcount > 0:
-            for record in cursor:
-                message_ids[record[1]] = record[0]
-        else:
-            return 0
-
-        global fb_wall_last_value
-        cursor.execute('select max(fb_wall_row_id) from message')
-        fb_wall_last_value = cursor.fetchone()[0]
-        
-        global fb_user_last_value
-        cursor.execute('select max(row_id) from fb_user')
-        fb_user_last_value = cursor.fetchone()[0]
-        
-        global message_last_value
-        cursor.execute('select max(row_id) from message')
-        message_last_value = cursor.fetchone()[0]
-        
-        global message_to_last_value
-        cursor.execute('select max(row_id) from message_to')
-        message_to_last_value = cursor.fetchone()[0]
-
-        global likedby_last_value
-        cursor.execute('select max(row_id) from likedby')
-        likedby_last_value = cursor.fetchone()[0]
-        
-        global tag_last_value
-        cursor.execute('select max(row_id) from tag')
-        tag_last_value = cursor.fetchone()[0]
-
-        global link_last_value
-        cursor.execute('select max(row_id) from link')
-        link_last_value = cursor.fetchone()[0]
-#        raw_input('Input?')
-        return 1
-    except psycopg2.Error, e:
-        ERROR_FILE.write("*********Database************Error %s: %s\n" % (e.pgcode, e.pgerror))
-        return -1
+new_fb_wall = []
+new_fb_users = []
+new_messages = []
+new_message_tos = []
+new_likedbys = []
+new_tags = []
+new_links= []
 
 # Return the row_id of the found user else -1 for not found or exception
 def find_user (fb_id):
@@ -152,14 +119,12 @@ def register_message (onedata, parent_message_row_id):
     if onedata.has_key("shares"):
         shares_count = onedata["shares"]["count"]
     else:
-        shares_count = None
-        
+        shares_count = None    
     if onedata.has_key("from"):
         postedBy_row_id = register_user(onedata["from"])
-        
+    
     global message_last_value
     message_last_value = message_last_value + 1
-    new_messages.append((message_last_value, message_id, parent_message_row_id, fb_wall_last_value, name, type_, description, caption, postedBy_row_id, created_time, updated_time, can_remove, shares_count))
     message_ids[message_id] = message_last_value
     message_row_id = message_last_value
     
@@ -207,6 +172,10 @@ def register_message (onedata, parent_message_row_id):
                     if each_tag is None:
                         continue
                     register_tag(each_tag, message_row_id)      
+
+#    print fb_user_ids
+    group_id = fb_user_ids[long(message_id.split('_')[0])]    
+    new_messages.append((message_last_value, message_id, parent_message_row_id, group_id, name, type_, description, caption, postedBy_row_id, created_time, updated_time, can_remove, shares_count))
     
     global link_last_value
     if onedata.has_key("picture"):
@@ -259,7 +228,7 @@ def parse_this_post (json_strings):
             except Exception as e:
                 ERROR_FILE.write("*********Json Loading at Json File %s************Error %s\n" % (working_json_file_name, e.args[0])) 
                 return -1        
-            FILE.write(json.dumps(onedata, sort_keys=True, indent = 4))
+#            FILE.write(json.dumps(onedata, sort_keys=True, indent = 4))
             if onedata is None:
                 continue
             if onedata is False:
@@ -343,93 +312,20 @@ def parse_this_post (json_strings):
                             LOG_FILE.write('Inconsistency of UNKNOWN likes within comments at %s \n' %(working_json_file_name))
 
 
-print(strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()))
-conn = None
-cursor = None
-FILE = None
-LOG_FILE = None
-ERROR_FILE = None
-working_json_file_name = None
 
-fb_user_ids = {}
-message_ids = {}
-fb_wall_last_value = 0
-fb_user_last_value = 0
-message_last_value = 0
-message_to_last_value = 0
-likedby_last_value = 0
-tag_last_value = 0
-link_last_value = 0
-
-csv_writing_mode = "w"
-
-new_fb_wall = []
-new_fb_users = []
-new_messages = []
-new_message_tos = []
-new_likedbys = []
-new_tags = []
-new_links= []
-
-try:
-    (conn, cursor) = openDb(True, True)
-    data_initializer()
-    
-    LOG_FILE = open(sys.argv[1]+"logfile.txt", "w").close() #To empty the file
-    LOG_FILE = open (sys.argv[1]+"logfile.txt", "a")
-    ERROR_FILE = open(sys.argv[1]+"errorfile.txt", "w").close() #To empty the file
-    ERROR_FILE = open (sys.argv[1]+"errorfile.txt", "a")
-    
-    if(len(sys.argv) > 1):
-        for root, dirs, files in os.walk(sys.argv[1]):
-            os.chdir(sys.argv[1])
-            for dir in dirs:
-#                message_ids = {}
-                fb_wall_last_value = fb_wall_last_value + 1
-                for root_next, dirs_next, files_next in os.walk(dir):
-                    for each_file in files_next:
-                        open(sys.argv[1]+"temp.json", "w").close() #To empty the file
-                        FILE = open (sys.argv[1]+"temp.json", "a")
-#                        print (sys.argv[1]+dir+'/'+each_file)
-                        json_strings = open (sys.argv[1]+dir+'/'+each_file)
-                        working_json_file_name = dir+'/'+each_file
-                        #raw_input('press a key')
-                        parse_this_post(json_strings)
-                        FILE.close()
-    else:
-        print('Give a path for Json directories')
-    LOG_FILE.close()
-    ERROR_FILE.close()    
-
-    fb_user_file = open (sys.argv[1]+"fb_user.csv", csv_writing_mode)
-    message_file = open (sys.argv[1]+"message.csv", csv_writing_mode) 
-    message_to_file = open (sys.argv[1]+"message_to.csv", csv_writing_mode) 
-    likedby_file = open (sys.argv[1]+"likedby.csv", csv_writing_mode) 
-    tag_file = open (sys.argv[1]+"tag.csv", csv_writing_mode)
-    link_file =  open (sys.argv[1]+"link.csv", csv_writing_mode)
-
-    writer = csv.writer(fb_user_file, quoting=csv.QUOTE_MINIMAL)
-    writer.writerows(new_fb_users)
-    writer = csv.writer(message_file ,quoting=csv.QUOTE_MINIMAL)
-    writer.writerows(new_messages)
-    writer = csv.writer(message_to_file ,quoting=csv.QUOTE_MINIMAL)
-    writer.writerows(new_message_tos)
-    writer = csv.writer(likedby_file ,quoting=csv.QUOTE_MINIMAL)
-    writer.writerows(new_likedbys)
-    writer = csv.writer(tag_file ,quoting=csv.QUOTE_MINIMAL)
-    writer.writerows(new_tags)
-    writer = csv.writer(link_file ,quoting=csv.QUOTE_MINIMAL)
-    writer.writerows(new_links)
-
-    fb_user_file.close()
-    message_file.close() 
-    message_to_file.close() 
-    likedby_file.close() 
-    tag_file.close() 
-    link_file.close()
-    
-    closeDB(conn, cursor)
-    print(strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()))
-except psycopg2.Error, e:
-    closeDB(conn, cursor)
-    print "Error %d: %s" % (e.pgcode, e.pgerror)
+#if(len(sys.argv) > 1):
+#    for root, dirs, files in os.walk(sys.argv[1]):
+#        os.chdir(sys.argv[1])
+#        for dir in dirs:
+##                message_ids = {}
+#            fb_wall_last_value = fb_wall_last_value + 1
+#            for root_next, dirs_next, files_next in os.walk(dir):
+#                for each_file in files_next:
+#                    open(sys.argv[1]+"temp.json", "w").close() #To empty the file
+#                    FILE = open (sys.argv[1]+"temp.json", "a")
+##                        print (sys.argv[1]+dir+'/'+each_file)
+#                    working_json_file_name = dir+'/'+each_file
+#                    #raw_input('press a key')
+#                    FILE.close()
+#else:
+#    print('Give a path for Json directories')

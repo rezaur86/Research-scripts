@@ -9,7 +9,7 @@ DROP SCHEMA fb_wallpost cascade;
 create schema fb_wallpost;
 set search_path to fb_wallpost;
 
-CREATE TABLE fb_wall(
+CREATE TABLE community (
 	row_id BIGINT,
 	id BIGINT NOT NULL,
 	name varchar(1000),

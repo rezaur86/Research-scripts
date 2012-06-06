@@ -2938,3 +2938,287 @@ java.lang.RuntimeException: The module psycopg2.__init__ could not be found nor 
 	at com.python.pydev.analysis.builder.AbstractAnalysisBuilderRunnable.run(AbstractAnalysisBuilderRunnable.java:156)
 	at org.python.pydev.core.concurrency.RunnableAsJobsPoolThread$1.run(RunnableAsJobsPoolThread.java:103)
 	at org.eclipse.core.internal.jobs.Worker.run(Worker.java:54)
+!SESSION 2012-06-04 19:08:01.893 -----------------------------------------------
+eclipse.buildId=I20110613-1736
+java.version=1.6.0_24
+java.vendor=Sun Microsystems Inc.
+BootLoader constants: OS=linux, ARCH=x86_64, WS=gtk, NL=en_US
+Command-line arguments:  -os linux -ws gtk -arch x86_64
+
+!ENTRY org.python.pydev.core 4 4 2012-06-05 10:41:07.207
+!MESSAGE Error while visiting json_describer (/home/rezaur/Documents/Code/EclipseSpace/jsonParser/src/json_describer.py)
+!STACK 0
+java.lang.NullPointerException
+	at com.python.pydev.analysis.AnalysisPreferences.getSetOfNames(AnalysisPreferences.java:145)
+	at com.python.pydev.analysis.AnalysisPreferences.getNamesIgnoredByUnusedVariable(AnalysisPreferences.java:132)
+	at com.python.pydev.analysis.visitors.MessagesManager.startsWithNamesToIgnore(MessagesManager.java:385)
+	at com.python.pydev.analysis.visitors.MessagesManager.addUnusedMessage(MessagesManager.java:321)
+	at com.python.pydev.analysis.visitors.OccurrencesVisitor.onAfterEndScope(OccurrencesVisitor.java:338)
+	at com.python.pydev.analysis.scopeanalysis.AbstractScopeAnalyzerVisitor.endScope(AbstractScopeAnalyzerVisitor.java:1012)
+	at com.python.pydev.analysis.scopeanalysis.AbstractScopeAnalyzerVisitor.visitFunctionDef(AbstractScopeAnalyzerVisitor.java:407)
+	at org.python.pydev.parser.jython.ast.FunctionDef.accept(FunctionDef.java:117)
+	at org.python.pydev.parser.jython.ast.Module.traverse(Module.java:79)
+	at com.python.pydev.analysis.scopeanalysis.AbstractScopeAnalyzerVisitor.traverse(AbstractScopeAnalyzerVisitor.java:186)
+	at com.python.pydev.analysis.visitors.OccurrencesVisitor.traverse(OccurrencesVisitor.java:265)
+	at org.python.pydev.parser.jython.ast.VisitorBase.visitModule(VisitorBase.java:9)
+	at org.python.pydev.parser.jython.ast.Module.accept(Module.java:72)
+	at com.python.pydev.analysis.OccurrencesAnalyzer.analyzeDocument(OccurrencesAnalyzer.java:47)
+	at com.python.pydev.analysis.builder.AnalysisBuilderRunnable.doAnalysis(AnalysisBuilderRunnable.java:250)
+	at com.python.pydev.analysis.builder.AbstractAnalysisBuilderRunnable.run(AbstractAnalysisBuilderRunnable.java:156)
+	at org.python.pydev.core.concurrency.RunnableAsJobsPoolThread$1.run(RunnableAsJobsPoolThread.java:103)
+	at org.eclipse.core.internal.jobs.Worker.run(Worker.java:54)
+
+!ENTRY org.python.pydev.core 4 4 2012-06-05 10:41:07.209
+!MESSAGE No message gotten (null message).
+!STACK 0
+java.lang.NullPointerException
+	at com.python.pydev.analysis.AnalysisPreferences.getSetOfNames(AnalysisPreferences.java:145)
+	at com.python.pydev.analysis.AnalysisPreferences.getTokensAlwaysInGlobals(AnalysisPreferences.java:136)
+	at com.python.pydev.analysis.visitors.MessagesManager.isActuallyUndefined(MessagesManager.java:222)
+	at com.python.pydev.analysis.visitors.MessagesManager.addUndefinedMessage(MessagesManager.java:191)
+	at com.python.pydev.analysis.visitors.MessagesManager.addUndefinedMessage(MessagesManager.java:184)
+	at com.python.pydev.analysis.visitors.OccurrencesVisitor.onAddUndefinedMessage(OccurrencesVisitor.java:303)
+	at com.python.pydev.analysis.visitors.OccurrencesVisitor.onLastScope(OccurrencesVisitor.java:314)
+	at com.python.pydev.analysis.scopeanalysis.AbstractScopeAnalyzerVisitor.endScope(AbstractScopeAnalyzerVisitor.java:1008)
+	at com.python.pydev.analysis.visitors.OccurrencesVisitor.getMessages(OccurrencesVisitor.java:273)
+	at com.python.pydev.analysis.OccurrencesAnalyzer.analyzeDocument(OccurrencesAnalyzer.java:60)
+	at com.python.pydev.analysis.builder.AnalysisBuilderRunnable.doAnalysis(AnalysisBuilderRunnable.java:250)
+	at com.python.pydev.analysis.builder.AbstractAnalysisBuilderRunnable.run(AbstractAnalysisBuilderRunnable.java:156)
+	at org.python.pydev.core.concurrency.RunnableAsJobsPoolThread$1.run(RunnableAsJobsPoolThread.java:103)
+	at org.eclipse.core.internal.jobs.Worker.run(Worker.java:54)
+
+!ENTRY org.python.pydev.core 4 4 2012-06-05 10:41:07.330
+!MESSAGE Error while getting info for module:os. Project: P/jsonParser
+!STACK 0
+java.lang.RuntimeException: java.lang.RuntimeException: Shells are already finished for good, so, it is an invalid state to try to restart a new shell.
+	at org.python.pydev.editor.codecompletion.shell.AbstractShell.getImportCompletions(AbstractShell.java:858)
+	at org.python.pydev.editor.codecompletion.revisited.modules.CompiledModule.getGlobalTokens(CompiledModule.java:342)
+	at org.python.pydev.editor.codecompletion.revisited.AbstractASTManager.internalGenerateGetCompletionsForModule(AbstractASTManager.java:719)
+	at org.python.pydev.editor.codecompletion.revisited.AbstractASTManager.getCompletionsForModule(AbstractASTManager.java:545)
+	at org.python.pydev.editor.codecompletion.revisited.AbstractASTManager.getCompletionsForModule(AbstractASTManager.java:516)
+	at org.python.pydev.editor.codecompletion.revisited.AbstractASTManager.getCompletionsForModule(AbstractASTManager.java:508)
+	at org.python.pydev.editor.codecompletion.revisited.modules.AbstractModule.internalGenerateCachedTokens(AbstractModule.java:203)
+	at org.python.pydev.editor.codecompletion.revisited.modules.AbstractModule.getCachedCompletions(AbstractModule.java:173)
+	at org.python.pydev.editor.codecompletion.revisited.modules.AbstractModule.isInGlobalTokens(AbstractModule.java:128)
+	at com.python.pydev.analysis.scopeanalysis.AbstractScopeAnalyzerVisitor.markRead(AbstractScopeAnalyzerVisitor.java:1142)
+	at com.python.pydev.analysis.scopeanalysis.AbstractScopeAnalyzerVisitor.visitAttribute(AbstractScopeAnalyzerVisitor.java:663)
+	at org.python.pydev.parser.jython.ast.Attribute.accept(Attribute.java:80)
+	at com.python.pydev.analysis.scopeanalysis.AbstractScopeAnalyzerVisitor.onVisitCallFunc(AbstractScopeAnalyzerVisitor.java:226)
+	at com.python.pydev.analysis.visitors.OccurrencesVisitor.onVisitCallFunc(OccurrencesVisitor.java:417)
+	at com.python.pydev.analysis.scopeanalysis.AbstractScopeAnalyzerVisitor.visitCall(AbstractScopeAnalyzerVisitor.java:193)
+	at com.python.pydev.analysis.visitors.OccurrencesVisitor.visitCall(OccurrencesVisitor.java:229)
+	at org.python.pydev.parser.jython.ast.Call.accept(Call.java:116)
+	at com.python.pydev.analysis.visitors.OccurrencesVisitor.traverse(OccurrencesVisitor.java:123)
+	at com.python.pydev.analysis.visitors.OccurrencesVisitor.traverse(OccurrencesVisitor.java:259)
+	at org.python.pydev.parser.jython.ast.VisitorBase.visitIf(VisitorBase.java:99)
+	at com.python.pydev.analysis.scopeanalysis.AbstractScopeAnalyzerVisitor.visitIf(AbstractScopeAnalyzerVisitor.java:799)
+	at org.python.pydev.parser.jython.ast.If.accept(If.java:89)
+	at org.python.pydev.parser.jython.ast.For.traverse(For.java:111)
+	at com.python.pydev.analysis.scopeanalysis.AbstractScopeAnalyzerVisitor.traverse(AbstractScopeAnalyzerVisitor.java:186)
+	at com.python.pydev.analysis.visitors.OccurrencesVisitor.traverse(OccurrencesVisitor.java:265)
+	at org.python.pydev.parser.jython.ast.VisitorBase.visitFor(VisitorBase.java:87)
+	at com.python.pydev.analysis.scopeanalysis.AbstractScopeAnalyzerVisitor.visitFor(AbstractScopeAnalyzerVisitor.java:765)
+	at org.python.pydev.parser.jython.ast.For.accept(For.java:98)
+	at com.python.pydev.analysis.scopeanalysis.AbstractScopeAnalyzerVisitor.visitFunctionDef(AbstractScopeAnalyzerVisitor.java:402)
+	at org.python.pydev.parser.jython.ast.FunctionDef.accept(FunctionDef.java:117)
+	at org.python.pydev.parser.jython.ast.Module.traverse(Module.java:79)
+	at com.python.pydev.analysis.scopeanalysis.AbstractScopeAnalyzerVisitor.traverse(AbstractScopeAnalyzerVisitor.java:186)
+	at com.python.pydev.analysis.visitors.OccurrencesVisitor.traverse(OccurrencesVisitor.java:265)
+	at org.python.pydev.parser.jython.ast.VisitorBase.visitModule(VisitorBase.java:9)
+	at org.python.pydev.parser.jython.ast.Module.accept(Module.java:72)
+	at com.python.pydev.analysis.OccurrencesAnalyzer.analyzeDocument(OccurrencesAnalyzer.java:47)
+	at com.python.pydev.analysis.builder.AnalysisBuilderRunnable.doAnalysis(AnalysisBuilderRunnable.java:250)
+	at com.python.pydev.analysis.builder.AbstractAnalysisBuilderRunnable.run(AbstractAnalysisBuilderRunnable.java:156)
+	at org.python.pydev.core.concurrency.RunnableAsJobsPoolThread$1.run(RunnableAsJobsPoolThread.java:103)
+	at org.eclipse.core.internal.jobs.Worker.run(Worker.java:54)
+Caused by: java.lang.RuntimeException: Shells are already finished for good, so, it is an invalid state to try to restart a new shell.
+	at org.python.pydev.editor.codecompletion.shell.AbstractShell.restartShell(AbstractShell.java:931)
+	at org.python.pydev.editor.codecompletion.shell.AbstractShell.getTheCompletions(AbstractShell.java:917)
+	at org.python.pydev.editor.codecompletion.shell.AbstractShell.getImportCompletions(AbstractShell.java:856)
+	... 39 more
+
+!ENTRY org.python.pydev.core 4 4 2012-06-05 10:41:07.338
+!MESSAGE Error while getting info for module:__builtin__. Project: P/jsonParser
+!STACK 0
+java.lang.RuntimeException: Unable to create shell for CompiledModule: __builtin__
+	at org.python.pydev.editor.codecompletion.revisited.modules.CompiledModule.getGlobalTokens(CompiledModule.java:330)
+	at org.python.pydev.editor.codecompletion.revisited.AbstractASTManager.internalGenerateGetCompletionsForModule(AbstractASTManager.java:719)
+	at org.python.pydev.editor.codecompletion.revisited.AbstractASTManager.getCompletionsForModule(AbstractASTManager.java:545)
+	at org.python.pydev.editor.codecompletion.revisited.AbstractASTManager.getCompletionsForModule(AbstractASTManager.java:516)
+	at org.python.pydev.editor.codecompletion.revisited.AbstractASTManager.getCompletionsForModule(AbstractASTManager.java:508)
+	at org.python.pydev.editor.codecompletion.revisited.AbstractASTManager.getCompletionsForModule(AbstractASTManager.java:500)
+	at org.python.pydev.editor.codecompletion.revisited.AbstractASTManager.internalGenerateGetCompletionsForModule(AbstractASTManager.java:727)
+	at org.python.pydev.editor.codecompletion.revisited.AbstractASTManager.getCompletionsForModule(AbstractASTManager.java:545)
+	at org.python.pydev.editor.codecompletion.revisited.AbstractASTManager.getCompletionsForModule(AbstractASTManager.java:516)
+	at org.python.pydev.editor.codecompletion.revisited.AbstractASTManager.getCompletionsForModule(AbstractASTManager.java:508)
+	at org.python.pydev.editor.codecompletion.revisited.modules.AbstractModule.internalGenerateCachedTokens(AbstractModule.java:203)
+	at org.python.pydev.editor.codecompletion.revisited.modules.AbstractModule.getCachedCompletions(AbstractModule.java:173)
+	at org.python.pydev.editor.codecompletion.revisited.modules.AbstractModule.isInGlobalTokens(AbstractModule.java:128)
+	at com.python.pydev.analysis.scopeanalysis.AbstractScopeAnalyzerVisitor.markRead(AbstractScopeAnalyzerVisitor.java:1142)
+	at com.python.pydev.analysis.scopeanalysis.AbstractScopeAnalyzerVisitor.visitAttribute(AbstractScopeAnalyzerVisitor.java:663)
+	at org.python.pydev.parser.jython.ast.Attribute.accept(Attribute.java:80)
+	at com.python.pydev.analysis.scopeanalysis.AbstractScopeAnalyzerVisitor.onVisitCallFunc(AbstractScopeAnalyzerVisitor.java:226)
+	at com.python.pydev.analysis.visitors.OccurrencesVisitor.onVisitCallFunc(OccurrencesVisitor.java:417)
+	at com.python.pydev.analysis.scopeanalysis.AbstractScopeAnalyzerVisitor.visitCall(AbstractScopeAnalyzerVisitor.java:193)
+	at com.python.pydev.analysis.visitors.OccurrencesVisitor.visitCall(OccurrencesVisitor.java:229)
+	at org.python.pydev.parser.jython.ast.Call.accept(Call.java:116)
+	at com.python.pydev.analysis.visitors.OccurrencesVisitor.traverse(OccurrencesVisitor.java:123)
+	at com.python.pydev.analysis.visitors.OccurrencesVisitor.traverse(OccurrencesVisitor.java:259)
+	at org.python.pydev.parser.jython.ast.VisitorBase.visitIf(VisitorBase.java:99)
+	at com.python.pydev.analysis.scopeanalysis.AbstractScopeAnalyzerVisitor.visitIf(AbstractScopeAnalyzerVisitor.java:799)
+	at org.python.pydev.parser.jython.ast.If.accept(If.java:89)
+	at org.python.pydev.parser.jython.ast.For.traverse(For.java:111)
+	at com.python.pydev.analysis.scopeanalysis.AbstractScopeAnalyzerVisitor.traverse(AbstractScopeAnalyzerVisitor.java:186)
+	at com.python.pydev.analysis.visitors.OccurrencesVisitor.traverse(OccurrencesVisitor.java:265)
+	at org.python.pydev.parser.jython.ast.VisitorBase.visitFor(VisitorBase.java:87)
+	at com.python.pydev.analysis.scopeanalysis.AbstractScopeAnalyzerVisitor.visitFor(AbstractScopeAnalyzerVisitor.java:765)
+	at org.python.pydev.parser.jython.ast.For.accept(For.java:98)
+	at com.python.pydev.analysis.scopeanalysis.AbstractScopeAnalyzerVisitor.visitFunctionDef(AbstractScopeAnalyzerVisitor.java:402)
+	at org.python.pydev.parser.jython.ast.FunctionDef.accept(FunctionDef.java:117)
+	at org.python.pydev.parser.jython.ast.Module.traverse(Module.java:79)
+	at com.python.pydev.analysis.scopeanalysis.AbstractScopeAnalyzerVisitor.traverse(AbstractScopeAnalyzerVisitor.java:186)
+	at com.python.pydev.analysis.visitors.OccurrencesVisitor.traverse(OccurrencesVisitor.java:265)
+	at org.python.pydev.parser.jython.ast.VisitorBase.visitModule(VisitorBase.java:9)
+	at org.python.pydev.parser.jython.ast.Module.accept(Module.java:72)
+	at com.python.pydev.analysis.OccurrencesAnalyzer.analyzeDocument(OccurrencesAnalyzer.java:47)
+	at com.python.pydev.analysis.builder.AnalysisBuilderRunnable.doAnalysis(AnalysisBuilderRunnable.java:250)
+	at com.python.pydev.analysis.builder.AbstractAnalysisBuilderRunnable.run(AbstractAnalysisBuilderRunnable.java:156)
+	at org.python.pydev.core.concurrency.RunnableAsJobsPoolThread$1.run(RunnableAsJobsPoolThread.java:103)
+	at org.eclipse.core.internal.jobs.Worker.run(Worker.java:54)
+Caused by: java.lang.RuntimeException: Shells are already finished for good, so, it is an invalid state to try to create a new shell.
+	at org.python.pydev.editor.codecompletion.shell.AbstractShell.<init>(AbstractShell.java:370)
+	at org.python.pydev.editor.codecompletion.shell.PythonShell.<init>(PythonShell.java:39)
+	at org.python.pydev.editor.codecompletion.shell.AbstractShell.getServerShell(AbstractShell.java:306)
+	at org.python.pydev.editor.codecompletion.shell.AbstractShell.getServerShell(AbstractShell.java:257)
+	at org.python.pydev.editor.codecompletion.revisited.modules.CompiledModule.getGlobalTokens(CompiledModule.java:328)
+	... 43 more
+
+!ENTRY org.python.pydev.core 4 4 2012-06-05 10:41:07.374
+!MESSAGE Error checking for valid tokens (imports) for data_organizer
+!STACK 0
+java.lang.NullPointerException
+	at com.python.pydev.analysis.AnalysisPreferences.getSetOfNames(AnalysisPreferences.java:145)
+	at com.python.pydev.analysis.AnalysisPreferences.getTokensAlwaysInGlobals(AnalysisPreferences.java:136)
+	at com.python.pydev.analysis.visitors.MessagesManager.isActuallyUndefined(MessagesManager.java:222)
+	at com.python.pydev.analysis.visitors.MessagesManager.addUndefinedVarInImportMessage(MessagesManager.java:201)
+	at com.python.pydev.analysis.visitors.OccurrencesVisitor.onAddUndefinedVarInImportMessage(OccurrencesVisitor.java:282)
+	at com.python.pydev.analysis.scopeanalysis.AbstractScopeAnalyzerVisitor.markRead(AbstractScopeAnalyzerVisitor.java:1160)
+	at com.python.pydev.analysis.scopeanalysis.AbstractScopeAnalyzerVisitor.visitAttribute(AbstractScopeAnalyzerVisitor.java:663)
+	at org.python.pydev.parser.jython.ast.Attribute.accept(Attribute.java:80)
+	at com.python.pydev.analysis.scopeanalysis.AbstractScopeAnalyzerVisitor.onVisitCallFunc(AbstractScopeAnalyzerVisitor.java:226)
+	at com.python.pydev.analysis.visitors.OccurrencesVisitor.onVisitCallFunc(OccurrencesVisitor.java:417)
+	at com.python.pydev.analysis.scopeanalysis.AbstractScopeAnalyzerVisitor.visitCall(AbstractScopeAnalyzerVisitor.java:193)
+	at com.python.pydev.analysis.visitors.OccurrencesVisitor.visitCall(OccurrencesVisitor.java:229)
+	at org.python.pydev.parser.jython.ast.Call.accept(Call.java:116)
+	at com.python.pydev.analysis.visitors.OccurrencesVisitor.traverse(OccurrencesVisitor.java:123)
+	at com.python.pydev.analysis.visitors.OccurrencesVisitor.traverse(OccurrencesVisitor.java:259)
+	at org.python.pydev.parser.jython.ast.VisitorBase.visitIf(VisitorBase.java:99)
+	at com.python.pydev.analysis.scopeanalysis.AbstractScopeAnalyzerVisitor.visitIf(AbstractScopeAnalyzerVisitor.java:799)
+	at org.python.pydev.parser.jython.ast.If.accept(If.java:89)
+	at org.python.pydev.parser.jython.ast.For.traverse(For.java:111)
+	at com.python.pydev.analysis.scopeanalysis.AbstractScopeAnalyzerVisitor.traverse(AbstractScopeAnalyzerVisitor.java:186)
+	at com.python.pydev.analysis.visitors.OccurrencesVisitor.traverse(OccurrencesVisitor.java:265)
+	at org.python.pydev.parser.jython.ast.VisitorBase.visitFor(VisitorBase.java:87)
+	at com.python.pydev.analysis.scopeanalysis.AbstractScopeAnalyzerVisitor.visitFor(AbstractScopeAnalyzerVisitor.java:765)
+	at org.python.pydev.parser.jython.ast.For.accept(For.java:98)
+	at com.python.pydev.analysis.scopeanalysis.AbstractScopeAnalyzerVisitor.visitFunctionDef(AbstractScopeAnalyzerVisitor.java:402)
+	at org.python.pydev.parser.jython.ast.FunctionDef.accept(FunctionDef.java:117)
+	at org.python.pydev.parser.jython.ast.Module.traverse(Module.java:79)
+	at com.python.pydev.analysis.scopeanalysis.AbstractScopeAnalyzerVisitor.traverse(AbstractScopeAnalyzerVisitor.java:186)
+	at com.python.pydev.analysis.visitors.OccurrencesVisitor.traverse(OccurrencesVisitor.java:265)
+	at org.python.pydev.parser.jython.ast.VisitorBase.visitModule(VisitorBase.java:9)
+	at org.python.pydev.parser.jython.ast.Module.accept(Module.java:72)
+	at com.python.pydev.analysis.OccurrencesAnalyzer.analyzeDocument(OccurrencesAnalyzer.java:47)
+	at com.python.pydev.analysis.builder.AnalysisBuilderRunnable.doAnalysis(AnalysisBuilderRunnable.java:250)
+	at com.python.pydev.analysis.builder.AbstractAnalysisBuilderRunnable.run(AbstractAnalysisBuilderRunnable.java:156)
+	at org.python.pydev.core.concurrency.RunnableAsJobsPoolThread$1.run(RunnableAsJobsPoolThread.java:103)
+	at org.eclipse.core.internal.jobs.Worker.run(Worker.java:54)
+
+!ENTRY org.python.pydev.core 4 4 2012-06-05 10:41:07.376
+!MESSAGE Error while visiting data_organizer (/home/rezaur/Documents/Code/EclipseSpace/jsonParser/src/data_organizer.py)
+!STACK 0
+java.lang.NullPointerException
+	at com.python.pydev.analysis.AnalysisPreferences.getSetOfNames(AnalysisPreferences.java:145)
+	at com.python.pydev.analysis.AnalysisPreferences.getNamesIgnoredByUnusedVariable(AnalysisPreferences.java:132)
+	at com.python.pydev.analysis.visitors.MessagesManager.startsWithNamesToIgnore(MessagesManager.java:385)
+	at com.python.pydev.analysis.visitors.MessagesManager.addUnusedMessage(MessagesManager.java:321)
+	at com.python.pydev.analysis.visitors.OccurrencesVisitor.onAfterEndScope(OccurrencesVisitor.java:338)
+	at com.python.pydev.analysis.scopeanalysis.AbstractScopeAnalyzerVisitor.endScope(AbstractScopeAnalyzerVisitor.java:1012)
+	at com.python.pydev.analysis.scopeanalysis.AbstractScopeAnalyzerVisitor.visitFunctionDef(AbstractScopeAnalyzerVisitor.java:407)
+	at org.python.pydev.parser.jython.ast.FunctionDef.accept(FunctionDef.java:117)
+	at org.python.pydev.parser.jython.ast.Module.traverse(Module.java:79)
+	at com.python.pydev.analysis.scopeanalysis.AbstractScopeAnalyzerVisitor.traverse(AbstractScopeAnalyzerVisitor.java:186)
+	at com.python.pydev.analysis.visitors.OccurrencesVisitor.traverse(OccurrencesVisitor.java:265)
+	at org.python.pydev.parser.jython.ast.VisitorBase.visitModule(VisitorBase.java:9)
+	at org.python.pydev.parser.jython.ast.Module.accept(Module.java:72)
+	at com.python.pydev.analysis.OccurrencesAnalyzer.analyzeDocument(OccurrencesAnalyzer.java:47)
+	at com.python.pydev.analysis.builder.AnalysisBuilderRunnable.doAnalysis(AnalysisBuilderRunnable.java:250)
+	at com.python.pydev.analysis.builder.AbstractAnalysisBuilderRunnable.run(AbstractAnalysisBuilderRunnable.java:156)
+	at org.python.pydev.core.concurrency.RunnableAsJobsPoolThread$1.run(RunnableAsJobsPoolThread.java:103)
+	at org.eclipse.core.internal.jobs.Worker.run(Worker.java:54)
+!SESSION 2012-06-05 10:41:10.997 -----------------------------------------------
+eclipse.buildId=I20110613-1736
+java.version=1.6.0_24
+java.vendor=Sun Microsystems Inc.
+BootLoader constants: OS=linux, ARCH=x86_64, WS=gtk, NL=en_US
+Command-line arguments:  -os linux -ws gtk -arch x86_64
+
+!ENTRY org.python.pydev.core 4 4 2012-06-05 10:41:21.802
+!MESSAGE Unable to resolve module for:L/jsonParser/src/json_describer.py
+!STACK 0
+java.lang.RuntimeException: Unable to resolve module for:L/jsonParser/src/json_describer.py
+	at org.python.pydev.builder.PyDevBuilderVisitor.getModuleName(PyDevBuilderVisitor.java:209)
+	at com.python.pydev.analysis.builder.AnalysisBuilderVisitor.doVisitChangedResource(AnalysisBuilderVisitor.java:158)
+	at com.python.pydev.analysis.builder.AnalysisParserObserver.analyze(AnalysisParserObserver.java:174)
+	at com.python.pydev.analysis.builder.AnalysisParserObserver.access$0(AnalysisParserObserver.java:144)
+	at com.python.pydev.analysis.builder.AnalysisParserObserver$AnalyzeLaterJob.run(AnalysisParserObserver.java:79)
+	at org.eclipse.core.internal.jobs.Worker.run(Worker.java:54)
+
+!ENTRY org.python.pydev.core 4 4 2012-06-05 10:50:03.862
+!MESSAGE org.eclipse.jface.text.BadLocationException
+!STACK 0
+java.lang.RuntimeException: org.eclipse.jface.text.BadLocationException
+	at org.python.pydev.core.docutils.ParsingUtils$IDocumentParsingUtils.charAt(ParsingUtils.java:204)
+	at org.python.pydev.builder.todo.PyTodoVisitor.computeTodoMarkers(PyTodoVisitor.java:78)
+	at org.python.pydev.builder.todo.PyTodoVisitor.visitChangedResource(PyTodoVisitor.java:56)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:616)
+	at org.python.pydev.core.REF.invoke(REF.java:497)
+	at org.python.pydev.core.REF.invoke(REF.java:488)
+	at org.python.pydev.builder.PydevGrouperVisitor.visitWith(PydevGrouperVisitor.java:81)
+	at org.python.pydev.builder.PydevGrouperVisitor.visitChangedResource(PydevGrouperVisitor.java:116)
+	at org.python.pydev.builder.PydevInternalResourceDeltaVisitor.chooseVisit(PydevInternalResourceDeltaVisitor.java:168)
+	at org.python.pydev.builder.PydevInternalResourceDeltaVisitor.visit(PydevInternalResourceDeltaVisitor.java:114)
+	at org.eclipse.core.internal.events.ResourceDelta.accept(ResourceDelta.java:69)
+	at org.eclipse.core.internal.events.ResourceDelta.accept(ResourceDelta.java:80)
+	at org.eclipse.core.internal.events.ResourceDelta.accept(ResourceDelta.java:80)
+	at org.eclipse.core.internal.events.ResourceDelta.accept(ResourceDelta.java:49)
+	at org.python.pydev.builder.PyDevBuilder.build(PyDevBuilder.java:117)
+	at org.eclipse.core.internal.events.BuildManager$2.run(BuildManager.java:728)
+	at org.eclipse.core.runtime.SafeRunner.run(SafeRunner.java:42)
+	at org.eclipse.core.internal.events.BuildManager.basicBuild(BuildManager.java:199)
+	at org.eclipse.core.internal.events.BuildManager.basicBuild(BuildManager.java:239)
+	at org.eclipse.core.internal.events.BuildManager$1.run(BuildManager.java:292)
+	at org.eclipse.core.runtime.SafeRunner.run(SafeRunner.java:42)
+	at org.eclipse.core.internal.events.BuildManager.basicBuild(BuildManager.java:295)
+	at org.eclipse.core.internal.events.BuildManager.basicBuildLoop(BuildManager.java:351)
+	at org.eclipse.core.internal.events.BuildManager.build(BuildManager.java:374)
+	at org.eclipse.core.internal.events.AutoBuildJob.doBuild(AutoBuildJob.java:143)
+	at org.eclipse.core.internal.events.AutoBuildJob.run(AutoBuildJob.java:241)
+	at org.eclipse.core.internal.jobs.Worker.run(Worker.java:54)
+Caused by: org.eclipse.jface.text.BadLocationException
+	at org.eclipse.jface.text.AbstractDocument.getChar(AbstractDocument.java:806)
+	at org.eclipse.core.internal.filebuffers.SynchronizableDocument.getChar(SynchronizableDocument.java:152)
+	at org.python.pydev.core.docutils.ParsingUtils$IDocumentParsingUtils.charAt(ParsingUtils.java:202)
+	... 29 more
+!SESSION 2012-06-05 11:11:26.330 -----------------------------------------------
+eclipse.buildId=I20110613-1736
+java.version=1.6.0_24
+java.vendor=Sun Microsystems Inc.
+BootLoader constants: OS=linux, ARCH=x86_64, WS=gtk, NL=en_US
+Command-line arguments:  -os linux -ws gtk -arch x86_64
+
+!ENTRY org.eclipse.core.resources 2 10035 2012-06-05 11:11:27.712
+!MESSAGE The workspace exited with unsaved changes in the previous session; refreshing workspace to recover changes.

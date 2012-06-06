@@ -1,0 +1,150 @@
+import fnmatch
+import shutil
+import tarfile
+
+from json_describer import * 
+
+compress_mode = 'r:gz'
+compress_file_format = r'*.tar.gz'
+json_file_pattern = r'0*.json'
+
+csv_writing_mode = "w"
+
+def recursive_directory_content_move(root, where_to_move):
+    for each_entry in os.listdir(root):
+        if os.path.isdir(os.path.join(root,each_entry)):
+            recursive_directory_content_move(os.path.join(root,each_entry), where_to_move)
+        else:
+            try:
+                if fnmatch.fnmatch(each_entry, json_file_pattern):
+                    shutil.move(os.path.join(root,each_entry), os.path.join(where_to_move,each_entry))
+            except shutil.Error, e:
+                continue
+
+def write_CSV():
+    fb_user_file = open (sys.argv[1]+"fb_user.csv", csv_writing_mode)
+    message_file = open (sys.argv[1]+"message.csv", csv_writing_mode) 
+    message_to_file = open (sys.argv[1]+"message_to.csv", csv_writing_mode) 
+    likedby_file = open (sys.argv[1]+"likedby.csv", csv_writing_mode) 
+    tag_file = open (sys.argv[1]+"tag.csv", csv_writing_mode)
+    link_file =  open (sys.argv[1]+"link.csv", csv_writing_mode)
+    
+    writer = csv.writer(fb_user_file, quoting=csv.QUOTE_MINIMAL)
+    writer.writerows(new_fb_users)
+    writer = csv.writer(message_file ,quoting=csv.QUOTE_MINIMAL)
+    writer.writerows(new_messages)
+    writer = csv.writer(message_to_file ,quoting=csv.QUOTE_MINIMAL)
+    writer.writerows(new_message_tos)
+    writer = csv.writer(likedby_file ,quoting=csv.QUOTE_MINIMAL)
+    writer.writerows(new_likedbys)
+    writer = csv.writer(tag_file ,quoting=csv.QUOTE_MINIMAL)
+    writer.writerows(new_tags)
+    writer = csv.writer(link_file ,quoting=csv.QUOTE_MINIMAL)
+    writer.writerows(new_links)
+    
+    fb_user_file.close()
+    message_file.close() 
+    message_to_file.close() 
+    likedby_file.close() 
+    tag_file.close() 
+    link_file.close()
+
+# Initialize variables by reading from Database
+def data_initializer ():
+    try:
+        (conn, cursor) = openDb(True, True)
+    except psycopg2.Error, e:
+        print "Error %d: %s" % (e.pgcode, e.pgerror)
+    try:
+        cursor.execute('select row_id, id from fb_user')
+        if cursor.rowcount > 0:
+            for record in cursor:
+                fb_user_ids[record[1]] = record[0]
+        else:
+            return 0
+
+        cursor.execute('select row_id, id from message')
+        if cursor.rowcount > 0:
+            for record in cursor:
+                message_ids[record[1]] = record[0]
+        else:
+            return 0
+
+        global fb_wall_last_value
+        cursor.execute('select max(fb_wall_row_id) from message')
+        fb_wall_last_value = cursor.fetchone()[0]
+        
+        global fb_user_last_value
+        cursor.execute('select max(row_id) from fb_user')
+        fb_user_last_value = cursor.fetchone()[0]
+        
+        global message_last_value
+        cursor.execute('select max(row_id) from message')
+        message_last_value = cursor.fetchone()[0]
+        
+        global message_to_last_value
+        cursor.execute('select max(row_id) from message_to')
+        message_to_last_value = cursor.fetchone()[0]
+
+        global likedby_last_value
+        cursor.execute('select max(row_id) from likedby')
+        likedby_last_value = cursor.fetchone()[0]
+        
+        global tag_last_value
+        cursor.execute('select max(row_id) from tag')
+        tag_last_value = cursor.fetchone()[0]
+
+        global link_last_value
+        cursor.execute('select max(row_id) from link')
+        link_last_value = cursor.fetchone()[0]
+
+        closeDB(conn, cursor)
+        return 1
+    except psycopg2.Error, e:
+        closeDB(conn, cursor)
+        ERROR_FILE.write("*********Database************Error %s: %s\n" % (e.pgcode, e.pgerror))
+        return -1
+
+if(len(sys.argv) > 2):
+    print(strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()))
+    data_initializer()
+    LOG_FILE = open(sys.argv[1]+"logfile.txt", "w").close() #To empty the file
+    LOG_FILE = open (sys.argv[1]+"logfile.txt", "a")
+    ERROR_FILE = open(sys.argv[1]+"errorfile.txt", "w").close() #To empty the file
+    ERROR_FILE = open (sys.argv[1]+"errorfile.txt", "a")
+    for root, dirs, files in os.walk(sys.argv[1]):
+        if sys.argv[2] == '-e':
+            for each_file in files:
+                if fnmatch.fnmatch(each_file, compress_file_format):
+                    print each_file
+                    tar = tarfile.open(os.path.join(sys.argv[1],each_file), compress_mode)
+                    tar.extractall(os.path.join(sys.argv[1],'ex_temp'))
+                    tar.close()
+                    os.mkdir(os.path.join(sys.argv[1],'temp'))
+                    recursive_directory_content_move(os.path.join(sys.argv[1],'ex_temp'),os.path.join(sys.argv[1],'temp')) 
+                    list_of_posts = os.listdir(os.path.join(sys.argv[1],'temp'))
+                    for each_post in list_of_posts:
+                        json_strings = open (os.path.join(sys.argv[1], 'temp', each_post))
+                        parse_this_post(json_strings)
+                    shutil.rmtree(os.path.join(sys.argv[1], 'ex_temp'))
+                    shutil.rmtree(os.path.join(sys.argv[1],'temp'))
+        else:
+            os.chdir(sys.argv[1])
+            for dir in dirs:
+                print dir
+                entries = os.listdir(dir)
+                tmp_dir = dir
+                for each_entry in entries:
+                    if os.path.isdir(os.path.join(tmp_dir,each_entry)):
+                        os.rename(dir, 'temp')
+                        tmp_dir = 'temp'
+                        os.mkdir(dir)
+                        recursive_directory_content_move(os.path.join(sys.argv[1], 'temp'), os.path.join(sys.argv[1], dir))
+                        shutil.rmtree('temp')
+                        break
+                for each_file in os.listdir(dir):
+                    json_strings = open (sys.argv[1]+dir+'/'+each_file)
+    LOG_FILE.close()
+    ERROR_FILE.close()    
+else:
+    print('usage: python path {-e,-d}\n -e:for tar files auto extraction\n -d: already extracted json directories')
