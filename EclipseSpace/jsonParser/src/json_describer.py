@@ -188,30 +188,30 @@ def register_message (onedata, parent_message_row_id):
     global link_last_value
     if onedata.has_key("picture"):
         link_last_value = link_last_value +1
-        new_links.append((link_last_value, message_row_id, onedata["picture"], 'picture', None, None))
+        new_links.append((link_last_value, message_row_id, asciiCodify(onedata["picture"]), 'picture', None, None))
     if onedata.has_key("link"):
         link_last_value = link_last_value +1
-        new_links.append((link_last_value, message_row_id, onedata["link"], 'link', None, None))
+        new_links.append((link_last_value, message_row_id, asciiCodify(onedata["link"]), 'link', None, None))
     if onedata.has_key("icon"):
         link_last_value = link_last_value +1
-        new_links.append((link_last_value, message_row_id, onedata["icon"], 'icon', None, None))
+        new_links.append((link_last_value, message_row_id, asciiCodify(onedata["icon"]), 'icon', None, None))
     if onedata.has_key("actions"):
         for each_action in onedata["actions"]:
             if each_action.has_key("link"):
                 link_last_value = link_last_value +1
-                new_links.append((link_last_value, message_row_id, each_action["link"], 'ACTION', each_action["name"], None))
+                new_links.append((link_last_value, message_row_id, asciiCodify(each_action["link"]), 'ACTION', asciiCodify(each_action["name"]), None))
     if onedata.has_key("properties"):
         for each_property in onedata["properties"]:
             if each_property.has_key("href"):
-                each_property_href = each_property["href"]
+                each_property_href = asciiCodify(each_property["href"])
             else:
                 each_property_href = None
             if each_property.has_key("name"):
-                each_property_name = each_property["name"]
+                each_property_name = asciiCodify(each_property["name"])
             else:  
                 each_property_name = None
             if each_property.has_key("text"):
-                each_property_text = each_property["text"]
+                each_property_text = asciiCodify(each_property["text"])
             else:
                 each_property_text = None
             link_last_value = link_last_value +1
