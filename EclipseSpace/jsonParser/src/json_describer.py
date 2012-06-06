@@ -249,6 +249,8 @@ def parse_this_post (json_strings):
 #                    ERROR_FILE.write("*********Duplicate crawling %s************\n" % (working_json_file_name))
                     return -1
                 message_row_id = register_message(onedata, None)
+                if message_row_id == -1:
+                    return -1
                 if onedata.has_key("likes"):
                     likes_count = onedata["likes"]["count"]
                 if onedata.has_key("comments"):
