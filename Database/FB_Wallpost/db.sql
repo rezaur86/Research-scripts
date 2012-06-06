@@ -32,7 +32,7 @@ CREATE TABLE message (
 	row_id BIGINT,
 	id VARCHAR(100) NOT NULL,
 	parent_message_row_id INT,
-	group_id BIGINT,
+	fb_wall_row_id BIGINT,
 	name TEXT,
 	text TEXT,
 	type VARCHAR(300),
@@ -46,7 +46,7 @@ CREATE TABLE message (
 	PRIMARY KEY (row_id),
 	FOREIGN KEY (parent_message_row_id) REFERENCES message(row_id) ON UPDATE CASCADE ON DELETE RESTRICT,
 	FOREIGN KEY (from_user_row_id) REFERENCES fb_user(row_id) ON UPDATE CASCADE ON DELETE RESTRICT,
-	FOREIGN KEY (group_id) REFERENCES fb_user(row_id) ON UPDATE CASCADE ON DELETE RESTRICT,
+	FOREIGN KEY (fb_wall_row_id) REFERENCES fb_user(row_id) ON UPDATE CASCADE ON DELETE RESTRICT,
 	UNIQUE(id)
 );
 
