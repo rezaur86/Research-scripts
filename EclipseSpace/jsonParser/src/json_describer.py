@@ -199,7 +199,7 @@ def register_message (onedata, parent_message_row_id):
         for each_action in onedata["actions"]:
             if each_action.has_key("link"):
                 link_last_value = link_last_value +1
-                new_links.append((link_last_value, message_row_id, asciiCodify(each_action["link"]), 'ACTION', asciiCodify(each_action["name"]), None))
+                new_links.append((link_last_value, message_row_id, asciiCodify(each_action["link"]), 'ACTION', asciiCodify(str(each_action["name"])), None))
     if onedata.has_key("properties"):
         for each_property in onedata["properties"]:
             if each_property.has_key("href"):
@@ -207,11 +207,11 @@ def register_message (onedata, parent_message_row_id):
             else:
                 each_property_href = None
             if each_property.has_key("name"):
-                each_property_name = asciiCodify(each_property["name"])
+                each_property_name = asciiCodify(str(each_property["name"]))
             else:  
                 each_property_name = None
             if each_property.has_key("text"):
-                each_property_text = asciiCodify(each_property["text"])
+                each_property_text = asciiCodify(str(each_property["text"]))
             else:
                 each_property_text = None
             link_last_value = link_last_value +1

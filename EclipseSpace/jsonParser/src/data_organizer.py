@@ -118,6 +118,8 @@ if(len(sys.argv) > 2):
         if sys.argv[2] == '-e':
             for each_file in files:
                 if fnmatch.fnmatch(each_file, compress_file_format):
+                    shutil.rmtree(os.path.join(sys.argv[1],'ex_temp'))
+                    shutil.rmtree(os.path.join(sys.argv[1],'temp'))
                     print each_file
                     tar = tarfile.open(os.path.join(sys.argv[1],each_file), compress_mode)
                     tar.extractall(os.path.join(sys.argv[1],'ex_temp'))
