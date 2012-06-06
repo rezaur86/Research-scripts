@@ -37,6 +37,7 @@ def asciiCodify(s):
 def register_user (jsonObj):
     if jsonObj is None:
         return -1
+    global fb_user_ids
     if jsonObj.has_key("id"):
         fb_id_str = (json.dumps(jsonObj["id"]).replace('\"','')).split('.')[0]
         fb_id = long(fb_id_str)
@@ -55,7 +56,6 @@ def register_user (jsonObj):
         category = None
     global fb_user_last_value
     fb_user_last_value = fb_user_last_value + 1
-    global fb_user_ids
     fb_user_ids[fb_id] = fb_user_last_value
     new_fb_users.append((fb_user_last_value, fb_id_str, name, category))
     return fb_user_last_value
