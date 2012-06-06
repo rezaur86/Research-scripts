@@ -28,9 +28,9 @@ new_links= []
 
 #to ignore unicode error:
 def asciiCodify(s):
-    if type(s) != unicode:
-        s = unicode(s, errors="replace")
     try:
+        if type(s) != unicode:
+            s = unicode(s, errors="replace")
         v = s.encode("ascii", "replace")
         return v
     except Exception:
