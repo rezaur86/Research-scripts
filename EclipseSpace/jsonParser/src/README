@@ -1,0 +1,2 @@
+Parse json files in each directory and generated csv files.
+csv files are formatted for the designed database, please note db.sql
