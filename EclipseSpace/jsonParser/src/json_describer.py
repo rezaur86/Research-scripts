@@ -26,43 +26,44 @@ new_likedbys = []
 new_tags = []
 new_links= []
 
-# Return the row_id of the found user else -1 for not found or exception
-def find_user (fb_id):
-    if fb_user_ids.has_key(fb_id):
-        return fb_user_ids[fb_id]
-    else:
-        return -1
+#to ignore unicode error:
+def asciiCodify(s):
+    if type(s) != unicode:
+        s = unicode(s, errors="replace")
+    v = s.encode("ascii", "replace")
+    return v
     
 # Return row_id if already exists or successful, else return -1 if exception occurs
 def register_user (jsonObj):
     if jsonObj is None:
         return -1
     if jsonObj.has_key("id"):
-        fb_id = json.dumps(jsonObj["id"]).replace('\"','')
-        row_id = find_user(long(fb_id.split('.')[0]))
-        if row_id != -1:
+        fb_id_str = (json.dumps(jsonObj["id"]).replace('\"','')).split('.')[0]
+        fb_id = long(fb_id_str)
+        if fb_user_ids.has_key(fb_id):
+            row_id = fb_user_ids[fb_id]
             return row_id 
     else:
         return -1
     if jsonObj.has_key("name"):
-        name = json.dumps(jsonObj["name"]).replace('\"','')
+        name = asciiCodify(json.dumps(jsonObj["name"]).replace('\"',''))
     else:
         name = None
     if jsonObj.has_key("category"):
-        category = json.dumps(jsonObj["category"]).replace('\"','')
+        category = asciiCodify(json.dumps(jsonObj["category"]).replace('\"',''))
     else:
         category = None
     global fb_user_last_value
     fb_user_last_value = fb_user_last_value + 1
     global fb_user_ids
-    fb_user_ids[long(fb_id.split('.')[0])] = fb_user_last_value
-    new_fb_users.append((fb_user_last_value, fb_id.split('.')[0], name, category))
+    fb_user_ids[fb_id] = fb_user_last_value
+    new_fb_users.append((fb_user_last_value, fb_id_str, name, category))
     return fb_user_last_value
 
 def register_tag (each_tag, message_row_id):
     user_row_id = register_user(each_tag)
     if each_tag.has_key("type"):
-        type_ = each_tag["type"].replace('\"','')
+        type_ = asciiCodify(each_tag["type"].replace('\"',''))
     else:
         type_ = None
     if each_tag.has_key("offset"):
@@ -90,23 +91,23 @@ def register_message (onedata, parent_message_row_id):
     else:
         return -1
     if onedata.has_key("name"):
-        name = onedata["name"].replace('\"','')
+        name = asciiCodify(onedata["name"].replace('\"',''))
     else:
         name = None
     if onedata.has_key("message"):
-        text = onedata["message"].replace('\"','')
+        text = asciiCodify(onedata["message"].replace('\"',''))
     else:
         text = None
     if onedata.has_key("type"):
-        type_ = onedata["type"].replace('\"','')
+        type_ = asciiCodify(onedata["type"].replace('\"',''))
     else:
         type_ = None
     if onedata.has_key("description"):
-        description = onedata["description"].replace('\"','')
+        description = asciiCodify(onedata["description"].replace('\"',''))
     else:
         description = None
     if onedata.has_key("caption"):
-        caption = onedata["caption"].replace('\"','')
+        caption = asciiCodify(onedata["caption"].replace('\"',''))
     else:
         caption = None
     if onedata.has_key("created_time"):
