@@ -1,7 +1,0 @@
-import json
-import sys
-from pprint import pprint
-
-def describe_this (json_file):
-    if(len(sys.argv) > 1):
-        json_strings = open (sys.argv[1])

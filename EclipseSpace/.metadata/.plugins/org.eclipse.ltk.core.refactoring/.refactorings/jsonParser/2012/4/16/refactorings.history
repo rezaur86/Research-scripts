@@ -1,4 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<session version="1.0">
-<refactoring comment="Rename resource &apos;jsonParser/src/sql_execute.py&apos; to &apos;db_connection.py&apos;" description="Rename resource &apos;sql_execute.py&apos;" flags="7" id="org.eclipse.ltk.core.refactoring.rename.resource" input="src/sql_execute.py" name="db_connection.py" stamp="1334985314133" updateReferences="true"/>
-</session>
