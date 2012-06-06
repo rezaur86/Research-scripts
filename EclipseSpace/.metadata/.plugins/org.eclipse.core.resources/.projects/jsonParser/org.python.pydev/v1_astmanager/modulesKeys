@@ -1,6 +1,0 @@
-MODULES_MANAGER_V2
-data_organizer|/home/rezaur/Documents/Code/EclipseSpace/jsonParser/src/data_organizer.py
-db_connection|/home/rezaur/Documents/Code/EclipseSpace/jsonParser/src/db_connection.py
-json_describer|/home/rezaur/Documents/Code/EclipseSpace/jsonParser/src/json_describer.py
-json_parser|/home/rezaur/Documents/Code/EclipseSpace/jsonParser/src/json_parser.py
-print_json_file|/home/rezaur/Documents/Code/EclipseSpace/jsonParser/src/print_json_file.py
