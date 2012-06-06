@@ -81,9 +81,14 @@ def register_tag (each_tag, message_row_id):
 # Parent_message is the Post on which the user commented, else None if this is the Post 
 def register_message (onedata, parent_message_row_id):
     global message_ids
-    message_id = onedata["id"].replace('\"','')
-    if message_ids.has_key(message_id):
-        return
+    if onedata is None:
+        return -1
+    if onedata.has_key("id"):            
+        message_id = onedata["id"].replace('\"','')
+        if message_ids.has_key(message_id):
+            return message_ids[message_id]
+    else:
+        return -1
     if onedata.has_key("name"):
         name = onedata["name"].replace('\"','')
     else:
@@ -122,7 +127,10 @@ def register_message (onedata, parent_message_row_id):
         shares_count = None    
     if onedata.has_key("from"):
         postedBy_row_id = register_user(onedata["from"])
-    
+        if postedBy_row_id == -1:
+            return -1
+    else:
+        return -1
     global message_last_value
     message_last_value = message_last_value + 1
     message_ids[message_id] = message_last_value
@@ -173,7 +181,6 @@ def register_message (onedata, parent_message_row_id):
                         continue
                     register_tag(each_tag, message_row_id)      
 
-#    print fb_user_ids
     group_id = fb_user_ids[long(message_id.split('_')[0])]    
     new_messages.append((message_last_value, message_id, parent_message_row_id, group_id, name, type_, description, caption, postedBy_row_id, created_time, updated_time, can_remove, shares_count))
     
@@ -310,7 +317,6 @@ def parse_this_post (json_strings):
                                     LOG_FILE.write('Inconsistency of %s likes within comments at %s \n' %(likes_of_a_comment_count, working_json_file_name))
                         except:
                             LOG_FILE.write('Inconsistency of UNKNOWN likes within comments at %s \n' %(working_json_file_name))
-
 
 
 #if(len(sys.argv) > 1):

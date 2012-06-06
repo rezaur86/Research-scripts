@@ -15,16 +15,15 @@ data_organizer|0|/home/rezaur/Documents/Code/EclipseSpace/jsonParser/src/data_or
 2=data_organizer
 -- END DICTIONARY
 -- START TREE 1
-33
+29
 clo|1|closeDB!10@
 com|2|compress_file_format!19@compress_mode!19@
 con|0|
-csv|4|csv!27@csv_writing_mode!19@csv_lock!27@csv_counter!27@
+csv|4|csv!27@csv_lock!27@csv_writing_mode!19@csv_counter!27@
 cur|0|
 dat|1|data_initializer!18@
 db_|3|db_namespace!11@db_server!11@db_name!11@
 des|1|describe_this!26@
-ent|0|
 err|0|
 fb_|1|fb_wall_last_value!27@
 fil|1|FILE!35@
@@ -32,7 +31,6 @@ fin|0|
 jso|3|json_files_lock!27@json_file_pattern!19@json_files!27@
 lik|0|
 lin|0|
-lis|0|
 log|0|
 mes|1|message_ids!27@
 new|0|
@@ -43,9 +41,7 @@ par|0|
 rec|1|recursive_directory_content_move!18@
 reg|0|
 tag|0|
-tar|0|
 tem|1|temp!35@
-tmp|0|
 wal|1|wall_id_of_files!27@
 wor|3|worker!26@worker_id!27@worker_list!27@
 wri|1|write_CSV!18@
