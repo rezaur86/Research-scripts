@@ -1,0 +1,4 @@
+EclipseSpace/.metadata/*
+.project
+.pydevproject
+*.pyc
