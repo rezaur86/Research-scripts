@@ -304,14 +304,13 @@ def parse_this_post (json_strings):
                         try:
                             likes_of_a_comment_count = likes_of_comments_count_queue.popleft()
                             comment_message_row_id = comment_message_row_id_queue.popleft()
-                            if comment_message_row_id == -1:
-                                continue
                             for each_like_on_comment in onedata["ec_likes"]["data"]:
                                 if likes_of_a_comment_count > 0:
                                     likes_of_a_comment_count -= 1
                                     likedby = register_user(each_like_on_comment)
                                     likedby_last_value = likedby_last_value + 1                                    
-                                    new_likedbys.append((likedby_last_value, comment_message_row_id, likedby))
+                                    if comment_message_row_id != -1:    # Else skip appending new likedby row
+                                        new_likedbys.append((likedby_last_value, comment_message_row_id, likedby))
                             if onedata["ec_likes"].has_key("paging"):
                                 if onedata["ec_likes"]["paging"].has_key("next"):
                                     likes_of_comments_count_queue.appendleft(likes_of_a_comment_count)
