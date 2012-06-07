@@ -1,7 +1,7 @@
 import fnmatch
 import shutil
 import tarfile
-from time import gmtime, strftime
+from time import localtime, strftime
 import sys
 import os
 import csv
@@ -29,12 +29,15 @@ def recursive_directory_content_move(root, where_to_move):
                 continue
 
 def write_CSV():
-    fb_user_file = open (sys.argv[1]+"fb_user.csv", csv_writing_mode)
-    message_file = open (sys.argv[1]+"message.csv", csv_writing_mode) 
-    message_to_file = open (sys.argv[1]+"message_to.csv", csv_writing_mode) 
-    likedby_file = open (sys.argv[1]+"likedby.csv", csv_writing_mode) 
-    tag_file = open (sys.argv[1]+"tag.csv", csv_writing_mode)
-    link_file =  open (sys.argv[1]+"link.csv", csv_writing_mode)
+    time_now = strftime("%a, %b %d %Y %H:%M:%S", localtime())
+    os.mkdir(os.path.join(sys.argv[1],'CSV_'+time_now))
+    CSV_path = os.path.join(sys.argv[1],'CSV_'+time_now)
+    fb_user_file = open (CSV_path+"/fb_user.csv", csv_writing_mode)
+    message_file = open (CSV_path+"/message.csv", csv_writing_mode) 
+    message_to_file = open (CSV_path+"/message_to.csv", csv_writing_mode) 
+    likedby_file = open (CSV_path+"/likedby.csv", csv_writing_mode) 
+    tag_file = open (CSV_path+"/tag.csv", csv_writing_mode)
+    link_file =  open (CSV_path+"/link.csv", csv_writing_mode)
     
     writer = csv.writer(fb_user_file, quoting=csv.QUOTE_MINIMAL)
     writer.writerows(json_describer.new_fb_users)
@@ -79,9 +82,6 @@ def data_initializer ():
         else:
             return 0
 
-        cursor.execute('select max(fb_wall_row_id) from message')
-        json_describer.fb_wall_last_value = cursor.fetchone()[0]
-        
         cursor.execute('select max(row_id) from fb_user')
         json_describer.fb_user_last_value = cursor.fetchone()[0]
         
@@ -108,8 +108,8 @@ def data_initializer ():
         return -1
 
 if(len(sys.argv) > 1):
-    print(strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()))
-#    data_initializer()
+    print(strftime("%a, %b %d %Y %H:%M:%S", localtime()))
+    data_initializer()
     json_describer.LOG_FILE = open(sys.argv[1]+"logfile.txt", "w").close() #To empty the file
     json_describer.LOG_FILE = open (sys.argv[1]+"logfile.txt", "a")
     json_describer.ERROR_FILE = open(sys.argv[1]+"errorfile.txt", "w").close() #To empty the file
@@ -126,7 +126,6 @@ if(len(sys.argv) > 1):
             os.mkdir(os.path.join(sys.argv[1],'temp'))
             recursive_directory_content_move(os.path.join(sys.argv[1],'ex_temp'),os.path.join(sys.argv[1],'temp'))
             list_of_posts = os.listdir(os.path.join(sys.argv[1],'temp'))
-            raw_input()
             for each_post in list_of_posts:
                 json_describer.working_json_file_name = each_entry + '/' + each_post
                 json_strings = open (os.path.join(sys.argv[1], 'temp', each_post))
@@ -138,7 +137,6 @@ if(len(sys.argv) > 1):
             os.mkdir(os.path.join(sys.argv[1],'temp'))
             recursive_directory_content_move(os.path.join(sys.argv[1], each_entry),os.path.join(sys.argv[1],'temp'))
             list_of_posts = os.listdir(os.path.join(sys.argv[1],'temp'))
-            raw_input()
             for each_post in list_of_posts:
                 json_describer.working_json_file_name = each_entry + '/' + each_post
                 json_strings = open (os.path.join(sys.argv[1], 'temp', each_post))
@@ -147,6 +145,6 @@ if(len(sys.argv) > 1):
     json_describer.LOG_FILE.close()
     json_describer.ERROR_FILE.close()
     write_CSV()
-    print(strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()))
+    print(strftime("%a, %b %d %Y %H:%M:%S", localtime()))
 else:
     print('usage: python data_organizer.py input_path output_path')
