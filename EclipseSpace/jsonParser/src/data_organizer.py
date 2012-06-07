@@ -25,7 +25,7 @@ def recursive_directory_content_move(root, where_to_move):
             try:
                 if fnmatch.fnmatch(each_entry, json_file_pattern):
                     shutil.move(os.path.join(root,each_entry), os.path.join(where_to_move,each_entry))
-            except shutil.Error, e:
+            except shutil.Error:
                 continue
 
 def write_CSV():
@@ -107,52 +107,46 @@ def data_initializer ():
         ERROR_FILE.write("*********Database************Error %s: %s\n" % (e.pgcode, e.pgerror))
         return -1
 
-if(len(sys.argv) > 2):
+if(len(sys.argv) > 1):
     print(strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()))
-    data_initializer()
+#    data_initializer()
     json_describer.LOG_FILE = open(sys.argv[1]+"logfile.txt", "w").close() #To empty the file
     json_describer.LOG_FILE = open (sys.argv[1]+"logfile.txt", "a")
     json_describer.ERROR_FILE = open(sys.argv[1]+"errorfile.txt", "w").close() #To empty the file
     json_describer.ERROR_FILE = open (sys.argv[1]+"errorfile.txt", "a")
-    for root, dirs, files in os.walk(sys.argv[1]):
-        if sys.argv[2] == '-e':
-            for each_file in files:
-                if fnmatch.fnmatch(each_file, compress_file_format):
-#                    shutil.rmtree(os.path.join(sys.argv[1],'ex_temp'))
-#                    shutil.rmtree(os.path.join(sys.argv[1],'temp'))
-                    print each_file
-                    tar = tarfile.open(os.path.join(sys.argv[1],each_file), compress_mode)
-                    tar.extractall(os.path.join(sys.argv[1],'ex_temp'))
-                    tar.close()
-                    os.mkdir(os.path.join(sys.argv[1],'temp'))
-                    recursive_directory_content_move(os.path.join(sys.argv[1],'ex_temp'),os.path.join(sys.argv[1],'temp'))
-                    list_of_posts = os.listdir(os.path.join(sys.argv[1],'temp'))
-                    for each_post in list_of_posts:
-                        json_describer.working_json_file_name = each_file + '/' + each_post
-                        json_strings = open (os.path.join(sys.argv[1], 'temp', each_post))
-                        parse_this_post(json_strings)
-                    shutil.rmtree(os.path.join(sys.argv[1], 'ex_temp'))
-                    shutil.rmtree(os.path.join(sys.argv[1],'temp'))
-        else:
-            # This part doesn't work since I am planning to work with compressed data only
-            os.chdir(sys.argv[1])
-            for dir in dirs:
-                print dir
-                entries = os.listdir(dir)
-                tmp_dir = dir
-                for each_entry in entries:
-                    if os.path.isdir(os.path.join(tmp_dir,each_entry)):
-                        os.rename(dir, 'temp')
-                        tmp_dir = 'temp'
-                        os.mkdir(dir)
-                        recursive_directory_content_move(os.path.join(sys.argv[1], 'temp'), os.path.join(sys.argv[1], dir))
-                        shutil.rmtree('temp')
-                        break
-                for each_file in os.listdir(dir):
-                    json_strings = open (sys.argv[1]+dir+'/'+each_file)
+    for each_entry in os.listdir(sys.argv[1]):
+        if fnmatch.fnmatch(each_entry, compress_file_format):
+            print each_entry
+            try:
+                tar = tarfile.open(os.path.join(sys.argv[1],each_entry), compress_mode)
+                tar.extractall(os.path.join(sys.argv[1],'ex_temp'))
+                tar.close()
+            except tarfile.TarError:
+                print "Fail to extract: " + each_entry
+            os.mkdir(os.path.join(sys.argv[1],'temp'))
+            recursive_directory_content_move(os.path.join(sys.argv[1],'ex_temp'),os.path.join(sys.argv[1],'temp'))
+            list_of_posts = os.listdir(os.path.join(sys.argv[1],'temp'))
+            raw_input()
+            for each_post in list_of_posts:
+                json_describer.working_json_file_name = each_entry + '/' + each_post
+                json_strings = open (os.path.join(sys.argv[1], 'temp', each_post))
+                parse_this_post(json_strings)
+            shutil.rmtree(os.path.join(sys.argv[1], 'ex_temp'))
+            shutil.rmtree(os.path.join(sys.argv[1],'temp'))
+        if os.path.isdir(os.path.join(sys.argv[1],each_entry)):
+            print each_entry
+            os.mkdir(os.path.join(sys.argv[1],'temp'))
+            recursive_directory_content_move(os.path.join(sys.argv[1], each_entry),os.path.join(sys.argv[1],'temp'))
+            list_of_posts = os.listdir(os.path.join(sys.argv[1],'temp'))
+            raw_input()
+            for each_post in list_of_posts:
+                json_describer.working_json_file_name = each_entry + '/' + each_post
+                json_strings = open (os.path.join(sys.argv[1], 'temp', each_post))
+                parse_this_post(json_strings)
+            shutil.rmtree(os.path.join(sys.argv[1],'temp'))        
     json_describer.LOG_FILE.close()
     json_describer.ERROR_FILE.close()
     write_CSV()
     print(strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()))
 else:
-    print('usage: python path {-e,-d}\n -e:for tar files auto extraction\n -d: already extracted json directories')
+    print('usage: python data_organizer.py input_path output_path')

@@ -324,21 +324,3 @@ def parse_this_post (json_strings):
                                     LOG_FILE.write('Inconsistency of %s likes within comments at %s \n' %(likes_of_a_comment_count, working_json_file_name))
                         except:
                             LOG_FILE.write('Inconsistency of UNKNOWN likes within comments at %s \n' %(working_json_file_name))
-
-
-#if(len(sys.argv) > 1):
-#    for root, dirs, files in os.walk(sys.argv[1]):
-#        os.chdir(sys.argv[1])
-#        for dir in dirs:
-##                message_ids = {}
-#            fb_wall_last_value = fb_wall_last_value + 1
-#            for root_next, dirs_next, files_next in os.walk(dir):
-#                for each_file in files_next:
-#                    open(sys.argv[1]+"temp.json", "w").close() #To empty the file
-#                    FILE = open (sys.argv[1]+"temp.json", "a")
-##                        print (sys.argv[1]+dir+'/'+each_file)
-#                    working_json_file_name = dir+'/'+each_file
-#                    #raw_input('press a key')
-#                    FILE.close()
-#else:
-#    print('Give a path for Json directories')
