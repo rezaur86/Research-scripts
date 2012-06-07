@@ -304,6 +304,8 @@ def parse_this_post (json_strings):
                         try:
                             likes_of_a_comment_count = likes_of_comments_count_queue.popleft()
                             comment_message_row_id = comment_message_row_id_queue.popleft()
+                            if comment_message_row_id == -1:
+                                continue
                             for each_like_on_comment in onedata["ec_likes"]["data"]:
                                 if likes_of_a_comment_count > 0:
                                     likes_of_a_comment_count -= 1
