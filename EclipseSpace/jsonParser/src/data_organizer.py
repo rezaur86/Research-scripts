@@ -29,9 +29,9 @@ def recursive_directory_content_move(root, where_to_move):
                 continue
 
 def write_CSV():
-    time_now = strftime("%a, %b %d %Y %H:%M:%S", localtime())
-    os.mkdir(os.path.join(sys.argv[1],'CSV_'+time_now))
-    CSV_path = os.path.join(sys.argv[1],'CSV_'+time_now)
+    time_now = strftime("%a_%b_%d_%Y_%H_%M_%S", localtime())
+    os.mkdir(os.path.join(sys.argv[1],'CSVs_'+time_now))
+    CSV_path = os.path.join(sys.argv[1],'CSVs_'+time_now)
     fb_user_file = open (CSV_path+"/fb_user.csv", csv_writing_mode)
     message_file = open (CSV_path+"/message.csv", csv_writing_mode) 
     message_to_file = open (CSV_path+"/message_to.csv", csv_writing_mode) 
