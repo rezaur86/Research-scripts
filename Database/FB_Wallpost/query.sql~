@@ -11,7 +11,13 @@ select fb_user.id as user_id, count(participate.group_row_id) as participation_c
 
 -------Users invoved in a particular community-----------------
 create or replace view message_community as (select row_id from message where fb_wall_row_id = 1 or fb_wall_row_id = 2);
-\copy ( select from_user_row_id from message_community JOIN message on message_community.row_id = message.row_id UNION select to_user_row_id from message_community JOIN message_to on message_community.row_id = message_to.message_row_id UNION select who_user_row_id from message_community JOIN likedby on message_community.row_id = likedby.what_message_row_id UNION select user_row_id from message_community JOIN tag on message_community.row_id = tag.message_row_id) to 'users_involved.txt'
+\copy (
+select from_user_row_id from message_community JOIN message on message_community.row_id = message.row_id
+UNION
+select to_user_row_id from message_community JOIN message_to on message_community.row_id = message_to.message_row_id
+UNION
+select who_user_row_id from message_community JOIN likedby on message_community.row_id = likeby.what_message_row_id
+) to 'users_involved.txt';
 
 create table post_info as (
 select parent_message_row_id as post_row_id, array_to_string(array_agg(text), ', ') as info from (
