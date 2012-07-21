@@ -90,6 +90,10 @@ CREATE TABLE link (
 	FOREIGN KEY (message_row_id) REFERENCES message(row_id) ON UPDATE CASCADE ON DELETE RESTRICT
 );
 
+CREATE TABLE keyword (
+	row_id BIGINT,
+	word TEXT	
+);
 
 \COPY fb_user(row_id, id, name, category) from '/home/rezaur/Documents/fb_user.csv' with delimiter ',' CSV quote '"';
 \COPY message(row_id, id, parent_message_row_id, fb_wall_row_id, name, type, description, caption, from_user_row_id, created_time, updated_time, can_remove, shares_count) from '/home/rezaur/Documents/message.csv' with delimiter ',' CSV quote '"';

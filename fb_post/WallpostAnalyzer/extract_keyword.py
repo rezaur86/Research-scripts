@@ -10,9 +10,10 @@ def extract_keyword(text):
     extractor.filter = extract.DefaultFilter(singleStrengthMinOccur=3, noLimitStrength=2)
     keywords = sorted(extractor(text))
     i = 0
+    global all_keywords
     for each_keyword in keywords:
         i = i + 1
-        print each_keyword
+        all_keywords[each_keyword[0]] = each_keyword[1]
     print i 
     return keywords
 
@@ -42,10 +43,10 @@ def read_story (group_id, by_post = False):
                         if record[i] is None:
                             record[i] = ''
                     story = story + str(record[3]) + ' ' + str(record[5]) + ' ' + str(record[6]) + ':' + str(record[4]) + '\n'
-                    if (cut_off < 0):
-                         break
-                    else:
-                        cut_off -= 1
+#                    if (cut_off < 0):
+#                         break
+#                    else:
+#                        cut_off -= 1
             else:
                 return None
         else:
@@ -61,14 +62,14 @@ def read_story (group_id, by_post = False):
                         if record[i] is None:
                             record[i] = ''
                     stories.append(str(record[3]) + ' ' + str(record[5]) + ' ' + str(record[6]) + ':' + str(record[4]) + '\n')
-                for i in range(post_count):
-                    cursor.execute('select row_id, id, parent_message_row_id, name, text, description, caption from message where parent_message_row_id = %s', (post_row_ids[i],))
+                for p_i in range(post_count):
+                    cursor.execute('select row_id, id, parent_message_row_id, name, text, description, caption from message where parent_message_row_id = %s', (post_row_ids[p_i],))
                     for record_t in cursor:
                         record = list(record_t)
                         for i in range(len(record)):
                             if record[i] is None:
                                 record[i] = ''
-                        stories[i] = stories[i] + str(record[3]) + ' ' + str(record[5]) + ' ' + str(record[6]) + ':' + str(record[4]) + '\n'
+                        stories[p_i] = stories[p_i] + str(record[3]) + ' ' + str(record[5]) + ' ' + str(record[6]) + ':' + str(record[4]) + '\n'
             else:
                 return None
             
@@ -82,8 +83,38 @@ def read_story (group_id, by_post = False):
         print ("*********Database************Error %s: %s\n" % (e.pgcode, e.pgerror))
         return -1
 
-story = read_story(153774071379194)
-print story
-raw_input()
-keywords = extract_keyword(story)
- 
+def register_keywords():
+    try:
+        (conn, cursor) = openDb(True, True)
+    except psycopg2.Error, e:
+        print "Error %d: %s" % (e.pgcode, e.pgerror)
+        return -1
+    try:
+        cursor.execute('select max(row_id) from keyword')
+        if cursor.rowcount < 1:
+            keyword_row_id = 0
+        else:
+            keyword_row_id = cursor.fetchone()[0]
+        cursor.execute('select word from keyword')
+        if cursor.rowcount > 0:
+            for record in cursor:
+                if all_keywords.has_key(record[0]) == True:
+                    del all_keywords[record[0]]
+        for each_keyword in all_keywords:
+            keyword_row_id += 1
+            new_keywords.append((keyword_row_id, each_keyword))
+        cursor.executemany('insert into keyword(row_id, word) values (%s, %s)', new_keywords)
+    except psycopg2.Error, e:
+        closeDB(conn, cursor)
+        print ("*********Database************Error %s: %s\n" % (e.pgcode, e.pgerror))
+        return -1
+
+groups = sys.argv[1].split(',')
+for each_group in groups:
+    story = read_story(each_group)
+    #print story
+    #raw_input()
+    new_keywords = []
+    all_keywords = {}
+    keywords = extract_keyword(story)
+    register_keywords()
