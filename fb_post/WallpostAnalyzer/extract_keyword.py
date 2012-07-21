@@ -1,4 +1,7 @@
+import os, sys
 from topia.termextract import extract
+sys.path.append(os.path.abspath('../jsonParser/'))
+from db_connection import openDb, closeDB
 
 def extract_keyword(text):
     extractor = extract.TermExtractor()
@@ -10,7 +13,53 @@ def extract_keyword(text):
         i = i + 1
         print each_keyword
     print i 
-    
+
+def read_story (group_id, post_id = -1):
+    try:
+        (conn, cursor) = openDb(True, True)
+    except psycopg2.Error, e:
+        print "Error %d: %s" % (e.pgcode, e.pgerror)
+        return -1
+    try:
+        cursor.execute('select row_id, id from fb_user')
+        if cursor.rowcount > 0:
+            for record in cursor:
+                json_describer.fb_user_ids[record[1]] = record[0]
+        else:
+            return 0
+
+        cursor.execute('select row_id, id from message')
+        if cursor.rowcount > 0:
+            for record in cursor:
+                json_describer.message_ids[record[1]] = record[0]
+        else:
+            return 0
+
+        cursor.execute('select max(row_id) from fb_user')
+        json_describer.fb_user_last_value = cursor.fetchone()[0]
+        
+        cursor.execute('select max(row_id) from message')
+        json_describer.message_last_value = cursor.fetchone()[0]
+        
+        cursor.execute('select max(row_id) from message_to')
+        json_describer.message_to_last_value = cursor.fetchone()[0]
+
+        cursor.execute('select max(row_id) from likedby')
+        json_describer.likedby_last_value = cursor.fetchone()[0]
+        
+        cursor.execute('select max(row_id) from tag')
+        json_describer.tag_last_value = cursor.fetchone()[0]
+
+        cursor.execute('select max(row_id) from link')
+        json_describer.link_last_value = cursor.fetchone()[0]
+
+        closeDB(conn, cursor)
+        return 1
+    except psycopg2.Error, e:
+        closeDB(conn, cursor)
+        ERROR_FILE.write("*********Database************Error %s: %s\n" % (e.pgcode, e.pgerror))
+        return -1
+
 text = '''Police shut Palestinian theatre in Jerusalem.
 ...
 ... Israeli police have shut down a Palestinian theatre in East Jerusalem.
