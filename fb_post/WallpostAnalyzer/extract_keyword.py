@@ -110,11 +110,9 @@ def register_keywords():
         return -1
 
 groups = sys.argv[1].split(',')
+new_keywords = []
+all_keywords = {}
 for each_group in groups:
     story = read_story(each_group)
-    #print story
-    #raw_input()
-    new_keywords = []
-    all_keywords = {}
     keywords = extract_keyword(story)
-    register_keywords()
+register_keywords()
