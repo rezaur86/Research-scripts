@@ -2,7 +2,7 @@ import psycopg2
 
 db_name = 'rezaur_db'
 db_server = 'localhost'
-db_namespace = 'fb_wallpost'
+db_namespace = 'fb_post'
 
 def openDb(auto_commit=True, change_schema=True):
     try:
