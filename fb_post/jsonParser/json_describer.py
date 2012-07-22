@@ -244,6 +244,8 @@ def parse_this_post (json_strings):
                 continue
             if onedata is False:
                 continue
+            if type(onedata) is not dict:
+                continue
             if onedata.has_key("id"):
                 if message_ids.has_key(onedata["id"]):
 #                    ERROR_FILE.write("*********Duplicate crawling %s************\n" % (working_json_file_name))

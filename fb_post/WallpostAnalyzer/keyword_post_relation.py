@@ -19,7 +19,7 @@ def init_keywords():
         print ("*********Database************Error %s: %s\n" % (e.pgcode, e.pgerror))
         return -1
 
-def read_post(group_id):
+def build_keyword_post(group_id):
     try:
         cursor.execute('select row_id, name from fb_user where id = %s', (group_id,))
         if cursor.rowcount > 0:
@@ -51,18 +51,18 @@ def read_post(group_id):
                     
             for each_post in keyword_freq_in_post.keys():
                 keyword_post_row_id += 1
-                keyword_post.append((keyword_post_row_id, keywords[each_word], keyword_freq_in_post[each_post])) 
-            
+                new_keyword_post.append((keyword_post_row_id, keywords[each_word], post_row_id, keyword_freq_in_post[each_post])) 
+            cursor.executemany('insert into keyword(row_id, keyword_row_id, post_row_id, freq) values (%s, %s, %s, %s)', new_keyword_post)
+
         closeDB(conn, cursor)
     except psycopg2.Error, e:
         closeDB(conn, cursor)
         print ("*********Database************Error %s: %s\n" % (e.pgcode, e.pgerror))
         return -1
-    
 
 groups = sys.argv[1].split(',')
 keywords = {}
-keyword_post = []
+new_keyword_post = []
 init_keywords()
 for each_group in groups:
-    
+    build_keyword_post(each_group)
