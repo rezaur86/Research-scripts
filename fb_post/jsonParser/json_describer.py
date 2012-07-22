@@ -186,7 +186,7 @@ def register_message (onedata, parent_message_row_id):
                     register_tag(each_tag, message_row_id)      
 
     group_id = fb_user_ids[long(message_id.split('_')[0])]    
-    new_messages.append((message_last_value, message_id, parent_message_row_id, group_id, name, type_, description, caption, postedBy_row_id, created_time, updated_time, can_remove, shares_count))
+    new_messages.append((message_last_value, message_id, parent_message_row_id, group_id, name, text, type_, description, caption, postedBy_row_id, created_time, updated_time, can_remove, shares_count))
     
     global link_last_value
     if onedata.has_key("picture"):
