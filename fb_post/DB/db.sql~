@@ -88,8 +88,7 @@ CREATE TABLE keyword (
 CREATE TABLE keyword_post (
 	row_id BIGINT,
 	keyword_row_id BIGINT,
-	post_row_id BIGINT,
-	freq INT
+	post_row_id BIGINT
 );
 
 alter table fb_user drop CONSTRAINT fb_user_pkey cascade;
