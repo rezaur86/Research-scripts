@@ -75,8 +75,8 @@ CREATE TABLE link (
 	message_row_id INT NOT NULL,
 	address TEXT,
 	type varchar(10),
-	name varchar(100),
-	text varchar(200),
+	name TEXT,
+	text TEXT,
 	FOREIGN KEY (message_row_id) REFERENCES message(row_id) ON UPDATE CASCADE ON DELETE RESTRICT
 );
 

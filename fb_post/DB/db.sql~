@@ -75,7 +75,7 @@ CREATE TABLE link (
 	message_row_id INT NOT NULL,
 	address TEXT,
 	type varchar(10),
-	name varchar(100),
+	name TEXT,
 	text varchar(200),
 	FOREIGN KEY (message_row_id) REFERENCES message(row_id) ON UPDATE CASCADE ON DELETE RESTRICT
 );
@@ -88,7 +88,8 @@ CREATE TABLE keyword (
 CREATE TABLE keyword_post (
 	row_id BIGINT,
 	keyword_row_id BIGINT,
-	post_row_id BIGINT
+	post_row_id BIGINT,
+	freq INT
 );
 
 alter table fb_user drop CONSTRAINT fb_user_pkey cascade;

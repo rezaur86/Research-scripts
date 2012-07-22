@@ -7,7 +7,7 @@ from db_connection import openDb, closeDB
 
 def extract_keyword(text):
     extractor = extract.TermExtractor()
-    extractor.filter = extract.DefaultFilter(singleStrengthMinOccur=6, noLimitStrength=3)
+    extractor.filter = extract.DefaultFilter(singleStrengthMinOccur=10, noLimitStrength=3)
     keywords = sorted(extractor(text))
     i = 0
     global all_keywords
@@ -91,10 +91,9 @@ def register_keywords():
         return -1
     try:
         cursor.execute('select max(row_id) from keyword')
-        if cursor.rowcount < 1:
+        keyword_row_id = cursor.fetchone()[0]
+        if keyword_row_id is None:
             keyword_row_id = 0
-        else:
-            keyword_row_id = cursor.fetchone()[0]
         cursor.execute('select word from keyword')
         if cursor.rowcount > 0:
             for record in cursor:
