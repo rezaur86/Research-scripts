@@ -1,4 +1,5 @@
 import os, sys
+import re
 from topia.termextract import extract
 import psycopg2
 sys.path.append(os.path.abspath('../jsonParser/'))
@@ -13,7 +14,7 @@ def extract_keyword(text):
     global all_keywords
     for each_keyword in keywords:
         i = i + 1
-        all_keywords[each_keyword[0]] = each_keyword[1]
+        all_keywords[" ".join(re.split("[^a-zA-Z]+", each_keyword[0]))] = each_keyword[1]
     print i 
     return keywords
 
@@ -35,18 +36,9 @@ def read_story (group_id, by_post = False):
         if by_post == False:
             story = ''
             cut_off = 100
-            cursor.execute('select row_id, id, parent_message_row_id, name, text, description, caption from message where fb_wall_row_id = %s', (group_row_id,))
+            cursor.execute('''select string_agg(name||', '||description||', '||caption||' : '||text,E'\n') from message where fb_wall_row_id = %s''', (group_row_id,))
             if cursor.rowcount > 0:
-                for record_t in cursor:
-                    record = list(record_t)
-                    for i in range(len(record)):
-                        if record[i] is None:
-                            record[i] = ''
-                    story = story + str(record[3]) + ' ' + str(record[5]) + ' ' + str(record[6]) + ':' + str(record[4]) + '\n'
-#                    if (cut_off < 0):
-#                         break
-#                    else:
-#                        cut_off -= 1
+                story = cursor.fetchone()[0]
             else:
                 return None
         else:
