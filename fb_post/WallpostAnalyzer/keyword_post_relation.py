@@ -36,17 +36,16 @@ def build_keyword_post(group_id):
             return None
 
         cursor.execute('select max(row_id) from keyword_post')
-        if cursor.fetchone()[0] is None:
+        max_row_id = cursor.fetchone()[0]
+        if max_row_id is None:
             keyword_post_row_id = 0
         else:
-            keyword_post_row_id = cursor.fetchone()[0]
+            keyword_post_row_id = max_row_id
         i = 0 
         for each_word in keywords.keys():
-            each_word = adapt(each_word)
-            print each_word
-            i += 1
-            if i > 10:
-                break
+#            i += 1
+#            if i > 10:
+#                break
             cursor.execute('''select row_id, parent_message_row_id from message where fb_wall_row_id = %s and name||', '||description||', '||caption||' : '||text ~ %s''', (group_row_id, each_word))
             keyword_freq_in_post = {}
             for record in cursor:
@@ -62,9 +61,10 @@ def build_keyword_post(group_id):
             print keyword_freq_in_post
             for each_post in keyword_freq_in_post.keys():
                 keyword_post_row_id += 1
-                new_keyword_post.append((keyword_post_row_id, keywords[each_word], post_row_id, keyword_freq_in_post[each_post])) 
-            cursor.executemany('insert into keyword_post(row_id, keyword_row_id, post_row_id, freq) values (%s, %s, %s, %s)', new_keyword_post)
-
+                new_keyword_post.append((keyword_post_row_id, keywords[each_word], post_row_id, keyword_freq_in_post[each_post]))
+                print new_keyword_post 
+            
+        cursor.executemany('insert into keyword_post(row_id, keyword_row_id, post_row_id, freq) values (%s, %s, %s, %s)', new_keyword_post)
         closeDB(conn, cursor)
     except psycopg2.Error, e:
         closeDB(conn, cursor)
