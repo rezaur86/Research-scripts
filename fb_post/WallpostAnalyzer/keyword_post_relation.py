@@ -58,11 +58,9 @@ def build_keyword_post(group_id):
                     keyword_freq_in_post[post_row_id] += 1
                 else:
                     keyword_freq_in_post[post_row_id] = 1
-            print keyword_freq_in_post
             for each_post in keyword_freq_in_post.keys():
                 keyword_post_row_id += 1
                 new_keyword_post.append((keyword_post_row_id, keywords[each_word], post_row_id, keyword_freq_in_post[each_post]))
-                print new_keyword_post 
             
         cursor.executemany('insert into keyword_post(row_id, keyword_row_id, post_row_id, freq) values (%s, %s, %s, %s)', new_keyword_post)
         closeDB(conn, cursor)
