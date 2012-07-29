@@ -15,7 +15,6 @@ def extract_keyword(text):
 def read_story (group_id, by_post = False):
     try:
         (conn, cursor) = openDb(True, True)
-        (conn_1, cursor_1) = openDb(True, True)        
     except psycopg2.Error, e:
         print "Error %d: %s" % (e.pgcode, e.pgerror)
         return -1
@@ -37,35 +36,28 @@ def read_story (group_id, by_post = False):
             else:
                 return None
         else:
-            stories = []
-            post_row_ids = []
-            cursor.execute('''select row_id from message where fb_wall_row_id = %s and parent_message_row_id is null''', (group_row_id,))
-            keyword_freq_in_post = {}
+            cut_off = 100
+            cursor.execute('''select parent_message_row_id, string_agg(ARRAY_TO_STRING(ARRAY[name,description,caption,text], ', '),E'\n') from message where fb_wall_row_id = %s group by parent_message_row_id''', (group_row_id,))
             for record in cursor:
                 print record[0]
-                cursor_1.execute('''select string_agg(ARRAY_TO_STRING(ARRAY[name,description,caption,text], ', '),E'\n') from message where row_id = %s or parent_message_row_id = %s''', (record[0],record[0]))
-                if cursor_1.rowcount > 0:
-                    story = cursor_1.fetchone()[0]
-                    print story
-                    story_keywords = extract_keyword(story)
-                    i = 0
-                    for each_keyword in story_keywords:
-                        keyword_row_id = register_keywords(" ".join(re.split("[^a-zA-Z]+", each_keyword[0])))
-                        keyword_post_row_id += 1
-                        new_keyword_post.append((keyword_post_row_id, keyword_row_id, record[0], each_keyword[1]))    
-                        i += 1
-                    print i        
-                else:
-                    continue
+                story = record[1]
+                print story
+                story_keywords = extract_keyword(story)
+                i = 0
+                for each_keyword in story_keywords:
+                    keyword_row_id = register_keywords(" ".join(re.split("[^a-zA-Z]+", each_keyword[0])))
+                    keyword_post_row_id += 1
+                    new_keyword_post.append((keyword_post_row_id, keyword_row_id, record[0], each_keyword[1]))    
+                    i += 1
+                print i
+                cut_off -= 1
+                if cut_off < 1:
+                    break     
         closeDB(conn, cursor)
-        closeDB(conn_1, cursor_1)
         if (by_post == False):
             return story
-        else:
-            return stories
     except psycopg2.Error, e:
         closeDB(conn, cursor)
-        closeDB(conn_1, cursor_1)
         print ("*********Database************Error %s: %s\n" % (e.pgcode, e.pgerror))
         return -1
 
