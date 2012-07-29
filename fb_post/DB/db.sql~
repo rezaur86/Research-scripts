@@ -76,7 +76,7 @@ CREATE TABLE link (
 	address TEXT,
 	type varchar(10),
 	name TEXT,
-	text varchar(200),
+	text TEXT,
 	FOREIGN KEY (message_row_id) REFERENCES message(row_id) ON UPDATE CASCADE ON DELETE RESTRICT
 );
 
@@ -108,3 +108,26 @@ alter table tag drop CONSTRAINT tag_pkey cascade;
 \COPY tag(row_id, message_row_id, user_row_id, type, starting_offset, length) from '/home/rezaur/Documents/tag.csv' with delimiter ',' CSV quote '"';
 \COPY link(row_id, message_row_id, address, type, name, text) from '/home/rezaur/Documents/link.csv' with delimiter ',' CSV quote '"';
 
+
+alter table fb_user add CONSTRAINT fb_user_pkey PRIMARY KEY (row_id);
+alter table fb_user add CONSTRAINT fb_user_id_key UNIQUE(id);
+
+alter table message add CONSTRAINT message_pkey PRIMARY KEY (row_id);
+alter table message add CONSTRAINT message_id_key UNIQUE(id);
+alter table message add CONSTRAINT message_fb_wall_row_id_fkey FOREIGN KEY (fb_wall_row_id) REFERENCES fb_user(row_id) ON UPDATE CASCADE ON DELETE RESTRICT;
+alter table message add CONSTRAINT message_from_user_row_id_fkey FOREIGN KEY (from_user_row_id) REFERENCES fb_user(row_id) ON UPDATE CASCADE ON DELETE RESTRICT;
+alter table message add CONSTRAINT message_parent_message_row_id_fkey" FOREIGN KEY (parent_message_row_id) REFERENCES message(row_id) ON UPDATE CASCADE ON DELETE RESTRICT;
+
+alter table message_to add CONSTRAINT message_to_pkey PRIMARY KEY (row_id);
+alter table message_to add CONSTRAINT message_to_message_row_id_fkey FOREIGN KEY (message_row_id) REFERENCES message(row_id) ON UPDATE CASCADE ON DELETE RESTRICT;
+alter table message_to add CONSTRAINT message_to_to_user_row_id_fkey FOREIGN KEY (to_user_row_id) REFERENCES fb_user(row_id) ON UPDATE CASCADE ON DELETE RESTRICT;
+
+alter table likedby add CONSTRAINT likedby_pkey PRIMARY KEY (row_id);
+alter table likedby add CONSTRAINT likedby_what_message_row_id_fkey FOREIGN KEY (what_message_row_id) REFERENCES message(row_id) ON UPDATE CASCADE ON DELETE RESTRICT;
+alter table likedby add CONSTRAINT likedby_who_user_row_id_fkey FOREIGN KEY (who_user_row_id) REFERENCES fb_user(row_id) ON UPDATE CASCADE ON DELETE RESTRICT;
+
+alter table tag add CONSTRAINT tag_pkey PRIMARY KEY (row_id);
+alter table tag add CONSTRAINT tag_message_row_id_fkey FOREIGN KEY (message_row_id) REFERENCES message(row_id) ON UPDATE CASCADE ON DELETE RESTRICT;
+alter table tag add CONSTRAINT tag_user_row_id_fkey FOREIGN KEY (user_row_id) REFERENCES fb_user(row_id) ON UPDATE CASCADE ON DELETE RESTRICT;
+
+alter table link add CONSTRAINT link_message_row_id_fkey PRIMARY KEY (row_id);
