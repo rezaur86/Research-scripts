@@ -21,6 +21,8 @@ pool_of_seeds_lock = threading.RLock()
 
 cascade_sizes = []
 cascade_sizes_lock = threading.RLock()
+cascade_max_depth = []
+cascade_max_depth_lock = threading.RLock()
 batch_size = 10000
 thread_count = 24
 thread_ids = []
@@ -102,27 +104,55 @@ def CascadeWorker():
 
 def CascadeBuilder(min_seed_act_time, target_seeds):
     participation = {}
+    participation_at_depth = {}
+    target_seeds_depth = {}
     for i in range(min_seed_act_time, activities_count):
         if target_seeds.has_key(activities[i][0]) == True:
             if participation.has_key(activities[i][0]) == False:
                 participation[activities[i][0]] = Set([activities[i][0]])
+                participation_at_depth[activities[i][0]] = {}
+                participation_at_depth[activities[i][0]][activities[i][0]] = 0
+                target_seeds_depth[activities[i][0]] = 0
             if participation.has_key(activities[i][1]) == False:
-                participation[activities[i][1]] = participation[activities[i][0]]
+                participation[activities[i][1]] = participation[activities[i][0]].copy()
+                participation_at_depth[activities[i][1]] = participation_at_depth[activities[i][0]].copy()
+                for each_seed in participation_at_depth[activities[i][1]].keys():
+                    participation_at_depth[activities[i][1]][each_seed] += 1
             else:
                 participation[activities[i][1]] = participation[activities[i][1]].union(participation[activities[i][0]])
+                for each_seed in participation[activities[i][1]]:
+                    if participation_at_depth[activities[i][1]].has_key(each_seed) and participation_at_depth[activities[i][0]].has_key(each_seed):
+                        participation_at_depth[activities[i][1]][each_seed] = max(participation_at_depth[activities[i][1]][each_seed], participation_at_depth[activities[i][0]][each_seed]) + 1
+                    else:
+                        if participation_at_depth[activities[i][0]].has_key(each_seed):
+                            participation_at_depth[activities[i][1]][each_seed] = participation_at_depth[activities[i][0]][each_seed] + 1
         else:
             if participation.has_key(activities[i][0]) == True:
                 if participation.has_key(activities[i][1]) == False:
-                    participation[activities[i][1]] = participation[activities[i][0]]
+                    participation[activities[i][1]] = participation[activities[i][0]].copy()
+                    participation_at_depth[activities[i][1]] = participation_at_depth[activities[i][0]].copy()
+                    for each_seed in participation_at_depth[activities[i][1]].keys():
+                        participation_at_depth[activities[i][1]][each_seed] += 1
                 else:
                     participation[activities[i][1]] = participation[activities[i][1]].union(participation[activities[i][0]])
+                    for each_seed in participation[activities[i][1]]:
+                        if participation_at_depth[activities[i][1]].has_key(each_seed) and participation_at_depth[activities[i][0]].has_key(each_seed):
+                            participation_at_depth[activities[i][1]][each_seed] = max(participation_at_depth[activities[i][1]][each_seed], participation_at_depth[activities[i][0]][each_seed]) + 1
+                        else:
+                            if participation_at_depth[activities[i][0]].has_key(each_seed):
+                                participation_at_depth[activities[i][1]][each_seed] = participation_at_depth[activities[i][0]][each_seed] + 1
     for v_participates in participation.keys():
         for seed_v in participation[v_participates]:
             target_seeds[seed_v] += 1
+        for seed_v in participation_at_depth[v_participates].keys():
+            target_seeds_depth[seed_v] = max(target_seeds_depth[seed_v],participation_at_depth[v_participates][seed_v])
     for a_seed in target_seeds.keys():
         cascade_sizes_lock.acquire()
         cascade_sizes.append([v_ids[a_seed], target_seeds[a_seed]])
         cascade_sizes_lock.release()
+        cascade_max_depth_lock.acquire()
+        cascade_max_depth.append([v_ids[a_seed], target_seeds_depth[a_seed]])
+        cascade_max_depth_lock.release()
 
 # Create threads
 for i in range(thread_count):
@@ -146,3 +176,9 @@ writer = csv.writer(o_seeds_sizes, quoting=csv.QUOTE_MINIMAL)
 cascade_sizes.sort(key=operator.itemgetter(1), reverse=True)
 writer.writerows(cascade_sizes)
 o_seeds_sizes.close()
+
+o_seeds_depth =  open (sys.argv[3], "w")
+writer = csv.writer(o_seeds_depth, quoting=csv.QUOTE_MINIMAL)
+cascade_max_depth.sort(key=operator.itemgetter(1), reverse=True)
+writer.writerows(cascade_max_depth)
+o_seeds_depth.close()
