@@ -17,12 +17,6 @@ top_senders <- function (x_percent){
 
 top5 <- top_senders(5)
 
-############## hist of cascade size###############
-cascade_sizes <- read.csv('iheart_modified_orig-2010-26.csv', header=FALSE)
-library(ggplot2)
-colnames(cascade_sizes) <- c('seed','size')
-plot <- ggplot(cascade_sizes, aes(x=cascade_sizes$size)) + geom_histogram(binwidth=30000)
-ggsave(plot,file="iheart_modified_orig-2010-26.pdf")
 
 ################### Reachability ############################
 reachability <- function(g, m) {

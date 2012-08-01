@@ -21,8 +21,7 @@ pool_of_seeds_lock = threading.RLock()
 
 cascade_sizes = []
 cascade_sizes_lock = threading.RLock()
-cascade_max_depth = []
-cascade_max_depth_lock = threading.RLock()
+
 batch_size = 10000
 thread_count = 24
 thread_ids = []
@@ -148,11 +147,8 @@ def CascadeBuilder(min_seed_act_time, target_seeds):
             target_seeds_depth[seed_v] = max(target_seeds_depth[seed_v],participation_at_depth[v_participates][seed_v])
     for a_seed in target_seeds.keys():
         cascade_sizes_lock.acquire()
-        cascade_sizes.append([v_ids[a_seed], target_seeds[a_seed]])
+        cascade_sizes.append([v_ids[a_seed], target_seeds[a_seed], target_seeds_depth[a_seed]])
         cascade_sizes_lock.release()
-        cascade_max_depth_lock.acquire()
-        cascade_max_depth.append([v_ids[a_seed], target_seeds_depth[a_seed]])
-        cascade_max_depth_lock.release()
 
 # Create threads
 for i in range(thread_count):
@@ -176,9 +172,3 @@ writer = csv.writer(o_seeds_sizes, quoting=csv.QUOTE_MINIMAL)
 cascade_sizes.sort(key=operator.itemgetter(1), reverse=True)
 writer.writerows(cascade_sizes)
 o_seeds_sizes.close()
-
-o_seeds_depth =  open (sys.argv[3], "w")
-writer = csv.writer(o_seeds_depth, quoting=csv.QUOTE_MINIMAL)
-cascade_max_depth.sort(key=operator.itemgetter(1), reverse=True)
-writer.writerows(cascade_max_depth)
-o_seeds_depth.close()

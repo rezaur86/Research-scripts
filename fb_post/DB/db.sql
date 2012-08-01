@@ -108,6 +108,9 @@ alter table tag drop CONSTRAINT tag_pkey cascade;
 \COPY tag(row_id, message_row_id, user_row_id, type, starting_offset, length) from '/home/rezaur/Documents/tag.csv' with delimiter ',' CSV quote '"';
 \COPY link(row_id, message_row_id, address, type, name, text) from '/home/rezaur/Documents/link.csv' with delimiter ',' CSV quote '"';
 
+\COPY keyword(row_id, word) from '/home/rezaur/Documents/keyword.csv' with delimiter ',' CSV quote '"';
+\COPY keyword_post(row_id, keyword_row_id, post_row_id, freq) from '/home/rezaur/Documents/keyword_post.csv' with delimiter ',' CSV quote '"';
+
 
 alter table fb_user add CONSTRAINT fb_user_pkey PRIMARY KEY (row_id);
 alter table fb_user add CONSTRAINT fb_user_id_key UNIQUE(id);

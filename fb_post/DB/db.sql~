@@ -131,3 +131,4 @@ alter table tag add CONSTRAINT tag_message_row_id_fkey FOREIGN KEY (message_row_
 alter table tag add CONSTRAINT tag_user_row_id_fkey FOREIGN KEY (user_row_id) REFERENCES fb_user(row_id) ON UPDATE CASCADE ON DELETE RESTRICT;
 
 alter table link add CONSTRAINT link_message_row_id_fkey PRIMARY KEY (row_id);
+
