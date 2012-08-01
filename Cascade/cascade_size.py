@@ -23,40 +23,58 @@ cascade_sizes = []
 cascade_sizes_lock = threading.RLock()
 
 batch_size = 10000
-thread_count = 24
+thread_count = 2
 thread_ids = []
+
+ODEG = 0
+INDEG = 1
 # pre-processing: make lists of sender_ids and recipient_ids in the original graph
 for line in f:
     splits = line.split()
     sender = long(splits[0].strip())
     recv = long(splits[1].strip())
     
-    if vertices.has_key(sender) == False:
-        vertices[sender] = vertex_count
-        sender_id = vertex_count
-        v_ids.append(sender)
-        seeds.append([sender_id, activities_count]) # activities_count is the time of it's self activation
-        pool_of_seeds.append(seeds_count)
+    if vertices.has_key(sender):
+        vertices[sender][ODEG] += 1
+    else:
+        vertices[sender] = [1,0] #outdeg = 1, indeg = 0
+        pool_of_seeds.append(activities_count)
         seeds_count += 1
-        vertex_count += 1
+    if vertices.has_key(recv):
+        vertices[recv][INDEG] += 1
     else:
-        sender_id = vertices[sender]
-        
-    if vertices.has_key(recv) == False:
-        vertices[recv] = vertex_count
-        recv_id = vertex_count
-        v_ids.append(recv)
-        vertex_count = vertex_count + 1
-    else:
-        recv_id = vertices[recv]
+        vertices[recv] = [0,1] #outdeg = 0, indeg = 1
+    
+    activities.append([sender, recv]) # time of this activity is activities_count 
+    activities_count += 1
+
+#    if vertices.has_key(sender) == False:
+#        vertices[sender] = vertex_count
+#        sender_id = vertex_count
+#        v_ids.append(sender)
+#        seeds.append([sender_id, activities_count]) # activities_count is the time of it's self activation
+#        pool_of_seeds.append(seeds_count)
+#        seeds_count += 1
+#        vertex_count += 1
+#    else:
+#        sender_id = vertices[sender]
+#        vertices
+#        
+#    if vertices.has_key(recv) == False:
+#        vertices[recv] = vertex_count
+#        recv_id = vertex_count
+#        v_ids.append(recv)
+#        vertex_count = vertex_count + 1
+#    else:
+#        recv_id = vertices[recv]
 
 #    if activities_count > 100:
 #        break
 
-    activities.append([sender_id, recv_id]) # time of this activity is activities_count 
-    activities_count += 1
+#    activities.append([sender_id, recv_id]) # time of this activity is activities_count 
+#    activities_count += 1
 f.close()
-vertices = {} # free some memory
+#vertices = {} # free some memory
 
 print activities_count
 print seeds_count
@@ -75,42 +93,48 @@ class CascadeThread (threading.Thread):
 def CascadeWorker():
     to_do = True
     while to_do:
-        seeds_batch = {}
+        seeds_batch = []
         pool_of_seeds_lock.acquire()
         if len(pool_of_seeds) > 0:
-            new_seed_id = pool_of_seeds.pop(0)
+            new_seed_act_id = pool_of_seeds.pop(0)
         else:
             to_do = False
         pool_of_seeds_lock.release()
         if to_do == False:
             break
-        seeds_batch[seeds[new_seed_id][0]] = 0
+#        seeds_batch[seeds[new_seed_id][0]] = 0
+        seeds_batch.append(new_seed_act_id)
         batch_counter = batch_size - 1
-        min_seed_act_time = seeds[new_seed_id][1]
+#        min_seed_act_time = seeds[new_seed_id][1]
+        min_seed_act_time = new_seed_act_id
         while batch_counter > 0:
             pool_of_seeds_lock.acquire()
             if len(pool_of_seeds) > 0:
-                new_seed_id = pool_of_seeds.pop(0)
+                new_seed_act_id = pool_of_seeds.pop(0)
             else:
                 to_do = False
                 batch_counter = 0
             pool_of_seeds_lock.release()
             if batch_counter == 0:
                 break       
-            seeds_batch[seeds[new_seed_id][0]] = 0
+#            seeds_batch[seeds[new_seed_act_id][0]] = 0
+            seeds_batch.append(new_seed_act_id)
             batch_counter -= 1
         CascadeBuilder(min_seed_act_time, seeds_batch)
 
-def CascadeBuilder(min_seed_act_time, target_seeds):
+def CascadeBuilder(min_seed_act_time, seeds_batch):
     participation = {}
     participation_at_depth = {}
+    target_seeds = {}
     target_seeds_depth = {}
     for i in range(min_seed_act_time, activities_count):
-        if target_seeds.has_key(activities[i][0]) == True:
+#        if target_seeds.has_key(activities[i][0]) == True:
+        if i in seeds_batch:
             if participation.has_key(activities[i][0]) == False:
-                participation[activities[i][0]] = Set([activities[i][0]])
+                participation[activities[i][0]] = Set([int(seeds_batch.index(i))])#activities[i][0]])
                 participation_at_depth[activities[i][0]] = {}
-                participation_at_depth[activities[i][0]][activities[i][0]] = 0
+                participation_at_depth[activities[i][0]][int(seeds_batch.index(i))] = 0 #activities[i][0]] = 0
+                target_seeds[activities[i][0]] = 0
                 target_seeds_depth[activities[i][0]] = 0
             if participation.has_key(activities[i][1]) == False:
                 participation[activities[i][1]] = participation[activities[i][0]].copy()
@@ -142,12 +166,12 @@ def CascadeBuilder(min_seed_act_time, target_seeds):
                                 participation_at_depth[activities[i][1]][each_seed] = participation_at_depth[activities[i][0]][each_seed] + 1
     for v_participates in participation.keys():
         for seed_v in participation[v_participates]:
-            target_seeds[seed_v] += 1
+            target_seeds[activities[seeds_batch[seed_v]][0]] += 1
         for seed_v in participation_at_depth[v_participates].keys():
-            target_seeds_depth[seed_v] = max(target_seeds_depth[seed_v],participation_at_depth[v_participates][seed_v])
+            target_seeds_depth[activities[seeds_batch[seed_v]][0]] = max(target_seeds_depth[activities[seeds_batch[seed_v]][0]],participation_at_depth[v_participates][seed_v])
     for a_seed in target_seeds.keys():
         cascade_sizes_lock.acquire()
-        cascade_sizes.append([v_ids[a_seed], target_seeds[a_seed], target_seeds_depth[a_seed]])
+        cascade_sizes.append([a_seed, target_seeds[a_seed], target_seeds_depth[a_seed]])
         cascade_sizes_lock.release()
 
 # Create threads
