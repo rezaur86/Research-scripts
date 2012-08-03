@@ -24,4 +24,4 @@ For keith:
 
 \copy (select m2.id as message_id, (select m1.id as parent_message_id from occupy_LA as m1 where m1.row_id = m2.parent_message_row_id), m2.name as name, m2.text as text, m2.created_time as created_time,(select f.id as from_user_id from fb_user as f where m2.from_user_row_id = f.row_id) from occupy_la as m2) to 'keith_occupy_LA_message.csv';
 
-\copy (select (select m.id from occupy_LA as m where m.row_id = l.what_message_row_id),(select f.id from fb_user as f where f.row_id = l.who_user_row_id) from likedby as l) to 'keith_occupy_LA_liked_by.csv';
+\copy () to  'keith_occupy_LA_message.csv';
