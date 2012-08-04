@@ -9,74 +9,12 @@ import math
 from multiprocessing import Pool, Process, Value, Array
 from multiprocessing.dummy import Manager
 
-
-#vertices = {}
-#activities = array.array('L')
-#pool_of_seeds = array.array('L')
-#
-#ODEG = 0
-#INDEG = 1
-#f = open(sys.argv[1], "r")
-## pre-processing: make lists of sender_ids and recipient_ids in the original graph
-#seeds_count = 0
-#activities_count = 0
-#for line in f:
-#    splits = line.split()
-#    sender = long(splits[0].strip())
-#    recv = long(splits[1].strip())
-#    
-#    if vertices.has_key(sender):
-#        vertices[sender][ODEG] += 1
-#    else:
-#        vertices[sender] = [1,0] #outdeg = 1, indeg = 0
-#        pool_of_seeds.append(activities_count)
-#        seeds_count += 1
-#    if vertices.has_key(recv):
-#        vertices[recv][INDEG] += 1
-#    else:
-#        vertices[recv] = [0,1] #outdeg = 0, indeg = 1
-#    
-#    activities.append(sender)#[sender, recv]) # time of this activity is activities_count 
-#    activities.append(recv)
-#    activities_count += 1
-#print len(vertices.keys())
-#for key in vertices.keys():
-#    if vertices[key][ODEG] == 0 and vertices[key][INDEG] == 1:
-#        del vertices[key]
-#print len(vertices.keys())
-#    if activities_count > 100000:
-#        break
-
-#f.close()
-#
-#print activities_count
-#print seeds_count
-
 def CascadeWorker(activities, pool_of_seeds, vertices, process_id):
     cascade_sizes = []
     proc_seeds_count = len(pool_of_seeds)
     pool_last_index = 0
     batch_size = 10000
-    
-#    vertices = {}
-#    activities_count = len(activities)/2
-#    for i in range(activities_count):
-#        sender = activities[2*i+0]
-#        recv = activities[2*i+1]
-#        if vertices.has_key(sender):
-#            vertices[sender][ODEG] += 1
-#        else:
-#            vertices[sender] = [1,0] #outdeg = 1, indeg = 0
-#        if vertices.has_key(recv):
-#            vertices[recv][INDEG] += 1
-#        else:
-#            vertices[recv] = [0,1] #outdeg = 0, indeg = 1
-#    
-#    print len(vertices.keys())
-#    for key in vertices.keys():
-#        if vertices[key][ODEG] == 0 and vertices[key][INDEG] == 1:
-#            del vertices[key]
-#    print len(vertices.keys())
+#    print vertices
     while pool_last_index < proc_seeds_count:
         print pool_last_index*100/proc_seeds_count,'% of process',process_id.value
         seeds_batch = array.array('L')
@@ -155,7 +93,6 @@ def CascadeBuilder(activities, vertices, min_seed_act_time, seeds_batch, target_
                         target_seeds[seeds_batch[seed_v]] += 1
                         target_seeds_depth[seeds_batch[seed_v]] = max(target_seeds_depth[seeds_batch[seed_v]],participation_at_depth[activities[2*i+0]][seed_v]+1)
                     
-#    target_seeds = {key:0 for key in seeds_batch}
     for v_participates in participation.keys():
         for seed_v in participation[v_participates]:
             target_seeds[seeds_batch[seed_v]] += 1
@@ -170,7 +107,6 @@ def CascadeBuilder(activities, vertices, min_seed_act_time, seeds_batch, target_
     return cascade_sizes
 
 process_count = 12
-output_files = []
 if __name__ == '__main__':
     manager = Manager()
     vertices = manager.dict()
@@ -180,7 +116,6 @@ if __name__ == '__main__':
     ODEG = 0
     INDEG = 1
     f = open(sys.argv[1], "r")
-    # pre-processing: make lists of sender_ids and recipient_ids in the original graph
     seeds_count = 0
     activities_count = 0
     for line in f:
@@ -211,31 +146,24 @@ if __name__ == '__main__':
     
     print activities_count
     print seeds_count
-    
+    shared_activities = Array('L', activities, lock=False)
+    activities = None
+
     process_list = []
+    output_files = []
     for k in range(process_count):
         target_seeds = array.array('L')
         for s_i in range(seeds_count):
             if s_i%process_count == k:
                 target_seeds.append(pool_of_seeds[s_i])
-        p = Process(target=CascadeWorker, args=(Array('L', activities) , Array('L', target_seeds), vertices, Value('i', k)))
+        p = Process(target=CascadeWorker, args=(shared_activities, Array('L', target_seeds, lock = False), vertices, Value('i', k)))
         process_list.append(p)
         p.start()
         output_files.append('o_p'+str(k))
-    vertices = None
-    activities = None
+#    vertices = None
     pool_of_seeds = None
     for p in process_list:
         p.join()
-
-#while True:
-#    if len(pool_of_seeds) > 0:
-#        print len(pool_of_seeds)*100/seeds_count,'%'#, pool_of_seeds[0:5]
-#        time.sleep(20)
-#    else:
-#        break
-        
-#pool_of_seeds.join()
 print "Exiting Main Thread"
 cascade_sizes = []
 o_seeds_sizes =  open (sys.argv[2], "w")
