@@ -9,13 +9,13 @@ import math
 from multiprocessing import Pool, Process, Value, Array
 from multiprocessing.dummy import Manager
 
-def CascadeWorker(activities, pool_of_seeds, vertices, process_id):
-    cascade_sizes = []
+def CascadeWorker():
+    global cascade_sizes
     proc_seeds_count = len(pool_of_seeds)
     pool_last_index = 0
     batch_size = 10000
     while pool_last_index < proc_seeds_count:
-        print pool_last_index*100/proc_seeds_count,'% of process',process_id.value
+        print pool_last_index*100/proc_seeds_count,'% of process'
         seeds_batch = array.array('L')
         target_seeds = {}
         for i in range(batch_size):
@@ -27,14 +27,14 @@ def CascadeWorker(activities, pool_of_seeds, vertices, process_id):
             seeds_batch.append(activities[2*new_seed_act_id+0])
             target_seeds[new_seed_act_id] = i
         pool_last_index += batch_size
-        cascade_sizes.extend(CascadeBuilder(activities, vertices, min_seed_act_time, seeds_batch, target_seeds))
-    o_seeds_sizes =  open ('o_p'+str(process_id.value), "w")
-    writer = csv.writer(o_seeds_sizes, quoting=csv.QUOTE_MINIMAL)
-#    cascade_sizes.sort(key=operator.itemgetter(1), reverse=True)
-    writer.writerows(cascade_sizes)
-    o_seeds_sizes.close()
+        cascade_sizes.extend(CascadeBuilder(min_seed_act_time, seeds_batch, target_seeds))
+#    o_seeds_sizes =  open ('o_p'+str(process_id.value), "w")
+#    writer = csv.writer(o_seeds_sizes, quoting=csv.QUOTE_MINIMAL)
+##    cascade_sizes.sort(key=operator.itemgetter(1), reverse=True)
+#    writer.writerows(cascade_sizes)
+#    o_seeds_sizes.close()
 
-def CascadeBuilder(activities, vertices, min_seed_act_time, seeds_batch, target_seeds):
+def CascadeBuilder(min_seed_act_time, seeds_batch, target_seeds):
     participation = {}
     participation_at_depth = {}
     seeds_reg = target_seeds.copy()
@@ -54,10 +54,10 @@ def CascadeBuilder(activities, vertices, min_seed_act_time, seeds_batch, target_
                 
             if vertices.has_key(activities[2*i+1]):
                 if participation.has_key(activities[2*i+1]) == False:
-                    participation[activities[2*i+1]] = participation[activities[2*i+0]].copy()
-                    participation_at_depth[activities[2*i+1]] = participation_at_depth[activities[2*i+0]].copy()
-                    for each_seed in participation_at_depth[activities[2*i+1]].keys():
-                        participation_at_depth[activities[2*i+1]][each_seed] += 1
+                        participation[activities[2*i+1]] = participation[activities[2*i+0]].copy()
+                        participation_at_depth[activities[2*i+1]] = participation_at_depth[activities[2*i+0]].copy()
+                        for each_seed in participation_at_depth[activities[2*i+1]].keys():
+                            participation_at_depth[activities[2*i+1]][each_seed] += 1
                 else:
                     participation[activities[2*i+1]] = participation[activities[2*i+1]].union(participation[activities[2*i+0]])
                     for each_seed in participation[activities[2*i+1]]:
@@ -105,14 +105,11 @@ def CascadeBuilder(activities, vertices, min_seed_act_time, seeds_batch, target_
     target_seeds_depth = None
     return cascade_sizes
 
-process_count = 12
 vertices = {}
-shared_activities = None
+activities = array.array('L')
+pool_of_seeds = array.array('L')
+cascade_sizes = []
 if __name__ == '__main__':
-    activities = array.array('L')
-    manager = Manager()
-    vertices = manager.dict()
-    pool_of_seeds = array.array('L')
     ODEG = 0
     INDEG = 1
     f = open(sys.argv[1], "r")
@@ -122,6 +119,7 @@ if __name__ == '__main__':
         splits = line.split()
         sender = long(splits[0].strip())
         recv = long(splits[1].strip())
+        
         if vertices.has_key(sender):
             vertices[sender][ODEG] += 1
         else:
@@ -138,43 +136,47 @@ if __name__ == '__main__':
         activities_count += 1
     print len(vertices.keys())
     for key in vertices.keys():
-        if vertices[key][ODEG] == 0 and vertices[key][INDEG] == 1:
+        if vertices[key][ODEG] == 0:# and vertices[key][INDEG] == 1:
             del vertices[key]
     print len(vertices.keys())
     f.close()
     
     print activities_count
     print seeds_count
-    shared_activities = manager.Array('L', activities, lock=False)
+    
+    CascadeWorker()
+#    print sys.getsizeof(activities)
+#    shared_activities = manager.Array('L', activities, lock=False)
 #    activities = None
 
-    process_list = []
-    output_files = []
-    for k in range(process_count):
-        target_seeds = array.array('L')
-        for s_i in range(seeds_count):
-            if s_i%process_count == k:
-                target_seeds.append(pool_of_seeds[s_i])
-        p = Process(target=CascadeWorker, args=(shared_activities, Array('L', target_seeds, lock = False), vertices, Value('i', k)))
-        target_seeds = None
-        process_list.append(p)
-        p.start()
-        output_files.append('o_p'+str(k))
+#    vertices = {}
+#    process_list = []
+#    output_files = []
+#    for k in range(process_count):
+#        target_seeds = array.array('L')
+#        for s_i in range(seeds_count):
+#            if s_i%process_count == k:
+#                target_seeds.append(pool_of_seeds[s_i])
+#        p = Process(target=CascadeWorker, args=(shared_activities, Array('L', target_seeds, lock = False), vertices, Value('i', k)))
+#        target_seeds = None
+#        process_list.append(p)
+#        p.start()
+#        output_files.append('o_p'+str(k))
 #    vertices = None
-    pool_of_seeds = None
-    for p in process_list:
-        p.join()
-print "Exiting Main Thread"
-cascade_sizes = []
+#    pool_of_seeds = None
+#    for p in process_list:
+#        p.join()
+#print "Exiting Main Thread"
+#cascade_sizes = []
+#for o_file in output_files:
+#    file = open(o_file, 'r')
+#    data = file.read()
+#    file.close()
+#    os.remove(o_file)
+#    o_seeds_sizes.write(data)
+
 o_seeds_sizes =  open (sys.argv[2], "w")
-for o_file in output_files:
-    file = open(o_file, 'r')
-    data = file.read()
-    file.close()
-    os.remove(o_file)
-    o_seeds_sizes.write(data)
-    #'\n'???
-#writer = csv.writer(o_seeds_sizes, quoting=csv.QUOTE_MINIMAL)
-#cascade_sizes.sort(key=operator.itemgetter(1), reverse=True)
-#writer.writerows(cascade_sizes)
+writer = csv.writer(o_seeds_sizes, quoting=csv.QUOTE_MINIMAL)
+cascade_sizes.sort(key=operator.itemgetter(1), reverse=True)
+writer.writerows(cascade_sizes)
 o_seeds_sizes.close()

@@ -98,7 +98,9 @@ alter table message drop CONSTRAINT message_id_key cascade;
 alter table message drop CONSTRAINT message_pkey cascade;
 alter table message_to drop CONSTRAINT message_to_pkey cascade;
 alter table likedby drop CONSTRAINT likedby_pkey cascade;
+drop index likedby_what_message_row_id_idx cascade;
 alter table tag drop CONSTRAINT tag_pkey cascade;
+alter table link drop CONSTRAINT link_message_row_id_fkey cascade;
 
 
 \COPY fb_user(row_id, id, name, category) from '/home/rezaur/Documents/fb_user.csv' with delimiter ',' CSV quote '"';
@@ -119,7 +121,7 @@ alter table message add CONSTRAINT message_pkey PRIMARY KEY (row_id);
 alter table message add CONSTRAINT message_id_key UNIQUE(id);
 alter table message add CONSTRAINT message_fb_wall_row_id_fkey FOREIGN KEY (fb_wall_row_id) REFERENCES fb_user(row_id) ON UPDATE CASCADE ON DELETE RESTRICT;
 alter table message add CONSTRAINT message_from_user_row_id_fkey FOREIGN KEY (from_user_row_id) REFERENCES fb_user(row_id) ON UPDATE CASCADE ON DELETE RESTRICT;
-alter table message add CONSTRAINT message_parent_message_row_id_fkey" FOREIGN KEY (parent_message_row_id) REFERENCES message(row_id) ON UPDATE CASCADE ON DELETE RESTRICT;
+alter table message add CONSTRAINT message_parent_message_row_id_fkey FOREIGN KEY (parent_message_row_id) REFERENCES message(row_id) ON UPDATE CASCADE ON DELETE RESTRICT;
 
 alter table message_to add CONSTRAINT message_to_pkey PRIMARY KEY (row_id);
 alter table message_to add CONSTRAINT message_to_message_row_id_fkey FOREIGN KEY (message_row_id) REFERENCES message(row_id) ON UPDATE CASCADE ON DELETE RESTRICT;
@@ -128,6 +130,7 @@ alter table message_to add CONSTRAINT message_to_to_user_row_id_fkey FOREIGN KEY
 alter table likedby add CONSTRAINT likedby_pkey PRIMARY KEY (row_id);
 alter table likedby add CONSTRAINT likedby_what_message_row_id_fkey FOREIGN KEY (what_message_row_id) REFERENCES message(row_id) ON UPDATE CASCADE ON DELETE RESTRICT;
 alter table likedby add CONSTRAINT likedby_who_user_row_id_fkey FOREIGN KEY (who_user_row_id) REFERENCES fb_user(row_id) ON UPDATE CASCADE ON DELETE RESTRICT;
+create index likedby_what_message_row_id_idx on likedby using btree (what_message_row_id);
 
 alter table tag add CONSTRAINT tag_pkey PRIMARY KEY (row_id);
 alter table tag add CONSTRAINT tag_message_row_id_fkey FOREIGN KEY (message_row_id) REFERENCES message(row_id) ON UPDATE CASCADE ON DELETE RESTRICT;
