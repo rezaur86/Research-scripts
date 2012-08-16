@@ -40,3 +40,30 @@ UNION ( select t.user_row_id, m.from_user_row_id, m.parent_message_row_id from o
 Searching:
 create table keyword_post_link as (select k_p.*, l.address  from keyword_post as k_p JOIN (select message_row_id, address from link where type = 'ACTION' and name = 'Comment') as l ON k_p.post_row_id = l.message_row_id);
 select post_row_id, freq, address from keyword_post_link as k_p_l JOIN (select row_id from keyword where word ~ 'davis') as t ON k_p_l.keyword_row_id = t.row_id order by freq desc;
+shares,likes,comments
+create table search_temp as (select s.*, m.shares_counts, m.likes_count, m.comments_count from search as s JOIN message as m ON s.post_row_id = m.row_id);
+alter table search rename to search_no_lc_count;
+alter table search_temp rename to search;
+create index search_keyword_row_id_idx on search using btree (keyword_row_id);
+create index search_post_row_id_idx on search using btree (post_row_id);
+
+
+bug fixing:
+create table count_bug (
+message_row_id BIGINT not null,
+likes_count int,
+comments_count int,
+PRIMARY KEY (message_row_id)
+); 
+\COPY count_bug(post_row_id, likes_count, comments_count) from '/home/rezaur/Documents/count.csv' with delimiter ',' CSV quote '"';
+create index count_bug_message_row_id_idx on count_bug using btree (message_row_id);
+
+create table message_temp as (select m.*, c.likes_count, c.comments_count from message as m LEFT OUTER JOIN count_bug as c ON message.row_id = c.message_row_id);
+alter table message rename to message_no_lc_count;
+alter table message_temp rename to message;
+alter table message add CONSTRAINT message_pkey PRIMARY KEY (row_id);
+alter table message add CONSTRAINT message_id_key UNIQUE(id);
+alter table message add CONSTRAINT message_fb_wall_row_id_fkey FOREIGN KEY (fb_wall_row_id) REFERENCES fb_user(row_id) ON UPDATE CASCADE ON DELETE RESTRICT;
+alter table message add CONSTRAINT message_from_user_row_id_fkey FOREIGN KEY (from_user_row_id) REFERENCES fb_user(row_id) ON UPDATE CASCADE ON DELETE RESTRICT;
+alter table message add CONSTRAINT message_parent_message_row_id_fkey FOREIGN KEY (parent_message_row_id) REFERENCES message(row_id) ON UPDATE CASCADE ON DELETE RESTRICT;
+

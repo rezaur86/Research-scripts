@@ -25,6 +25,7 @@ new_message_tos = []
 new_likedbys = []
 new_tags = []
 new_links= []
+new_likes_comments_counts = {}
 
 #to ignore unicode error:
 def asciiCodify(s):
@@ -90,6 +91,24 @@ def register_message (onedata, parent_message_row_id):
     if onedata.has_key("id"):            
         message_id = onedata["id"].replace('\"','')
         if message_ids.has_key(message_id):
+            if onedata.has_key("likes"):
+                if type(onedata["likes"]) is dict:
+                    if onedata["likes"].has_key("count"):
+                        likes_count = onedata["likes"]["count"]
+                    else:
+                        likes_count = None              
+                elif type(onedata["likes"]) is int:
+                    likes_count = onedata["likes"]
+                else:
+                    likes_count = None 
+            else:
+                likes_count = None 
+            if onedata.has_key("comments"):
+                comments_count = onedata["comments"]["count"]
+            else:
+                comments_count = None
+            new_likes_comments_counts[message_ids[message_id]] = []
+            new_likes_comments_counts[message_ids[message_id]].append((likes_count, comments_count))             
             return message_ids[message_id]
     else:
         return -1
@@ -129,22 +148,6 @@ def register_message (onedata, parent_message_row_id):
         shares_count = onedata["shares"]["count"]
     else:
         shares_count = None    
-    if onedata.has_key("likes"):
-        if type(onedata["likes"]) is dict:
-            if onedata["likes"].has_key("count"):
-                likes_count = onedata["likes"]["count"]
-            else:
-                likes_count = None              
-        elif type(onedata["likes"]) is int:
-            likes_count = onedata["likes"]
-        else:
-            likes_count = None 
-    else:
-        likes_count = None 
-    if onedata.has_key("comments"):
-        comments_count = onedata["comments"]["count"]
-    else:
-        comments_count = None
     if onedata.has_key("from"):
         postedBy_row_id = register_user(onedata["from"])
         if postedBy_row_id == -1:
@@ -203,9 +206,9 @@ def register_message (onedata, parent_message_row_id):
 
     group_id = fb_user_ids[long(message_id.split('_')[0])]
     if parent_message_row_id is None:
-        new_messages.append((message_last_value, message_id, message_last_value, group_id, name, text, type_, description, caption, postedBy_row_id, created_time, updated_time, can_remove, shares_count, likes_count, comments_count))
+        new_messages.append((message_last_value, message_id, message_last_value, group_id, name, text, type_, description, caption, postedBy_row_id, created_time, updated_time, can_remove, shares_count))
     else:
-        new_messages.append((message_last_value, message_id, parent_message_row_id, group_id, name, text, type_, description, caption, postedBy_row_id, created_time, updated_time, can_remove, shares_count, likes_count, comments_count))
+        new_messages.append((message_last_value, message_id, parent_message_row_id, group_id, name, text, type_, description, caption, postedBy_row_id, created_time, updated_time, can_remove, shares_count))
     
     global link_last_value
     if onedata.has_key("picture"):
@@ -266,9 +269,10 @@ def parse_this_post (json_strings):
             if type(onedata) is not dict:
                 continue
             if onedata.has_key("id"):
-                if message_ids.has_key(onedata["id"]):
-#                    ERROR_FILE.write("*********Duplicate crawling %s************\n" % (working_json_file_name))
-                    return -1
+#                message_id = onedata["id"].replace('\"','')
+#                if message_ids.has_key(onedata["id"]):
+##                    ERROR_FILE.write("*********Duplicate crawling %s************\n" % (working_json_file_name))
+#                    return -1
                 message_row_id = register_message(onedata, None)
                 if message_row_id == -1:
                     return -1

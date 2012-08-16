@@ -38,6 +38,8 @@ def write_CSV():
     likedby_file = open (CSV_path+"/likedby.csv", csv_writing_mode) 
     tag_file = open (CSV_path+"/tag.csv", csv_writing_mode)
     link_file =  open (CSV_path+"/link.csv", csv_writing_mode)
+
+    count_file =  open (CSV_path+"/count.csv", csv_writing_mode)
     
     writer = csv.writer(fb_user_file, quoting=csv.QUOTE_MINIMAL)
     writer.writerows(json_describer.new_fb_users)
@@ -51,6 +53,12 @@ def write_CSV():
     writer.writerows(json_describer.new_tags)
     writer = csv.writer(link_file ,quoting=csv.QUOTE_MINIMAL)
     writer.writerows(json_describer.new_links)
+
+    writer = csv.writer(count_file ,quoting=csv.QUOTE_MINIMAL)
+    temp_count = []
+    for key in json_describer.new_likes_comments_counts.keys():
+        temp_count.append((key, json_describer.new_likes_comments_counts[key][0][0], json_describer.new_likes_comments_counts[key][0][1]))
+    writer.writerows(temp_count)
     
     fb_user_file.close()
     message_file.close() 
@@ -58,6 +66,7 @@ def write_CSV():
     likedby_file.close() 
     tag_file.close() 
     link_file.close()
+    count_file.close()
 
 # Initialize variables by reading from Database
 

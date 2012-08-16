@@ -33,6 +33,8 @@ CREATE TABLE message (
 	from_user_row_id INT NOT NULL,
 	can_remove BOOL,
 	shares_count INT,
+	likes_count INT,
+	comments_count INT,
 	PRIMARY KEY (row_id),
 	FOREIGN KEY (parent_message_row_id) REFERENCES message(row_id) ON UPDATE CASCADE ON DELETE RESTRICT,
 	FOREIGN KEY (from_user_row_id) REFERENCES fb_user(row_id) ON UPDATE CASCADE ON DELETE RESTRICT,
@@ -137,7 +139,7 @@ alter table tag add CONSTRAINT tag_pkey PRIMARY KEY (row_id);
 alter table tag add CONSTRAINT tag_message_row_id_fkey FOREIGN KEY (message_row_id) REFERENCES message(row_id) ON UPDATE CASCADE ON DELETE RESTRICT;
 alter table tag add CONSTRAINT tag_user_row_id_fkey FOREIGN KEY (user_row_id) REFERENCES fb_user(row_id) ON UPDATE CASCADE ON DELETE RESTRICT;
 
-alter table link add CONSTRAINT link_row_id_fkey PRIMARY KEY (row_id);
+alter table link add CONSTRAINT link_row_id_pkey PRIMARY KEY (row_id);
 create index link_message_row_id_idx on link using btree (message_row_id);
 
 alter table keyword add CONSTRAINT keyword_row_id_fkey PRIMARY KEY (row_id);

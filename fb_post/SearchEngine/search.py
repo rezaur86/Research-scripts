@@ -6,7 +6,7 @@ import sys,os
 import psycopg2
 sys.path.append(os.path.abspath('../jsonParser/'))
 from db_connection import openDb, closeDB
-def search (query, entropy = "Entropy"):
+def search (query):
     try:
         (conn, cursor) = openDb(True, True)
     except psycopg2.Error, e:
@@ -17,16 +17,16 @@ def search (query, entropy = "Entropy"):
         cursor.execute(query)
         result = ''
         for record in cursor:
-            if entropy == 'Entropy':
-                result += '''
-                    <tr>
-                        <td><a href=%s>%s</a></td> <td>%s</td> <td>%s</td>
-                    </tr>'''%(str(record[2]),str(record[2])[:50],str(record[1]),str(record[3]))
-            else:
-                result += '''
-                    <tr>
-                        <td><a href=%s>%s</a></td> <td>%s</td>
-                    </tr>'''%(str(record[2]),str(record[2])[:50],str(record[1]))
+#            if entropy == 'Entropy':
+            result += '''
+                <tr>
+                    <td><a href=%s>%s</a></td> <td>%s</td> <td>%s</td> <td>%s</td> <td>%s</td> <td>%s</td>
+                </tr>'''%(str(record[1]),str(record[1])[:50],str(record[2]),str(record[3]),str(record[4]),str(record[5]),str(record[6]) )
+#            else:
+#                result += '''
+#                    <tr>
+#                        <td><a href=%s>%s</a></td> <td>%s</td>
+#                    </tr>'''%(str(record[2]),str(record[2])[:50],str(record[1]))
         return result
     except psycopg2.Error, e:
         closeDB(conn, cursor)
@@ -41,7 +41,7 @@ try:
     if form.has_key("terms"):
         terms = form.getvalue("terms")
         words = terms.split()
-        query = '''select distinct post_row_id, freq, address, entropy from search as k_p_l JOIN (select row_id from keyword where'''
+        query = '''select distinct post_row_id, address, freq, entropy, shares_count, likes_count, comments_count from search as s JOIN (select row_id from keyword where'''
         words_count = len(words)
         print 
         for each_word in words:
@@ -51,26 +51,37 @@ try:
                 query += ' %s '%form.getvalue("boolean")
             else:
                 if form.getvalue("case") == 'Entropy':
-                    query += ') as t ON k_p_l.keyword_row_id = t.row_id order by entropy desc,freq desc limit 20'
-                else:
-                    query += ') as t ON k_p_l.keyword_row_id = t.row_id order by freq desc limit 20'                    
-        results = search (query, form.getvalue("case"))
+                    query += ') as t ON s.keyword_row_id = t.row_id order by entropy desc,freq desc limit '
+                elif form.getvalue("case") == 'Frequency':
+                    query += ') as t ON s.keyword_row_id = t.row_id order by freq desc limit '
+                elif form.getvalue("case") == 'Shares':
+                    query += ') as t ON s.keyword_row_id = t.row_id where shares_count is not Null order by shares_count desc,freq desc limit '
+                elif form.getvalue("case") == 'Likes':
+                    query += ') as t ON s.keyword_row_id = t.row_id where likes_count is not Null order by likes_count desc,freq desc limit '
+                elif form.getvalue("case") == 'Comments':
+                    query += ') as t ON s.keyword_row_id = t.row_id where comments_count is not Null order by comments_count desc,freq desc limit '
+        
+        query += str(form.getvalue("How Many"))                       
+        results = search (query)
         print """\
         <html>
         <head><title>Search Result </title></head>
         <body>
-        <h2>Search Result with %s</h2>
+        Search Result for <h2>%s</h2> based on %s
         <table border="1">
             <tr>
                 <th>Post link</th>
                 <th>Frequency</th>
                 <th>Entropy</th>
+                <th>Shares Count</th>
+                <th>Likes Count</th>
+                <th>Comments Count</th>
             </tr>
             %s
         </table>
         </body>
         </html>
-        """%(form.getvalue("case"),results)
+        """%(terms, form.getvalue("case"),results)
     else:
         # This is a little bit of test code.  This will never be called
         # when you call this class within your browser.  You probably want
