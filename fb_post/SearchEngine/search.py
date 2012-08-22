@@ -3,6 +3,8 @@ print "Content-Type: text/html"
 print
 import cgi
 import sys,os
+import json
+from decimal import Decimal
 import psycopg2
 sys.path.append(os.path.abspath('../jsonParser/'))
 from db_connection import openDb, closeDB
@@ -16,12 +18,24 @@ def search (query):
 #        cursor.execute('''select post_row_id, freq, address, entropy from keyword_post_link as k_p_l JOIN (select row_id from keyword where word ~ %s) as t ON k_p_l.keyword_row_id = t.row_id order by entropy,freq desc limit 10''', (terms,))
         cursor.execute(query)
         result = ''
+        global json_output
+        json_output["results"] = []
         for record in cursor:
 #            if entropy == 'Entropy':
+            json_result = {}
             result += '''
                 <tr>
-                    <td><a href=%s>%s</a></td> <td>%s</td> <td>%s</td> <td>%s</td> <td>%s</td> <td>%s</td>
-                </tr>'''%(str(record[1]),str(record[1])[:50],str(record[2]),str(record[3]),str(record[4]),str(record[5]),str(record[6]) )
+                    <td><a href=%s>%s</a></td> <td>%s</td> <td>%s</td> <td>%s</td> <td>%s</td> <td>%s</td> <td>%s</td> <td>%s</td>
+                </tr>'''%(str(record[1]),str(record[1])[:50],str(record[2]),str(record[3]),str(record[4]),str(record[5]),str(record[6]),str(record[7]),str(record[8]) )
+            json_result["link"] = record[1]
+            json_result["freq"] = record[2]
+            json_result["entropy"] = str(record[3])
+            json_result["shares"] = record[4]
+            json_result["likes"] = record[5]
+            json_result["comments"] = record[6]
+            json_result["createdtime"] = str(record[7])
+            json_result["group"] = str(record[8])
+            json_output["results"].append(json_result)
 #            else:
 #                result += '''
 #                    <tr>
@@ -35,20 +49,24 @@ def search (query):
 
 form = cgi.FieldStorage()
 results = []
+json_output = {}
 terms = ""
 
 try:
     if form.has_key("terms"):
         terms = form.getvalue("terms")
+        terms_type = 'AND' if form.getvalue("boolean") == 'ALL' else 'OR'
+        json_output["method"] = terms_type
         words = terms.split()
-        query = '''select distinct post_row_id, address, freq, entropy, shares_count, likes_count, comments_count from search as s JOIN (select row_id from keyword where'''
+        json_output["words"] = '|'.join(words)
+        query = '''select distinct post_row_id, address, freq, entropy, shares_count, likes_count, comments_count, created_time, group_name from search as s JOIN (select row_id from keyword where'''
         words_count = len(words)
         print 
         for each_word in words:
             query += ''' word ~* '%s' '''%each_word
             words_count -= 1
             if words_count > 0:
-                query += ' %s '%form.getvalue("boolean")
+                query += ' %s '%terms_type
             else:
                 if form.getvalue("case") == 'Entropy':
                     query += ') as t ON s.keyword_row_id = t.row_id order by entropy desc,freq desc limit '
@@ -61,8 +79,9 @@ try:
                 elif form.getvalue("case") == 'Comments':
                     query += ') as t ON s.keyword_row_id = t.row_id where comments_count is not Null order by comments_count desc,freq desc limit '
         
-        query += str(form.getvalue("How Many"))                       
+        query += str(form.getvalue("total_results"))                       
         results = search (query)
+        print json.dumps(json_output)
         print """\
         <html>
         <head><title>Search Result </title></head>
@@ -76,6 +95,8 @@ try:
                 <th>Shares Count</th>
                 <th>Likes Count</th>
                 <th>Comments Count</th>
+                <th>Created Time</th>
+                <th>Group Name</th>
             </tr>
             %s
         </table>

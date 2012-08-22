@@ -15,7 +15,7 @@ create or replace view message_community as (select row_id from message where fb
 
 For keith:
 create table the_8_groups as (select m.* from message as m JOIN (select row_id from fb_user where id in (44473416732,153774071379194,131459315949,23294612872,5550296508,294421993905616,184749301592842,15704546335)) as f ON m.fb_wall_row_id = f.row_id);
-\copy (select m2.id as message_id, (select m1.id as parent_message_id from the_8_groups as m1 where m1.row_id = m2.parent_message_row_id), m2.name as name, m2.text as text, m2.created_time as created_time,(select f.id as from_user_id from fb_user as f where m2.from_user_row_id = f.row_id) from the_8_groups as m2) to 'keith_the_8_groups_message.csv' with delimiter ' ' CSV quote '"';
+\copy (select m2.row_id as row_id, m2.id as message_id, (select m1.id as parent_message_id from the_8_groups as m1 where m1.row_id = m2.parent_message_row_id), m2.name as name, m2.text as text, m2.created_time as created_time,(select f.id as from_user_id from fb_user as f where m2.from_user_row_id = f.row_id) from the_8_groups as m2) to 'keith_the_8_groups_message.csv' with delimiter ',' CSV quote '"';
 
 \copy (select (select m.id from occupy_LA as m where m.row_id = l.what_message_row_id),(select f.id from fb_user as f where f.row_id = l.who_user_row_id) from likedby as l) to 'keith_occupy_LA_liked_by.csv';
 
@@ -41,8 +41,8 @@ Searching:
 create table keyword_post_link as (select k_p.*, l.address  from keyword_post as k_p JOIN (select message_row_id, address from link where type = 'ACTION' and name = 'Comment') as l ON k_p.post_row_id = l.message_row_id);
 select post_row_id, freq, address from keyword_post_link as k_p_l JOIN (select row_id from keyword where word ~ 'davis') as t ON k_p_l.keyword_row_id = t.row_id order by freq desc;
 shares,likes,comments
-create table search_temp as (select s.*, m.shares_counts, m.likes_count, m.comments_count from search as s JOIN message as m ON s.post_row_id = m.row_id);
-alter table search rename to search_no_lc_count;
+create table search_temp as (select s.*, (select f.name from fb_user as f where f.row_id = m.fb_wall_row_id), m.created_time from search as s JOIN message as m ON s.post_row_id = m.row_id);
+alter table search rename to search_old;
 alter table search_temp rename to search;
 create index search_keyword_row_id_idx on search using btree (keyword_row_id);
 create index search_post_row_id_idx on search using btree (post_row_id);
