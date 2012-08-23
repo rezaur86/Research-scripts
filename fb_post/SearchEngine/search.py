@@ -16,16 +16,11 @@ def search (query):
         return -1
     try:
         cursor.execute(query)
-        result = ''
         global json_output
         json_output["results"] = []
         for record in cursor:
-#            if entropy == 'Entropy':
             json_result = {}
-#            result += '''
-#                <tr>
-#                    <td><a href=%s>%s</a></td> <td>%s</td> <td>%s</td> <td>%s</td> <td>%s</td> <td>%s</td> <td>%s</td> <td>%s</td>
-#                </tr>'''%(str(record[1]),str(record[1])[:50],str(record[2]),str(record[3]),str(record[4]),str(record[5]),str(record[6]),str(record[7]),str(record[8]) )
+            json_result["post_id"] = record[0]
             json_result["link"] = record[1]
             json_result["freq"] = record[2] if record[2] is not None else 0
             json_result["entropy"] = str(record[3]) if record[3] is not None else 0
@@ -35,11 +30,6 @@ def search (query):
             json_result["createdtime"] = str(record[7])
             json_result["group"] = str(record[8])
             json_output["results"].append(json_result)
-#            else:
-#                result += '''
-#                    <tr>
-#                        <td><a href=%s>%s</a></td> <td>%s</td>
-#                    </tr>'''%(str(record[2]),str(record[2])[:50],str(record[1]))
         return result
     except psycopg2.Error, e:
         closeDB(conn, cursor)
@@ -81,35 +71,8 @@ try:
         query += str(form.getvalue("total_results"))                       
         results = search (query)
         print json.dumps(json_output)
-#        print """\
-#        <html>
-#        <head><title>Search Result </title></head>
-#        <body>
-#        Search Result for <h2>%s</h2> based on %s
-#        <table border="1">
-#            <tr>
-#                <th>Post link</th>
-#                <th>Frequency</th>
-#                <th>Entropy</th>
-#                <th>Shares Count</th>
-#                <th>Likes Count</th>
-#                <th>Comments Count</th>
-#                <th>Created Time</th>
-#                <th>Group Name</th>
-#            </tr>
-#            %s
-#        </table>
-#        </body>
-#        </html>
-#        """%(terms, form.getvalue("case"),results)
     else:
-        # This is a little bit of test code.  This will never be called
-        # when you call this class within your browser.  You probably want
-        # to remove this before putting this into production.
-        terms = "red blue three"
-#        results = search("red blue three", OR, CASE_SENSITIVE, listdir(BASE_DIR))
-
-#    doresultspage(terms, results)
+        terms = "UC Davis"
 except NameError:
     print "There was an error understanding your search request.  Please press the back button and try again."
 except:

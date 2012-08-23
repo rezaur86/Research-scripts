@@ -9,7 +9,7 @@ from db_connection import openDb, closeDB
 
 def extract_keyword(text):
     extractor = extract.TermExtractor()
-    extractor.filter = extract.DefaultFilter(singleStrengthMinOccur=3, noLimitStrength=2)
+    extractor.filter = extract.DefaultFilter(singleStrengthMinOccur=2, noLimitStrength=100)
     keywords = sorted(extractor(text))
     return keywords
 
@@ -43,7 +43,9 @@ def read_story (group_id, by_post = False):
                 story = record[1]
                 story_keywords = extract_keyword(story)
                 for each_keyword in story_keywords:
-                    keyword_row_id = register_keywords(" ".join(re.split("[^a-zA-Z]+", each_keyword[0])))
+#                    keyword_phrase = re.split("[^{a-zA-Z0-9}\-!@#\$%&\*\+\?_]+", each_keyword[0]) #(" ".join(re.split("[^a-zA-Z]+", each_keyword[0])))
+#                    for each_word in keyword_phrase:
+                    keyword_row_id = register_keywords((each_keyword[0]).lower()) #(" ".join(re.split("[^{a-zA-Z0-9}\-!@#\$%&\*\+\?_]+", each_keyword[0]))).lower())
                     keyword_post_row_id += 1
                     new_keyword_post.append((keyword_post_row_id, keyword_row_id, record[0], each_keyword[1]))    
 #                cut_off -= 1
@@ -78,16 +80,16 @@ def init_extraction():
         global keyword_row_id
         global all_keywords
         global keyword_post_row_id
-        cursor.execute('select max(row_id) from keyword')
+        cursor.execute('select max(row_id) from keyword_temp')
         keyword_row_id = cursor.fetchone()[0]
         if keyword_row_id is None:
             keyword_row_id = 0
-        cursor.execute('select row_id, word from keyword')
+        cursor.execute('select row_id, word from keyword_temp')
         if cursor.rowcount > 0:
             for record in cursor:
                 all_keywords[record[1]] = record[0]
 
-        cursor.execute('select max(row_id) from keyword_post')
+        cursor.execute('select max(row_id) from keyword_post_temp')
         keyword_post_row_id = cursor.fetchone()[0]
         if keyword_post_row_id is None:
             keyword_post_row_id = 0
