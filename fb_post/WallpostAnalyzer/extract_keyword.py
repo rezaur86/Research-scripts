@@ -9,7 +9,7 @@ from db_connection import openDb, closeDB
 
 def extract_keyword(text):
     extractor = extract.TermExtractor()
-    extractor.filter = extract.DefaultFilter(singleStrengthMinOccur=2, noLimitStrength=100)
+    extractor.filter = extract.DefaultFilter(singleStrengthMinOccur=2, noLimitStrength=65535)
     keywords = sorted(extractor(text))
     return keywords
 

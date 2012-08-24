@@ -30,7 +30,6 @@ def search (query):
             json_result["createdtime"] = str(record[7])
             json_result["group"] = str(record[8])
             json_output["results"].append(json_result)
-        return result
     except psycopg2.Error, e:
         closeDB(conn, cursor)
         print "*********Database************Error %s: %s\n" % (e.pgcode, e.pgerror)

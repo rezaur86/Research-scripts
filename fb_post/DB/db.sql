@@ -104,6 +104,7 @@ drop index likedby_what_message_row_id_idx cascade;
 alter table tag drop CONSTRAINT tag_pkey cascade;
 alter table link drop CONSTRAINT link_message_row_id_fkey cascade;
 drop index link_message_row_id_idx cascade;
+drop index message_parent_message_row_id_idx;
 
 
 \COPY fb_user(row_id, id, name, category) from '/home/rezaur/Documents/fb_user.csv' with delimiter ',' CSV quote '"';
@@ -125,6 +126,7 @@ alter table message add CONSTRAINT message_id_key UNIQUE(id);
 alter table message add CONSTRAINT message_fb_wall_row_id_fkey FOREIGN KEY (fb_wall_row_id) REFERENCES fb_user(row_id) ON UPDATE CASCADE ON DELETE RESTRICT;
 alter table message add CONSTRAINT message_from_user_row_id_fkey FOREIGN KEY (from_user_row_id) REFERENCES fb_user(row_id) ON UPDATE CASCADE ON DELETE RESTRICT;
 alter table message add CONSTRAINT message_parent_message_row_id_fkey FOREIGN KEY (parent_message_row_id) REFERENCES message(row_id) ON UPDATE CASCADE ON DELETE RESTRICT;
+create index message_parent_message_row_id_idx on message using btree (parent_message_row_id);
 
 alter table message_to add CONSTRAINT message_to_pkey PRIMARY KEY (row_id);
 alter table message_to add CONSTRAINT message_to_message_row_id_fkey FOREIGN KEY (message_row_id) REFERENCES message(row_id) ON UPDATE CASCADE ON DELETE RESTRICT;
