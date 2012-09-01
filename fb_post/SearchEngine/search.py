@@ -47,7 +47,7 @@ try:
         json_output["method"] = terms_type
         words = terms.split()
         json_output["words"] = '|'.join(words)
-        query = '''select distinct post_row_id, address, freq, entropy, shares_count, likes_count, comments_count, created_time, group_name from search as s JOIN (select row_id from keyword where'''
+        query = ''' select  * from (select distinct on (post_row_id) post_row_id, address, freq, entropy, shares_count, likes_count, comments_count, created_time, group_name from search as s JOIN (select row_id from keyword where'''
         words_count = len(words)
         print 
         for each_word in words:
@@ -57,15 +57,15 @@ try:
                 query += ' %s '%terms_type
             else:
                 if form.getvalue("ranking") == 'Entropy':
-                    query += ') as t ON s.keyword_row_id = t.row_id order by entropy desc,freq desc limit '
+                    query += ') as t ON s.keyword_row_id = t.row_id) as temp order by entropy desc,freq desc limit '
                 elif form.getvalue("ranking") == 'Frequency':
-                    query += ') as t ON s.keyword_row_id = t.row_id order by freq desc limit '
+                    query += ') as t ON s.keyword_row_id = t.row_id) as temp order by freq desc limit '
                 elif form.getvalue("ranking") == 'Shares':
-                    query += ') as t ON s.keyword_row_id = t.row_id where shares_count is not Null order by shares_count desc,freq desc limit '
+                    query += ') as t ON s.keyword_row_id = t.row_id) as temp where shares_count is not Null order by shares_count desc,freq desc limit '
                 elif form.getvalue("ranking") == 'Likes':
-                    query += ') as t ON s.keyword_row_id = t.row_id where likes_count is not Null order by likes_count desc,freq desc limit '
+                    query += ') as t ON s.keyword_row_id = t.row_id) as temp where likes_count is not Null order by likes_count desc,freq desc limit '
                 elif form.getvalue("ranking") == 'Comments':
-                    query += ') as t ON s.keyword_row_id = t.row_id where comments_count is not Null order by comments_count desc,freq desc limit '
+                    query += ') as t ON s.keyword_row_id = t.row_id) as temp where comments_count is not Null order by comments_count desc,freq desc limit '
         
         query += str(form.getvalue("total_results"))                       
         results = search (query)

@@ -106,6 +106,9 @@ alter table link drop CONSTRAINT link_message_row_id_fkey cascade;
 drop index link_message_row_id_idx cascade;
 drop index message_parent_message_row_id_idx;
 
+alter table keyword drop CONSTRAINT keyword_row_id_pkey cascade;
+drop index keyword_post_keyword_row_id_idx;
+
 
 \COPY fb_user(row_id, id, name, category) from '/home/rezaur/Documents/fb_user.csv' with delimiter ',' CSV quote '"';
 \COPY message(row_id, id, parent_message_row_id, fb_wall_row_id, name, text, type, description, caption, from_user_row_id, created_time, updated_time, can_remove, shares_count, likes_count, comments_count) from '/home/rezaur/Documents/message.csv' with delimiter ',' CSV quote '"';
@@ -144,7 +147,7 @@ alter table tag add CONSTRAINT tag_user_row_id_fkey FOREIGN KEY (user_row_id) RE
 alter table link add CONSTRAINT link_row_id_pkey PRIMARY KEY (row_id);
 create index link_message_row_id_idx on link using btree (message_row_id);
 
-alter table keyword add CONSTRAINT keyword_row_id_fkey PRIMARY KEY (row_id);
+alter table keyword add CONSTRAINT keyword_row_id_pkey PRIMARY KEY (row_id);
 alter table keyword_post add CONSTRAINT keyword_row_id_fkey FOREIGN KEY (keyword_row_id) REFERENCES keyword(row_id) ON UPDATE CASCADE ON DELETE RESTRICT;
-create index keyword_row_id_idx on keyword_post using btree (keyword_row_id);
+create index keyword_post_keyword_row_id_idx on keyword_post using btree (keyword_row_id);
 
