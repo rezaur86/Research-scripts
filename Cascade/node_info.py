@@ -32,7 +32,7 @@ if __name__ == '__main__':
             parent_born.append(timestamp)
             is_seed[sender] = True
             out_degree.append(0)
-        out_degree[sender] += 1
+        out_degree[sender] += 1 # Raising out degree even if multiple sending to same node ??
         
         if(recv > vertices_count - 1):
             vertices_count += 1
@@ -48,7 +48,7 @@ if __name__ == '__main__':
 
     f = open(sys.argv[2], "w")
     for i in range(vertices_count):
-        f.write('%s %s %s %s\n'%(i,parent_born[2*i+0],parent_born[2*i+1],int(is_leaf[i])))
+        f.write('%s %s %s %s\n'%(i, -1 if parent_born[2*i+0] == NO_PARENT else parent_born[2*i+0] ,parent_born[2*i+1],int(is_leaf[i])))
     f.close()
 
     f = open(sys.argv[3], "w")
