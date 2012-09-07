@@ -23,7 +23,8 @@ def extract_gender(data):
         onedata = json.loads(data)
     except Exception as e:
         print "*********Json Loading Error************\n"
-        return -1        
+        return -1
+  
     for an_id in onedata.keys():
         if onedata[an_id].has_key("gender"):
             batch_genders.append((an_id,onedata[an_id]["gender"]))
@@ -44,10 +45,12 @@ def UserInfoWorker():
     while True:
         batch = 0
         request_ids = ''
+        batch_ids = []
         with user_id_pop_lock:
             if len(user_ids) > 0:
                 an_id = user_ids.pop()
                 request_ids += str(an_id)
+                batch_ids.append(an_id)
                 batch += 1
             else:
                 break
@@ -56,13 +59,15 @@ def UserInfoWorker():
                 if len(user_ids) > 0:
                     an_id = user_ids.pop()
                     request_ids += ',' + str(an_id)
+                    batch_ids.append(an_id)
                     batch += 1
                 else:
                     break
         response = cStringIO.StringIO()
+        gender_url = graph_url + "?fields=gender&ids=" + request_ids
         try:
             c = pycurl.Curl()
-            c.setopt(c.URL, graph_url + "?fields=gender&ids=" + request_ids)
+            c.setopt(c.URL, gender_url)
             c.setopt(c.WRITEFUNCTION, response.write)
             c.perform()
             c.close()
@@ -72,7 +77,7 @@ def UserInfoWorker():
             if rerun1 or rerun2:        
                 time.sleep(600)
                 c = pycurl.Curl()
-                c.setopt(c.URL, graph_url + "?fields=gender&ids=" + request_ids)
+                c.setopt(c.URL, gender_url)
                 c.setopt(c.WRITEFUNCTION, response.write)
                 c.perform()
                 c.close()
@@ -82,7 +87,12 @@ def UserInfoWorker():
             with output_lock:
                 output.extend(batch_genders)
         except Exception, e:
-            print "Curl Exception",e
+            print "Curl Exception%s:"%e
+            err_f = open ('error.txt', "a")
+            err_f.write(gender_url+'\n')
+            err_f.close()
+            with user_id_pop_lock:
+                user_ids.extend(batch_ids)
         time.sleep(10)
 
 user_file = open("uids.txt", "r")
