@@ -16,7 +16,7 @@ if __name__ == '__main__':
     potential_parents = []
     out_degree = array.array('L')
     
-    parent_born = array.array('L')    
+    born = array.array('L')    
     vertices_count = 0
     f = open(sys.argv[1], "r")
     for line in f:
@@ -27,9 +27,8 @@ if __name__ == '__main__':
         
         if(sender > vertices_count - 1):
             vertices_count += 1
-            potential_parents.append(Set([]))
-            parent_born.append(NO_PARENT)
-            parent_born.append(timestamp)
+            potential_parents.append(NO_PARENT)
+            born.append(timestamp)
             is_seed[sender] = True
             out_degree.append(0)
         out_degree[sender] += 1 # Raising out degree even if multiple sending to same node ??
@@ -37,24 +36,33 @@ if __name__ == '__main__':
         if(recv > vertices_count - 1):
             vertices_count += 1
             is_leaf[sender] = False
-            potential_parents.append(Set([]))
-            potential_parents[recv].add(sender)
-            parent_born.append(sender)
-            parent_born.append(timestamp)
+            potential_parents.append(array.array('L'))
+            potential_parents[recv].append(sender)
+            born.append(timestamp)
             out_degree.append(0)
         else:
             if out_degree[recv] < 1:
-                potential_parents[recv].add(sender)
+                if sender not in potential_parents[recv]:
+                    potential_parents[recv].append(sender)
 
     f = open(sys.argv[2], "w")
     for i in range(vertices_count):
-        f.write('%s %s %s %s\n'%(i, -1 if parent_born[2*i+0] == NO_PARENT else parent_born[2*i+0] ,parent_born[2*i+1],int(is_leaf[i])))
-    f.close()
-
-    f = open(sys.argv[3], "w")
-    for i in range(vertices_count):
-        f.write('%s'%out_degree[i])
-        for j in potential_parents[i]:
-            f.write(' %s'%j)
+        f.write('%s %s %s %s'%(i, born[i], int(is_leaf[i]), out_degree[i])) #there is a difference between out_degree = 0 and leaf. Leaves are those who do not bring any new node to the graph
+        if potential_parents[i] == NO_PARENT:
+            f.write(' -1')
+        else:
+            for j in potential_parents[i]:
+                f.write(' %s'%j)
         f.write('\n')
     f.close()
+
+#    f = open(sys.argv[3], "w")
+#    for i in range(vertices_count):
+#        f.write('%s'%out_degree[i])
+#        if potential_parents[i] == NO_PARENT:
+#            f.write(' -1')
+#        else:
+#            for j in potential_parents[i]:
+#                f.write(' %s'%j)
+#        f.write('\n')
+#    f.close()
