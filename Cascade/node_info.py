@@ -55,14 +55,3 @@ if __name__ == '__main__':
                 f.write(' %s'%j)
         f.write('\n')
     f.close()
-
-#    f = open(sys.argv[3], "w")
-#    for i in range(vertices_count):
-#        f.write('%s'%out_degree[i])
-#        if potential_parents[i] == NO_PARENT:
-#            f.write(' -1')
-#        else:
-#            for j in potential_parents[i]:
-#                f.write(' %s'%j)
-#        f.write('\n')
-#    f.close()

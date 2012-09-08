@@ -18,16 +18,19 @@ error1 = re.compile(r"Calls to stream have exceeded the rate of 600 calls per 60
 error2 = re.compile(r"Application request limit reached")
 error3 = re.compile(r"Unknown fields")
 
+SHRINK_BATCH_SIZE = 0
+GENDER_ABSENT = 1
+SERVER_ERROR = 2
 
 def extract_gender(data):
     batch_genders = []
     try:
         onedata = json.loads(data)
+        for an_id in onedata.keys():
+            if onedata[an_id].has_key("gender"):
+                batch_genders.append((an_id,onedata[an_id]["gender"]))
     except Exception as e:
-        print "*********Json Loading Error************\n"
-    for an_id in onedata.keys():
-        if onedata[an_id].has_key("gender"):
-            batch_genders.append((an_id,onedata[an_id]["gender"]))
+        print "Gender Extracting, Json Error: %s"%e
     return batch_genders
 
 def curl_request (url):
@@ -40,6 +43,37 @@ def curl_request (url):
     c.close()
     return response.getvalue()
     
+def batch_crawler (batch_ids, batch_size, repeat_limit):
+    if repeat_limit < 0:
+        return SERVER_ERROR
+    if len(batch_ids) > 0:
+        batch_url = graph_url + "?fields=gender&ids=" +  ','.join(batch_ids)
+    else:
+        return None
+#    print batch_url
+    try:
+        time.sleep(10)
+        gender_json = ''.join((curl_request(batch_url)).split('\n'))
+        rerun1 = re.findall(error1,gender_json)
+        rerun2 = re.findall(error2,gender_json)
+        if rerun1 or rerun2:
+            print "Going to sleep for 600sec:", rerun1,rerun2        
+            time.sleep(600)
+            gender_json = ''.join(curl_request(batch_url).split('\n'))
+        rerun3 = re.findall(error3,gender_json)
+        extracted_genders = extract_gender(gender_json)
+        if rerun3 or len(extracted_genders) == 0:
+            if batch_size > 1:
+                return SHRINK_BATCH_SIZE
+            else:
+                return GENDER_ABSENT
+        else:
+            return extracted_genders
+    except Exception, e:
+        print "Server Error: %s, Repeating now"%e
+        return batch_crawler (batch_url, batch_size, repeat_limit-1)
+    
+
 class CrawlerThread (threading.Thread):
     def __init__(self, threadID, name):
         super(CrawlerThread, self).__init__()
@@ -52,16 +86,15 @@ class CrawlerThread (threading.Thread):
 
 def UserInfoWorker():
     global output
+    global gender_absent_ids
     while True:
         batch = 0
-        request_ids = ''
         batch_ids = []
-        gender_absent_batch_ids = []
+        batch_genders = []
         with user_id_pop_lock:
             if len(user_ids) > 0:
-                an_id = user_ids.pop(0)
-                request_ids += str(an_id)
-                batch_ids.append(an_id)
+                an_id = user_ids.pop()
+                batch_ids.append(str(an_id))
                 batch += 1
             else:
                 break
@@ -69,34 +102,70 @@ def UserInfoWorker():
             with user_id_pop_lock:
                 if len(user_ids) > 0:
                     an_id = user_ids.pop()
-                    request_ids += ',' + str(an_id)
-                    batch_ids.append(an_id)
+                    batch_ids.append(str(an_id))
                     batch += 1
                 else:
                     break
-        gender_url = graph_url + "?fields=gender&ids=" + request_ids
-        try:
-            gender_json = ''.join((curl_request(gender_url)).split('\n'))
-            rerun1 = re.findall(error1,gender_json)
-            rerun2 = re.findall(error2,gender_json)
-            if rerun1 or rerun2:        
-                time.sleep(600)
-                gender_json = ''.join(curl_request(gender_url).split('\n'))
-            rerun3 = re.findall(error3,gender_json)
-            if rerun3:
-                gender_absent_batch_ids.extend(batch_ids)
-            
-            batch_genders = extract_gender(gender_json)
-            with output_lock:
-                output.extend(batch_genders)
-        except Exception, e:
-            print "Curl Exception%s:"%e
-            err_f = open ('error.txt', "a")
-            err_f.write(gender_url+'\n')
-            err_f.close()
-            with user_id_pop_lock:
-                user_ids.extend(batch_ids)
-        time.sleep(10)
+#        gender_url = graph_url + "?fields=gender&ids=" +  ','.join()
+        extracted_genders = batch_crawler(batch_ids[0:BATCH_SIZE], BATCH_SIZE, 2)
+        if extracted_genders == SHRINK_BATCH_SIZE:
+            for i in range(10):
+#                gender_url = graph_url + "?fields=gender&ids=" + ','.join(batch_ids[100*i:100*(i+1)])
+                extracted_genders_i = batch_crawler(batch_ids[100*i:100*(i+1)], 100, 2)
+                if extracted_genders_i == SHRINK_BATCH_SIZE:
+                    for j in range(10):
+#                        gender_url = graph_url + "?fields=gender&ids=" + ','.join(batch_ids[100*i+10*j:100*i+10*(j+1)])
+                        extracted_genders_j = batch_crawler(batch_ids[100*i+10*j:100*i+10*(j+1)], 10, 2)
+                        if extracted_genders_j == SHRINK_BATCH_SIZE:
+                            for k in range(10):
+#                                gender_url = graph_url + "?fields=gender&ids=" + ','.join(batch_ids[100*i+10*j+1*k:100*i+10*j+1*(k+1)])
+                                extracted_genders_k = batch_crawler(batch_ids[100*i+10*j+1*k:100*i+10*j+1*(k+1)], 1, 2)
+                                if extracted_genders_k == GENDER_ABSENT:
+                                    with gender_absent_lock:
+                                        gender_absent_ids.append(batch_ids[100*i+10*j+1*k:100*i+10*j+1*(k+1)])
+                                elif type(extracted_genders_k) is list:
+                                    batch_genders.extend(extracted_genders_k)
+                        elif type(extracted_genders_j) is list:
+                            batch_genders.extend(extracted_genders_j)
+                elif type(extracted_genders_i) is list:
+                    batch_genders.extend(extracted_genders_i)
+        elif type(extracted_genders) is list:
+            batch_genders.extend(extracted_genders)
+        with output_lock:
+            output.extend(batch_genders)
+                            
+#            gender_json = ''.join((curl_request(gender_url)).split('\n'))
+#            rerun1 = re.findall(error1,gender_json)
+#            rerun2 = re.findall(error2,gender_json)
+#            if rerun1 or rerun2:        
+#                time.sleep(600)
+#                gender_json = ''.join(curl_request(gender_url).split('\n'))
+#            rerun3 = re.findall(error3,gender_json)
+#            extracted_genders = extract_gender(gender_json)
+#            if rerun3 or len(extracted_genders) == 0:
+#                #gender absent batch ids, so rerun individually
+#                for an_id in batch_ids:
+#                    time.sleep(10)
+#                    gender_url = graph_url + "?fields=gender&ids=" + str(an_id)
+#                    gender_json = ''.join((curl_request(gender_url)).split('\n'))
+#                    rerun1 = re.findall(error1,gender_json)
+#                    rerun2 = re.findall(error2,gender_json)
+#                    if rerun1 or rerun2:        
+#                        time.sleep(600)
+#                        gender_json = ''.join(curl_request(gender_url).split('\n'))
+#                    extracted_genders = extract_gender(gender_json)
+#                    is_gender_absent = re.findextracted_gendersall(error3,gender_json)
+#                    if is_gender_absent or len(extracted_genders) == 0:
+#                        with gender_absent_lock:
+#                            gender_absent_ids.append(an_id)
+#                    else:
+#                        batch_genders.extend(extracted_genders)
+#            else:
+#                batch_genders.extend(extracted_genders)
+#        except Exception, e:
+#            print "Server Error: %s"%e
+#            with user_id_pop_lock:
+#                user_ids.extend(batch_ids)
 
 user_file = open(sys.argv[1], "r")
 user_ids = []
@@ -107,10 +176,12 @@ for line in user_file:
 user_file.close()
 
 total_users = len(user_ids)
-print "total user %s"%total_users
+print "Total user %s"%total_users
 # Needs another lock to protect output
 output = []
 output_lock = threading.RLock()
+gender_absent_ids = []
+gender_absent_lock = threading.RLock()
 
 thread_ids = []
 for i in range(THREAD_COUNT):
@@ -120,13 +191,12 @@ for i in range(THREAD_COUNT):
 
 while True:
     if len(user_ids) > 0:
-        print len(user_ids)*100/total_users,'%'#, pool_of_seeds[0:5]
+        print len(user_ids)*100/total_users,'%'
         time.sleep(20)
         if len(output) > 10000:
             with output_lock:
                 o_gender_json = open (sys.argv[2], "a")
                 writer = csv.writer(o_gender_json, quoting=csv.QUOTE_MINIMAL)
-#                output.sort(key=operator.itemgetter(0), reverse=True)
                 writer.writerows(output)
                 o_gender_json.close()
                 output = []
@@ -142,5 +212,10 @@ if len(output) > 0:
         writer = csv.writer(o_gender_json, quoting=csv.QUOTE_MINIMAL)
         writer.writerows(output)
         o_gender_json.close()
-        
+if len(sys.argv) > 3:
+    o_absent_ids = open (sys.argv[3], "w")
+    for an_id in gender_absent_ids:
+        o_absent_ids.write("%s\n" %an_id)
+    o_absent_ids.close()
+
 print "Exiting Main Thread"
