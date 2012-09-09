@@ -1,107 +1,120 @@
+import sys
 import array
+import operator
 
-timeThrs = 20 #[86400, 172800, 259200, 345600, 432000, 518400, 604800, 691200, 777600, 864000]
-graph = {}
-node = {}
-threshold = 500000
-count = 0
+CLR_THRESHOLD = 1
 
 MAX_USERS = 2**29 - 1
 NO_PARENT = MAX_USERS + 1    
 
 class Node:
     def __init__(self):
-        self.size = 1
-        self.depth = 0
-    def setbTime(self, bTime):
-        self.bTime = bTime
+        self.size = [1]*len(timeThrs)
+        self.depth = [0]*len(timeThrs)
+    def setBornTime(self, bornTime):
+        self.bornTime = bornTime
+    def setActTime(self, actTime):
+        self.actTime = actTime
     def setParentList(self, p_list):
         self.parent_list = p_list
-#    def initialize(self):
-#        self.size = 1 #[1]*10
-#        self.depth = 0 #[0]*10
-
-def process(a_node):
-#    if element[3]!=1:
-#        newNode = node()
-#        newNode.setpID(element[1])
-#        newNode.setbTime(element[2])
-#        newNode.initialize()
-#    graph[element[0]] = newNode
-#    print "debugging",newNode.pID, newNode.bTime
-#    for i in range(10):
-    child = a_node
+    def print_node(self):
+        print self.size,self.depth
+            
+def process(child, thrsh_index):
     for pID in child.parent_list:
-        if pID not in graph:
+        if pID not in graph.keys():
             break;
-        if (child.bTime-graph[pID].bTime) <= timeThrs:
-            graph[pID].size += 1
-            if graph[pID].depth <= child.depth:
-                graph[pID].depth = child.depth+1
-            process(graph[pID])
-#            pID = child.pID
+        if (child.bornTime-graph[pID].bornTime) <= timeThrs[thrsh_index]:
+            graph[pID].size[thrsh_index] += 1
+            if graph[pID].depth[thrsh_index] <= child.depth[thrsh_index]:
+                graph[pID].depth[thrsh_index] = child.depth[thrsh_index]+1
+            process(graph[pID], thrsh_index)
         else:
             break
     
-def clearHashTable(element, result):
+def clearHashTable(current_node):
+    global result_size
+    global result_depth
     record = []
-    for node in graph.iterkeys():
-        if graph[element[0]].bTime-graph[node].bTime > timeThrs[9]:
-            record+=[node]
+    for node in graph.keys():
+        if current_node.bornTime-graph[node].bornTime > max(timeThrs):
+            record.append(node)
     for node in record:
-        #print("delete %s" %node)
-        for i in range(10):
-            if graph[node].size[i] not in result[i]:
-                result[i][graph[node].size[i]] = 1
+        for i in range(len(timeThrs)):    
+            if graph[node].size[i] in result_size[i]:
+                result_size[i][graph[node].size[i]] += 1
             else:
-                result[i][graph[node].size[i]] += 1
-            if graph[node].depth[i] not in result[10+i]:
-                result[10+i][graph[node].depth[i]] = 1
+                result_size[i][graph[node].size[i]] = 1
+            if graph[node].depth[i] in result_depth[i]:
+                result_depth[i][graph[node].depth[i]] += 1
             else:
-                result[10+i][graph[node].depth[i]] += 1
+                result_depth[i][graph[node].depth[i]] = 1
         del graph[node]
-
                 
-import sys
-result = [{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}] # first 10 for size, last 10 for depth
-f = open(sys.argv[1], "r")
+graph = {}
 
+f = open(sys.argv[1], "r")
+timeThrs = [] #[86400,172800,259200,345600,432000,518400,604800,691200,777600,864000]
+result_size = []
+result_depth = []
+for a_thrsh in sys.argv[2].split(','):
+    timeThrs.append(int(a_thrsh.strip()))
+    result_size.append({})
+    result_depth.append({})
+count = 0
 for line in f:
     element = line.split(' ')
     node_id = long(element[0].strip())
     born_time = int(element[1].strip())
-    is_leaf = bool(int(element[2].strip()))
-    odeg = int((element[3].strip()))
+    activation_time = int(element[2].strip())
+    is_leaf = bool(int(element[3].strip()))
+    odeg = int((element[4].strip()))
     potential_parents = array.array('L')
-    for p_index in range(4,len(element)):
+    for p_index in range(5,len(element)):
         if element[p_index].strip() == '-1':
             break
         else:
             potential_parents.append(long(element[p_index]))
     newNode = Node()
-    newNode.setbTime(born_time)
+    newNode.setBornTime(born_time)
+    newNode.setActTime(activation_time)
     newNode.setParentList(potential_parents)
     if is_leaf == False:
         graph[node_id] = newNode
-    process(newNode)
+    for i in range(len(timeThrs)):
+        process(newNode, i)
     count = count+1
-    if count==threshold:
-        clearHashTable(element, result)
+    if count==CLR_THRESHOLD:
+        clearHashTable(newNode)
         count = 0
 f.close()
 
-for node in graph.iterkeys():
-#    for i in range(10):    
-    if graph[node].size in result[0]:
-        result[0][graph[node].size] += 1
-    else:
-        result[0][graph[node].size] = 1
-    if graph[node].depth in result[10+0]:
-        result[10+0][graph[node].depth] += 1
-    else:
-        result[10+0][graph[node].depth] = 1
+for node in graph.keys():
+    for i in range(len(timeThrs)):    
+        if graph[node].size[i] in result_size[i]:
+            result_size[i][graph[node].size[i]] += 1
+        else:
+            result_size[i][graph[node].size[i]] = 1
+        if graph[node].depth[i] in result_depth[i]:
+            result_depth[i][graph[node].depth[i]] += 1
+        else:
+            result_depth[i][graph[node].depth[i]] = 1
+print result_size
+print result_depth
 
-print result[0], result[10]
+size_file = open("size.csv", "w")
+for i in range(len(timeThrs)):
+    temp = sorted(result_size[i].iteritems(), key=operator.itemgetter(1), reverse=True)
+    for tuple in temp:
+        size_file.write('%s,%s,%s\n'%(tuple[0],tuple[1],timeThrs[i]))
+size_file.close()
+
+depth_file = open("depth.csv", "w")
+for i in range(len(timeThrs)):
+    temp = sorted(result_depth[i].iteritems(), key=operator.itemgetter(1), reverse=True)
+    for tuple in temp:
+        depth_file.write('%s,%s,%s\n'%(tuple[0],tuple[1],timeThrs[i])) #there is a difference between out_degree = 0 and leaf. Leaves are those who do not bring any new node to the graph
+depth_file.close()
 #for i in range(10):
 #    sys.stdout.write("size%d =[" %timeThrs )
 #    for j in range(max(result[i])):
