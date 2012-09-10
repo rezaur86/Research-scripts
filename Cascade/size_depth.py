@@ -2,7 +2,7 @@ import sys
 import array
 import operator
 
-CLR_THRESHOLD = 1
+CLR_THRESHOLD = 500000
 
 MAX_USERS = 2**29 - 1
 NO_PARENT = MAX_USERS + 1    
@@ -21,7 +21,7 @@ class Node:
         print self.size,self.depth
             
 def process(child, thrsh_index):
-    for pID in child.parent_list:
+    for pID in child.parent_list[0:1]:
         if pID not in graph.keys():
             break;
         if (child.bornTime-graph[pID].bornTime) <= timeThrs[thrsh_index]:
@@ -74,7 +74,7 @@ for line in f:
         if element[p_index].strip() == '-1':
             break
         else:
-            potential_parents.append(long(element[p_index]))
+            potential_parents.append(long(element[p_index].strip()))
     newNode = Node()
     newNode.setBornTime(born_time)
     newNode.setActTime(activation_time)
@@ -84,10 +84,12 @@ for line in f:
     for i in range(len(timeThrs)):
         process(newNode, i)
     count = count+1
-    if count==CLR_THRESHOLD:
+    if (count % 1000) == 0:
+        print count
+    if (count % CLR_THRESHOLD) == 0:
+        print "Clearing"
         clearHashTable(newNode)
-        count = 0
-f.close()
+        f.close()
 
 for node in graph.keys():
     for i in range(len(timeThrs)):    
