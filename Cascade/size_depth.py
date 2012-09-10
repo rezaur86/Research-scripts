@@ -23,7 +23,7 @@ class Node:
 def process(child, thrsh_index):
     for pID in child.parent_list:
         if pID not in graph:
-            break;
+            break
         if (child.bornTime-graph[pID].bornTime) <= timeThrsh[thrsh_index]:
             graph[pID].size[thrsh_index] += 1
             if graph[pID].depth[thrsh_index] <= child.depth[thrsh_index]:
@@ -61,8 +61,8 @@ for a_thrsh in sys.argv[2].split(','):
     timeThrsh.append(int(a_thrsh.strip()))
     result_size.append({})
     result_depth.append({})
-size_file = open(argv[3]+"_size.csv", "w")
-depth_file = open(argv[3]+"_depth.csv", "w")
+size_file = open(sys.argv[3]+"_size.csv", "w")
+depth_file = open(sys.argv[3]+"_depth.csv", "w")
 
 count = 0
 for line in f:
