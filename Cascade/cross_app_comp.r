@@ -53,3 +53,45 @@ ggsave(plot,file='cross_app_size_boxplot.eps')
 cascade_size_depth$app <- factor(cascade_size_depth$app)
 plot <- ggplot(cascade_size_depth, aes(y=log(cascade_size_depth$depth), x = cascade_size_depth$app)) + geom_boxplot()
 ggsave(plot,file='cross_app_depth_boxplot.eps')
+
+
+#df = ddply(size_1st_parent, c('threshold'), function(one_partition){
+#			f = ecdf(one_partition$count)
+#			one_partition$cdf_val = f(one_partition$count)
+#			
+#			one_partition
+#		})
+#size_1st_parent.df <- ddply(size_1st_parent.sort, .(threshold), transform, f=ecdf(sort(count))(count))
+
+library(ggplot2)
+library(plyr)
+size_1st_parent <- as.data.frame(read.csv('size_1st_parent.csv', header=FALSE))
+colnames(size_1st_parent) <- c('size', 'count', 'threshold')
+
+size_1st_parent.df <- ddply(size_1st_parent, c('threshold'), function(one_partition){
+			one_partition = one_partition[order(one_partition$size),]
+			one_partition$cum_count = cumsum(one_partition$count)
+			one_partition$cdf_val = one_partition$cum_count / max(one_partition$cum_count)
+			
+			one_partition
+		})
+
+
+size_1st_parent.df$threshold <- factor(size_1st_parent.df$threshold)
+plot <- ggplot(size_1st_parent.df,aes(x = size, y = cdf_val)) + xlim(0,10) + geom_line(aes(group = threshold,colour = threshold))
+ggsave(plot,file='size_1st_parent.eps')
+
+size_all_parent <- as.data.frame(read.csv('size_all_parent.csv', header=FALSE))
+colnames(size_all_parent) <- c('size', 'count', 'threshold')
+size_all_parent.df <- ddply(size_all_parent, c('threshold'), function(one_partition){
+			one_partition = one_partition[order(one_partition$size),]
+			one_partition$cum_count = cumsum(one_partition$count)
+			one_partition$cdf_val = one_partition$cum_count / max(one_partition$cum_count)
+			
+			one_partition
+		})
+
+
+size_all_parent.df$threshold <- factor(size_all_parent.df$threshold)
+plot <- ggplot(size_all_parent.df,aes(x = size, y = cdf_val)) + xlim(0,10) + geom_line(aes(group = threshold,colour = threshold))
+ggsave(plot,file='size_all_parent.eps')
