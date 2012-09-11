@@ -67,19 +67,26 @@ library(ggplot2)
 library(plyr)
 size_1st_parent <- as.data.frame(read.csv('size_1st_parent.csv', header=FALSE))
 colnames(size_1st_parent) <- c('size', 'count', 'threshold')
-
 size_1st_parent.df <- ddply(size_1st_parent, c('threshold'), function(one_partition){
 			one_partition = one_partition[order(one_partition$size),]
 			one_partition$cum_count = cumsum(one_partition$count)
 			one_partition$cdf_val = one_partition$cum_count / max(one_partition$cum_count)
+			one_partition$pdf_val = one_partition$count / max(one_partition$cum_count)
 			
 			one_partition
 		})
-
-
 size_1st_parent.df$threshold <- factor(size_1st_parent.df$threshold)
+plot <- ggplot(size_1st_parent.df,aes(x = log10(size), y = cdf_val)) + geom_line(aes(group = threshold,colour = threshold))
+ggsave(plot,file='size_1st_parent_log.eps')
+plot <- ggplot(size_1st_parent.df,aes(x = size, y = log(pdf_val))) +xlim(0,3000) + geom_point(aes(group = threshold,colour = threshold))
+ggsave(plot,file='size_1st_parent_log_pdf.eps')
+plot <- ggplot(size_1st_parent.df,aes(x = size, y = cdf_val)) + xlim(0,100) + geom_line(aes(group = threshold,colour = threshold))
+ggsave(plot,file='size_1st_parent_100.eps')
 plot <- ggplot(size_1st_parent.df,aes(x = size, y = cdf_val)) + xlim(0,10) + geom_line(aes(group = threshold,colour = threshold))
-ggsave(plot,file='size_1st_parent.eps')
+ggsave(plot,file='size_1st_parent_10.eps')
+plot <- ggplot(size_1st_parent.df, aes(y=(size_1st_parent.df$size), x = size_1st_parent.df$threshold)) + geom_boxplot()
+ggsave(plot,file='size_1st_parent_boxplot.eps')
+
 
 size_all_parent <- as.data.frame(read.csv('size_all_parent.csv', header=FALSE))
 colnames(size_all_parent) <- c('size', 'count', 'threshold')
@@ -90,8 +97,62 @@ size_all_parent.df <- ddply(size_all_parent, c('threshold'), function(one_partit
 			
 			one_partition
 		})
-
-
 size_all_parent.df$threshold <- factor(size_all_parent.df$threshold)
+plot <- ggplot(size_all_parent.df,aes(x = size, y = cdf_val)) + xlim(0,100) + geom_line(aes(group = threshold,colour = threshold))
+ggsave(plot,file='size_all_parent_100.eps')
 plot <- ggplot(size_all_parent.df,aes(x = size, y = cdf_val)) + xlim(0,10) + geom_line(aes(group = threshold,colour = threshold))
-ggsave(plot,file='size_all_parent.eps')
+ggsave(plot,file='size_all_parent_10.eps')
+plot <- ggplot(size_all_parent.df, aes(y=(size_all_parent.df$size), x = size_all_parent.df$threshold)) + geom_boxplot()
+ggsave(plot,file='size_all_parent_boxplot.eps')
+
+size_odeg_parent <- as.data.frame(read.csv('size_odeg.csv', header=FALSE))
+colnames(size_odeg_parent) <- c('size', 'count', 'threshold')
+size_odeg_parent.df <- ddply(size_odeg_parent, c('threshold'), function(one_partition){
+			one_partition = one_partition[order(one_partition$size),]
+			one_partition$cum_count = cumsum(one_partition$count)
+			one_partition$cdf_val = one_partition$cum_count / max(one_partition$cum_count)
+			one_partition$pdf_val = one_partition$count / max(one_partition$cum_count)
+			
+			one_partition
+		})
+size_odeg_parent.df$threshold <- factor(size_odeg_parent.df$threshold)
+plot <- ggplot(size_odeg_parent.df,aes(x = size, y = cdf_val)) + xlim(0,100) + geom_line(aes(group = threshold,colour = threshold))
+ggsave(plot,file='size_odeg_parent_100.eps')
+plot <- ggplot(size_odeg_parent.df,aes(x = size, y = pdf_val)) + xlim(0,100) + geom_line(aes(group = threshold,colour = threshold))
+ggsave(plot,file='size_odeg_parent_100_pdf.eps')
+plot <- ggplot(size_odeg_parent.df,aes(x = log10(size), y = log10(cdf_val))) + xlim(0,10) + geom_line(aes(group = threshold,colour = threshold))
+ggsave(plot,file='size_odeg_parent_10.eps')
+plot <- ggplot(size_odeg_parent.df, aes(y=(size_odeg_parent.df$size), x = size_odeg_parent.df$threshold)) + geom_boxplot()
+ggsave(plot,file='size_odeg_parent_boxplot.eps')
+
+depth_1st_parent <- as.data.frame(read.csv('depth_1st_parent.csv', header=FALSE))
+colnames(depth_1st_parent) <- c('depth', 'count', 'threshold')
+depth_1st_parent.df <- ddply(depth_1st_parent, c('threshold'), function(one_partition){
+			one_partition = one_partition[order(one_partition$depth),]
+			one_partition$cum_count = cumsum(one_partition$count)
+			one_partition$cdf_val = one_partition$cum_count / max(one_partition$cum_count)
+			one_partition$pdf_val = one_partition$count / max(one_partition$cum_count)
+			
+			one_partition
+		})
+depth_1st_parent.df$threshold <- factor(depth_1st_parent.df$threshold)
+plot <- ggplot(depth_1st_parent.df,aes(x = log(depth), y = cdf_val)) + geom_line(aes(group = threshold,colour = threshold))
+ggsave(plot,file='depth_1st_parent_log.eps')
+plot <- ggplot(depth_1st_parent.df,aes(x = depth, y = log10(pdf_val))) + geom_line(aes(group = threshold,colour = threshold))
+ggsave(plot,file='depth_1st_parent_log_pdf.eps')
+plot <- ggplot(depth_1st_parent.df,aes(x = depth, y = cdf_val)) + xlim(0,10) + geom_line(aes(group = threshold,colour = threshold))
+ggsave(plot,file='depth_1st_parent_10.eps')
+
+depth_all_parent <- as.data.frame(read.csv('depth_odeg_parent.csv', header=FALSE))
+colnames(depth_all_parent) <- c('depth', 'count', 'threshold')
+depth_all_parent.df <- ddply(depth_all_parent, c('threshold'), function(one_partition){
+			one_partition = one_partition[order(one_partition$depth),]
+			one_partition$cum_count = cumsum(one_partition$count)
+			one_partition$cdf_val = one_partition$cum_count / max(one_partition$cum_count)
+			
+			one_partition
+		})
+depth_all_parent.df$threshold <- factor(depth_all_parent.df$threshold)
+plot <- ggplot(depth_all_parent.df,aes(x = depth, y = cdf_val)) + xlim(0,10) + geom_line(aes(group = threshold,colour = threshold))
+ggsave(plot,file='depth_odeg_parent.eps')
+

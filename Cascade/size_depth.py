@@ -17,6 +17,8 @@ class Node:
         self.actTime = actTime
     def setParentList(self, p_list):
         self.parent_list = p_list
+    def setOutDeg(self, odeg):
+        self.odeg = odeg
     def print_node(self):
         print self.size,self.depth
             
@@ -73,15 +75,25 @@ for line in f:
     is_leaf = bool(int(element[3].strip()))
     odeg = int((element[4].strip()))
     potential_parents = array.array('L')
+    chosen_pid_odeg = -1
+    chosen_pid = -1
     for p_index in range(5,len(element)):
-        if element[p_index].strip() == '-1':
+        a_parent = element[p_index].strip()
+        if a_parent == '-1':
             break
         else:
-            potential_parents.append(long(element[p_index].strip()))
+            if long(a_parent) in graph:
+                if graph[long(a_parent)].odeg > chosen_pid_odeg :
+                    chosen_pid = long(a_parent)
+                    chosen_pid_odeg = graph[long(a_parent)].odeg
+#            potential_parents.append(long(a_parent))
+    if chosen_pid != -1:
+        potential_parents.append(chosen_pid)
     newNode = Node()
     newNode.setBornTime(born_time)
     newNode.setActTime(activation_time)
     newNode.setParentList(potential_parents)
+    newNode.setOutDeg(odeg)
     if is_leaf == False:
         graph[node_id] = newNode
     for i in range(len(timeThrsh)):
