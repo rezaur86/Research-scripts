@@ -2,10 +2,13 @@ import sys
 import array
 import operator
 
+PARENT_TYPE_FIRST_PARENT = 0
+PARENT_TYPE_HIGHEST_ODEG = 1
+
 CLR_THRESHOLD = 500000
 
 MAX_USERS = 2**29 - 1
-NO_PARENT = MAX_USERS + 1    
+NO_PARENT = MAX_USERS + 1
 
 class Node:
     def __init__(self):
@@ -15,18 +18,47 @@ class Node:
         self.bornTime = bornTime
     def setActTime(self, actTime):
         self.actTime = actTime
-    def setParentList(self, p_list):
+    def setPotentialParent(self, p_list):
         self.parent_list = p_list
     def setOutDeg(self, odeg):
         self.odeg = odeg
     def print_node(self):
         print self.size,self.depth
-            
+
+def parent_chooser (parent_list, choice_type):
+    potential_parents = []
+    
+    if choice_type == PARENT_TYPE_FIRST_PARENT:
+        first_parent = parent_list[0].strip().split(',')
+        if first_parent[0] == '-1':
+            return potential_parents
+        potential_parents.append((long(first_parent[0]), long(first_parent[1])))
+        
+    if choice_type == PARENT_TYPE_HIGHEST_ODEG:
+        chosen_pid_odeg = -1
+        chosen_pid = -1
+        chosen_receiving_time = -1
+        for element in parent_list:
+            a_parent = element.strip().split(',')
+            if a_parent == '-1':
+                break
+            else:
+                pID = long(a_parent[0])
+                if pID in graph:
+                    if graph[pID].odeg > chosen_pid_odeg :
+                        chosen_pid = pID
+                        chosen_pid_odeg = graph[pID].odeg
+                        chosen_receiving_time = long(a_parent[1])
+        if chosen_pid != -1:
+            potential_parents.append((chosen_pid, chosen_receiving_time))
+
+    return potential_parents
+
 def process(child, thrsh_index):
-    for pID in child.parent_list:
+    for (pID,receiving_time) in child.parent_list:
         if pID not in graph:
             break
-        if (child.bornTime-graph[pID].bornTime) <= timeThrsh[thrsh_index]:
+        if (receiving_time-graph[pID].actTime) <= timeThrsh[thrsh_index]:
             graph[pID].size[thrsh_index] += 1
             if graph[pID].depth[thrsh_index] <= child.depth[thrsh_index]:
                 graph[pID].depth[thrsh_index] = child.depth[thrsh_index]+1
@@ -70,29 +102,14 @@ count = 0
 for line in f:
     element = line.split(' ')
     node_id = long(element[0].strip())
-    born_time = int(element[1].strip())
+#    born_time = int(element[1].strip())
     activation_time = int(element[2].strip())
     is_leaf = bool(int(element[3].strip()))
     odeg = int((element[4].strip()))
-    potential_parents = array.array('L')
-    chosen_pid_odeg = -1
-    chosen_pid = -1
-    for p_index in range(5,len(element)):
-        a_parent = element[p_index].strip()
-        if a_parent == '-1':
-            break
-        else:
-            if long(a_parent) in graph:
-                if graph[long(a_parent)].odeg > chosen_pid_odeg :
-                    chosen_pid = long(a_parent)
-                    chosen_pid_odeg = graph[long(a_parent)].odeg
-#            potential_parents.append(long(a_parent))
-    if chosen_pid != -1:
-        potential_parents.append(chosen_pid)
     newNode = Node()
-    newNode.setBornTime(born_time)
+#    newNode.setBornTime(born_time)
     newNode.setActTime(activation_time)
-    newNode.setParentList(potential_parents)
+    newNode.setPotentialParent(parent_chooser(element[5:len(element)],PARENT_TYPE_HIGHEST_ODEG))
     newNode.setOutDeg(odeg)
     if is_leaf == False:
         graph[node_id] = newNode
@@ -101,9 +118,9 @@ for line in f:
     count = count+1
     if (count % 1000) == 0:
         print count
-    if (count % CLR_THRESHOLD) == 0:
-        print "Clearing"
-        clearHashTable(newNode)
+#    if (count % CLR_THRESHOLD) == 0:
+#        print "Clearing"
+#        clearHashTable(newNode)
 f.close()
 
 for node in graph:
