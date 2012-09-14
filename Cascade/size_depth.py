@@ -8,6 +8,8 @@ PARENT_TYPE_HIGHEST_ODEG = 1
 PARENT_TYPE_LAST_PARENT = 2
 PARENT_TYPE_RANDOM_PARENT = 3
 
+TOP_N = 10
+
 CLR_THRESHOLD = 500000
 
 MAX_USERS = 2**29 - 1
@@ -115,6 +117,12 @@ depth_file = open(sys.argv[3]+"_depth.csv", "w")
 top_n_size_file = open(sys.argv[3]+"_top_size.csv", "w")
 top_n_depth_file = open(sys.argv[3]+"_top_depth.csv", "w")
 
+parent_type = int(raw_input(
+'''PARENT_TYPE_FIRST_PARENT = 0
+PARENT_TYPE_HIGHEST_ODEG = 1
+PARENT_TYPE_LAST_PARENT = 2
+PARENT_TYPE_RANDOM_PARENT = 3
+Your choice? '''))
 count = 0
 for line in f:
     element = line.split(' ')
@@ -126,7 +134,7 @@ for line in f:
     newNode = Node()
 #    newNode.setBornTime(born_time)
     newNode.setActTime(activation_time)
-    newNode.setPotentialParent(parent_chooser(element[5:len(element)],PARENT_TYPE_HIGHEST_ODEG))
+    newNode.setPotentialParent(parent_chooser(element[5:len(element)],parent_type))
     newNode.setOutDeg(odeg)
     if is_leaf == False:
         graph[node_id] = newNode
@@ -153,7 +161,6 @@ for node in graph:
 print result_size
 print result_depth
 
-TOP_N = 10
 top_n_sizes = []
 top_n_depths = []
 for i in range(len(timeThrsh)):

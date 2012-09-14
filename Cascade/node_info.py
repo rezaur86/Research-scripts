@@ -15,7 +15,7 @@ if __name__ == '__main__':
     
     out_degree = array.array('I')
     potential_parents = []
-    born_time = array.array('l') # Born by chosen parent or the earliest time at which received from the chosen parent
+    born_time = array.array('l')
     activation_time = array.array('l')
     
     vertices_count = 0
@@ -53,9 +53,9 @@ if __name__ == '__main__':
                         potential_parents[recv].append((sender,timestamp))
                         break
 
-    f = open(sys.argv[2], "w")
+    f = open(sys.argv[2]+'.txt', "w")
     for i in range(vertices_count):
-        f.write('%s %s %s %s %s'%(i, born_time[i], activation_time[i], int(is_leaf[i]), out_degree[i])) #there is a difference between out_degree = 0 and leaf. Leaves are those who do not bring any new node to the graph
+        f.write('%s %s %s %s %s'%(i, born_time[i], activation_time[i], int(is_leaf[i]), out_degree[i]))
         if potential_parents[i] == NO_PARENT:
             f.write(' -1')
         else:
@@ -71,8 +71,8 @@ if __name__ == '__main__':
     
 #Sorting
     count = 0
-    f = open(sys.argv[2], "r")
-    f_sorted = open('sorted_'+sys.argv[2], "w")
+    f = open(sys.argv[2]+'.txt', "r")
+    f_sorted = open(sys.argv[2]+'_sorted.txt', "w")
     all_info = []
     for line in f:
         element = line.split(' ')
