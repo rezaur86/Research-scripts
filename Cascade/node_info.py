@@ -76,12 +76,14 @@ if __name__ == '__main__':
     all_info = []
     for line in f:
         element = line.split(' ')
+        element[2] = long(element[2].strip())
         all_info.append(element)
         count = count+1
         if (count % 10000) == 0:
             print 'still reading at %s'%count
     sorted_all_info = sorted(all_info, key = operator.itemgetter(2))
     for i in range(count):
+        sorted_all_info[i][2] = str(sorted_all_info[i][2])
         f_sorted.writelines(' '.join(sorted_all_info[i]))
     f.close()
     f_sorted.close()

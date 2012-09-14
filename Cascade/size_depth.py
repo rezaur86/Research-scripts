@@ -1,9 +1,12 @@
 import sys
 import array
 import operator
+from random import choice
 
 PARENT_TYPE_FIRST_PARENT = 0
 PARENT_TYPE_HIGHEST_ODEG = 1
+PARENT_TYPE_LAST_PARENT = 2
+PARENT_TYPE_RANDOM_PARENT = 3
 
 CLR_THRESHOLD = 500000
 
@@ -34,6 +37,18 @@ def parent_chooser (parent_list, choice_type):
             return potential_parents
         potential_parents.append((long(first_parent[0]), long(first_parent[1])))
         
+    if choice_type == PARENT_TYPE_LAST_PARENT:
+        last_parent = parent_list[len(parent_list)-1].strip().split(',')
+        if last_parent[0] == '-1':
+            return potential_parents
+        potential_parents.append((long(last_parent[0]), long(last_parent[1])))
+        
+    if choice_type == PARENT_TYPE_RANDOM_PARENT:
+        random_parent = choice(parent_list).strip().split(',')
+        if random_parent[0] == '-1':
+            return potential_parents
+        potential_parents.append((long(random_parent[0]), long(random_parent[1])))
+
     if choice_type == PARENT_TYPE_HIGHEST_ODEG:
         chosen_pid_odeg = -1
         chosen_pid = -1
@@ -97,6 +112,8 @@ for a_thrsh in sys.argv[2].split(','):
     result_depth.append({})
 size_file = open(sys.argv[3]+"_size.csv", "w")
 depth_file = open(sys.argv[3]+"_depth.csv", "w")
+top_n_size_file = open(sys.argv[3]+"_top_size.csv", "w")
+top_n_depth_file = open(sys.argv[3]+"_top_depth.csv", "w")
 
 count = 0
 for line in f:
@@ -136,29 +153,54 @@ for node in graph:
 print result_size
 print result_depth
 
+TOP_N = 10
+top_n_sizes = []
+top_n_depths = []
 for i in range(len(timeThrsh)):
-    temp = sorted(result_size[i].iteritems(), key=operator.itemgetter(1), reverse=True)
+    temp = sorted(result_size[i].iteritems(), key=operator.itemgetter(0), reverse=True)
+    top_n_sizes.append((temp[0:TOP_N]))
     for tuple in temp:
         size_file.write('%s,%s,%s\n'%(tuple[0],tuple[1],timeThrsh[i]))
 size_file.close()
-
 for i in range(len(timeThrsh)):
-    temp = sorted(result_depth[i].iteritems(), key=operator.itemgetter(1), reverse=True)
+    temp = sorted(result_depth[i].iteritems(), key=operator.itemgetter(0), reverse=True)
+    top_n_depths.append((temp[0:TOP_N]))
     for tuple in temp:
         depth_file.write('%s,%s,%s\n'%(tuple[0],tuple[1],timeThrsh[i]))
 depth_file.close()
-#for i in range(10):
-#    sys.stdout.write("size%d =[" %timeThrsh )
-#    for j in range(max(result[i])):
-#        if j+1 in result[i]:
-#            sys.stdout.write("%d " %result[i][j+1])
-#        else:
-#            sys.stdout.write("0 ")
-#    sys.stdout.write("];\n")
-#    sys.stdout.write("depth%d = [" %timeThrsh)
-#    for j in range(max(result[10+i])):
-#        if j+1 in result[10+i]:
-#            sys.stdout.write("%d " %result[10+i][j+1])
-#        else:
-#            sys.stdout.write("0 ")
-#    sys.stdout.write("];\n")
+
+top_n_size_users = []
+top_n_depth_users = []
+for i in range(len(timeThrsh)):
+    top_n_size_users.append({})
+    top_n_depth_users.append({})
+    for j in range(min(TOP_N,len(result_size[i]))):
+        top_n_size_users[i][top_n_sizes[i][j][0]] = []
+    for j in range(min(TOP_N,len(result_depth[i]))):
+        top_n_depth_users[i][top_n_depths[i][j][0]] = []
+
+for node_id in graph:
+    for i in range(len(timeThrsh)):
+        if graph[node_id].size[i] in top_n_size_users[i]:
+            top_n_size_users[i][graph[node_id].size[i]].append(node_id)
+        if graph[node_id].depth[i] in top_n_depth_users[i]:
+            top_n_depth_users[i][graph[node_id].depth[i]].append(node_id)
+print top_n_size_users
+print top_n_depth_users    
+
+for i in range(len(timeThrsh)):
+    temp = sorted(top_n_size_users[i].iteritems(), key=operator.itemgetter(0), reverse=True)
+    for tuple in temp:
+        size = tuple[0]
+        users = tuple[1]
+        for each_user in users:
+            top_n_size_file.write('%s,%s,%s\n'%(size,each_user,timeThrsh[i]))
+top_n_size_file.close()
+for i in range(len(timeThrsh)):
+    temp = sorted(top_n_depth_users[i].iteritems(), key=operator.itemgetter(0), reverse=True)
+    for tuple in temp:
+        depth = tuple[0]
+        users = tuple[1]
+        for each_user in users:
+            top_n_depth_file.write('%s,%s,%s\n'%(depth,each_user,timeThrsh[i]))
+top_n_depth_file.close()
