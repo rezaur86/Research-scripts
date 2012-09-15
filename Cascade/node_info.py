@@ -48,10 +48,13 @@ if __name__ == '__main__':
             out_degree.append(0)
         else:
             if out_degree[recv] < 1:
+                sender_is_already_parent = False
                 for (p,t) in potential_parents[recv]:
-                    if sender != p:
-                        potential_parents[recv].append((sender,timestamp))
+                    if sender == p:
+                        sender_is_already_parent = True
                         break
+                if sender_is_already_parent == False:
+                    potential_parents[recv].append((sender,timestamp))
 
     f = open(sys.argv[2]+'.txt', "w")
     for i in range(vertices_count):

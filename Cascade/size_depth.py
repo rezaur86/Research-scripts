@@ -58,7 +58,7 @@ def parent_chooser (parent_list, choice_type):
         for element in parent_list:
             a_parent = element.strip().split(',')
             if a_parent == '-1':
-                break
+                return potential_parents
             else:
                 pID = long(a_parent[0])
                 if pID in graph:
@@ -71,18 +71,20 @@ def parent_chooser (parent_list, choice_type):
 
     return potential_parents
 
-def process(child, thrsh_index):
+def process(child, end_time, thrsh_index):
     for (pID,receiving_time) in child.parent_list:
+        if end_time == -1:
+            end_time = receiving_time
         if pID not in graph:
-            break
+            return
 #        if (child.bornTime-graph[pID].bornTime) <= timeThrsh[thrsh_index]:
-        if (receiving_time-graph[pID].actTime) <= timeThrsh[thrsh_index]:
+        if (end_time-graph[pID].actTime) <= timeThrsh[thrsh_index]:
             graph[pID].size[thrsh_index] += 1
             if graph[pID].depth[thrsh_index] <= child.depth[thrsh_index]:
                 graph[pID].depth[thrsh_index] = child.depth[thrsh_index]+1
-            process(graph[pID], thrsh_index)
+            process(graph[pID], end_time, thrsh_index)
         else:
-            break
+            end_time = -1 # For considering next parent of this child, a provision if we consider multiple parents
     
 def clearHashTable(current_node):
     global result_size
@@ -102,11 +104,10 @@ def clearHashTable(current_node):
             else:
                 result_depth[i][graph[node].depth[i]] = 1
         del graph[node]
-                
-graph = {}
 
 f = open(sys.argv[1], "r")
 timeThrsh = [] #[86400,172800,259200,345600,432000,518400,604800,691200,777600,864000]
+graph = {}
 result_size = []
 result_depth = []
 for a_thrsh in sys.argv[2].split(','):
@@ -128,25 +129,27 @@ count = 0
 for line in f:
     element = line.split(' ')
     node_id = long(element[0].strip())
-    born_time = int(element[1].strip())
+#    born_time = int(element[1].strip())
     activation_time = int(element[2].strip())
     is_leaf = bool(int(element[3].strip()))
     odeg = int((element[4].strip()))
     newNode = Node()
-    newNode.setBornTime(born_time)
+#    newNode.setBornTime(born_time)
     newNode.setActTime(activation_time)
     newNode.setPotentialParent(parent_chooser(element[5:len(element)],parent_type))
     newNode.setOutDeg(odeg)
     if is_leaf == False:
         graph[node_id] = newNode
     for i in range(len(timeThrsh)):
-        process(newNode, i)
+        process(newNode, -1, i)
     count = count+1
     if (count % 1000) == 0:
         print count
 #    if (count % CLR_THRESHOLD) == 0:
 #        print "Clearing"
 #        clearHashTable(newNode)
+#        print graph
+                        
 f.close()
 
 for node in graph:
@@ -194,7 +197,7 @@ for node_id in graph:
         if graph[node_id].depth[i] in top_n_depth_users[i]:
             top_n_depth_users[i][graph[node_id].depth[i]].append(node_id)
 print top_n_size_users
-print top_n_depth_users    
+print top_n_depth_users
 
 for i in range(len(timeThrsh)):
     temp = sorted(top_n_size_users[i].iteritems(), key=operator.itemgetter(0), reverse=True)
