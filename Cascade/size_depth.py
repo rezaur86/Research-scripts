@@ -75,6 +75,7 @@ def process(child, thrsh_index):
     for (pID,receiving_time) in child.parent_list:
         if pID not in graph:
             break
+#        if (child.bornTime-graph[pID].bornTime) <= timeThrsh[thrsh_index]:
         if (receiving_time-graph[pID].actTime) <= timeThrsh[thrsh_index]:
             graph[pID].size[thrsh_index] += 1
             if graph[pID].depth[thrsh_index] <= child.depth[thrsh_index]:
@@ -112,10 +113,10 @@ for a_thrsh in sys.argv[2].split(','):
     timeThrsh.append(int(a_thrsh.strip()))
     result_size.append({})
     result_depth.append({})
-size_file = open(sys.argv[3]+"_size.csv", "w")
-depth_file = open(sys.argv[3]+"_depth.csv", "w")
-top_n_size_file = open(sys.argv[3]+"_top_size.csv", "w")
-top_n_depth_file = open(sys.argv[3]+"_top_depth.csv", "w")
+size_file = open(sys.argv[3]+"size.csv", "w")
+depth_file = open(sys.argv[3]+"depth.csv", "w")
+top_n_size_file = open(sys.argv[3]+"top_size.csv", "w")
+top_n_depth_file = open(sys.argv[3]+"top_depth.csv", "w")
 
 parent_type = int(raw_input(
 '''PARENT_TYPE_FIRST_PARENT = 0
@@ -127,12 +128,12 @@ count = 0
 for line in f:
     element = line.split(' ')
     node_id = long(element[0].strip())
-#    born_time = int(element[1].strip())
+    born_time = int(element[1].strip())
     activation_time = int(element[2].strip())
     is_leaf = bool(int(element[3].strip()))
     odeg = int((element[4].strip()))
     newNode = Node()
-#    newNode.setBornTime(born_time)
+    newNode.setBornTime(born_time)
     newNode.setActTime(activation_time)
     newNode.setPotentialParent(parent_chooser(element[5:len(element)],parent_type))
     newNode.setOutDeg(odeg)

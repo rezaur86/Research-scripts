@@ -52,7 +52,7 @@ if __name__ == '__main__':
             top_activities.append((sender, recv, timestamp))
             if sender in top_influencers:
                 top_influencers[sender].append(recv)
-        
+        count += 1
         if count%CLR_MEM_THRESH == 0:
             writer = csv.writer(top_activities_file,  delimiter=' ', quoting=csv.QUOTE_MINIMAL)
             writer.writerows(top_activities)
