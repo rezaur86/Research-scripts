@@ -8,8 +8,6 @@ PARENT_TYPE_HIGHEST_ODEG = 1
 PARENT_TYPE_LAST_PARENT = 2
 PARENT_TYPE_RANDOM_PARENT = 3
 
-TOP_N = 4
-
 CLR_THRESHOLD = 500000
 
 MAX_USERS = 2**29 - 1
@@ -125,6 +123,10 @@ PARENT_TYPE_HIGHEST_ODEG = 1
 PARENT_TYPE_LAST_PARENT = 2
 PARENT_TYPE_RANDOM_PARENT = 3
 Your choice? '''))
+TOP_N = int(raw_input(
+'''How many top nodes' sizes/depths you want to see?
+Your input 0~1000? '''))
+
 count = 0
 for line in f:
     element = line.split(' ')
