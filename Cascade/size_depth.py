@@ -8,7 +8,7 @@ PARENT_TYPE_HIGHEST_ODEG = 1
 PARENT_TYPE_LAST_PARENT = 2
 PARENT_TYPE_RANDOM_PARENT = 3
 
-TOP_N = 100
+TOP_N = 4
 
 CLR_THRESHOLD = 500000
 
@@ -169,25 +169,32 @@ top_n_sizes = []
 top_n_depths = []
 for i in range(len(timeThrsh)):
     temp = sorted(result_size[i].iteritems(), key=operator.itemgetter(0), reverse=True)
-    top_n_sizes.append((temp[0:TOP_N]))
+    top_counter = 0
+    top_n_sizes.append(([]))
     for tuple in temp:
+        if top_counter < TOP_N:
+            top_n_sizes[i].append((tuple))
+            top_counter += tuple[1]
         size_file.write('%s,%s,%s\n'%(tuple[0],tuple[1],timeThrsh[i]))
 size_file.close()
 for i in range(len(timeThrsh)):
     temp = sorted(result_depth[i].iteritems(), key=operator.itemgetter(0), reverse=True)
-    top_n_depths.append((temp[0:TOP_N]))
+    top_counter = 0
+    top_n_depths.append(([]))
     for tuple in temp:
+        if top_counter < TOP_N:
+            top_n_depths[i].append((tuple))
+            top_counter += tuple[1]
         depth_file.write('%s,%s,%s\n'%(tuple[0],tuple[1],timeThrsh[i]))
 depth_file.close()
-
 top_n_size_users = []
 top_n_depth_users = []
 for i in range(len(timeThrsh)):
     top_n_size_users.append({})
     top_n_depth_users.append({})
-    for j in range(min(TOP_N,len(result_size[i]))):
+    for j in range(len(top_n_sizes[i])):
         top_n_size_users[i][top_n_sizes[i][j][0]] = []
-    for j in range(min(TOP_N,len(result_depth[i]))):
+    for j in range(len(top_n_depths[i])):
         top_n_depth_users[i][top_n_depths[i][j][0]] = []
 
 for node_id in graph:
