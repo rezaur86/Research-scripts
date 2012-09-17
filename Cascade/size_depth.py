@@ -28,6 +28,15 @@ class Node:
     def print_node(self):
         print self.size,self.depth
 
+def record_a_child(child_id, parent_list):
+    global children_of_parent
+    for (each_parent,receiving_time) in parent_list:
+        if each_parent in children_of_parent:
+            children_of_parent[each_parent].append(child_id)
+        else:
+            children_of_parent[each_parent] = []
+            children_of_parent[each_parent].append(child_id)
+
 def parent_chooser (parent_list, choice_type):
     potential_parents = []
     
@@ -66,7 +75,6 @@ def parent_chooser (parent_list, choice_type):
                         chosen_receiving_time = long(a_parent[1])
         if chosen_pid != -1:
             potential_parents.append((chosen_pid, chosen_receiving_time))
-
     return potential_parents
 
 def process(child, end_time, thrsh_index):
@@ -116,7 +124,8 @@ size_file = open(sys.argv[3]+"size.csv", "w")
 depth_file = open(sys.argv[3]+"depth.csv", "w")
 top_n_size_file = open(sys.argv[3]+"top_size.csv", "w")
 top_n_depth_file = open(sys.argv[3]+"top_depth.csv", "w")
-
+children_of_parent = {} # To hold children of all parents
+children_of_parent_file = open(sys.argv[3]+"children_of_parent.txt", "w")
 parent_type = int(raw_input(
 '''PARENT_TYPE_FIRST_PARENT = 0
 PARENT_TYPE_HIGHEST_ODEG = 1
@@ -140,6 +149,7 @@ for line in f:
     newNode.setActTime(activation_time)
     newNode.setPotentialParent(parent_chooser(element[5:len(element)],parent_type))
     newNode.setOutDeg(odeg)
+    record_a_child(node_id, newNode.parent_list)
     if is_leaf == False:
         graph[node_id] = newNode
     for i in range(len(timeThrsh)):
@@ -150,10 +160,8 @@ for line in f:
 #    if (count % CLR_THRESHOLD) == 0:
 #        print "Clearing"
 #        clearHashTable(newNode)
-#        print graph
                         
 f.close()
-
 for node in graph:
     for i in range(len(timeThrsh)):    
         if graph[node].size[i] in result_size[i]:
@@ -224,3 +232,9 @@ for i in range(len(timeThrsh)):
         for each_user in users:
             top_n_depth_file.write('%s,%s,%s\n'%(depth,each_user,timeThrsh[i]))
 top_n_depth_file.close()
+for each_parent in children_of_parent:
+    children_of_parent_file.write('%s'%(each_parent))
+    for each_child in children_of_parent[each_parent]:
+        children_of_parent_file.write(' %s'%(each_child))
+    children_of_parent_file.write('\n')
+children_of_parent_file.close()
