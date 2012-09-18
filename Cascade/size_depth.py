@@ -112,7 +112,7 @@ def clearHashTable(current_node):
         del graph[node]
 
 f = open(sys.argv[1], "r")
-timeThrsh = [] #[86400,172800,259200,345600,432000,518400,604800,691200,777600,864000]
+timeThrsh = [] #[86400,172800,259200,345600,432000,518400,604800,691200,777600,864000,1209600,1814400]
 graph = {}
 result_size = []
 result_depth = []
