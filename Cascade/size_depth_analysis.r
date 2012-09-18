@@ -91,7 +91,5 @@ odeg_corr <- function(file_name){
 	odeg.df <- ddply(odeg, c('top_user_odeg'), summarise, avg_neighbour_odeg = mean(neighbour_odeg))
 	plot <- ggplot(odeg.df, aes(x = top_user_odeg, y = avg_neighbour_odeg)) + geom_point() + geom_smooth(method=lm)
 	ggsave(plot,file=paste(file_name,'corr.eps'))
-	cor(odeg_avg$top_user_odeg,odeg_avg$avg_neighbour_odeg)
+	cor(odeg.df$top_user_odeg,odeg.df$avg_neighbour_odeg)
 }
-
-odeg_corr('First_parent/TOP_10_actors_odeg.csv')
