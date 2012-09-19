@@ -71,8 +71,8 @@ if __name__ == '__main__':
                     top_users[long(splits[1].strip())] = long(splits[0].strip())
                 seen_time_window[time_window].add(int(splits[0].strip()))
         top_infl_file.close()
-        top_activities_file = open(each_infl_file+str(depth)+"graph.dot", "w")
-        top_actors_odeg_file  = open(each_infl_file+'top_'+str(TOP_N)+'_actors_odeg.csv', "w")
+        top_activities_file = open(each_infl_file+'_top_'+str(TOP_N)+'_'+str(depth)+"graph.dot", "w")
+        top_actors_odeg_file  = open(each_infl_file+'_top_'+str(TOP_N)+'_actors_odeg.csv', "w")
         for a_top_user in top_users:
             infl_activities(a_top_user, depth)
         top_activities_file.write('''digraph G {
@@ -85,4 +85,5 @@ node [shape=circle,label="",width=0.1,height=0.1]
         top_activities_file.write('}')
         top_activities_file.close()
         top_actors_odeg_file.close()
-        
+        if raw_input('Build Graph') == '1':
+            os.popen("neato -Ksfdp -Tsvg "+each_infl_file+"_top_"+str(TOP_N)+'_'+str(depth)+"graph.dot"+">"+each_infl_file+'_top_'+str(TOP_N)+'_'+str(depth)+"graph.svg")
