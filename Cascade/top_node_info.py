@@ -26,16 +26,32 @@ def infl_activities (parent,depth):
                 infl_activities(each_child, depth-1)
         else:
             return
-                
+
+def visulization (infl_file_name, user_list, max_depth):
+    if max_depth > 4:
+        print "Unnecessary graph, skipping visualization, please provide value less than 5 as the last argument"
+        return
+    for i in range(1,max_depth):
+        top_activities = []
+        for a_top_user in user_list:
+            infl_activities(a_top_user, i)
+        top_activities_file = open(infl_file_name+'_top_'+str(TOP_N)+'_'+str(i)+"graph.dot", "w")
+        top_activities_file.write('digraph G {\n node [shape=circle,label="",width=0.1,height=0.1]\n')#color=orange,style=filled,
+        for i in range(len(top_activities)):
+            top_activities_file.write('%s -> %s;\n'%(top_activities[i][0],top_activities[i][1])) # [color=black] 
+        top_activities_file.write('}')
+        top_activities_file.close()    
+        os.popen("neato -Ksfdp -Tsvg "+infl_file_name+'_top_'+str(TOP_N)+'_'+str(i)+"graph.dot"+">"+infl_file_name+'_top_'+str(TOP_N)+'_'+str(i)+"graph.svg")
 graph = {}
 graph_node_count = 0
 children_of_parent = {}
 top_activities = []
 
+TOP_N = int(raw_input('''Do you want to see subset of top users?
+then input your value: '''))
+
 CLR_MEM_THRESH = 10000
 if __name__ == '__main__':
-    TOP_N = int(raw_input('''Do you want to see subset of top users?
-    then input your value: '''))
     depth = int(raw_input('Graph depth? (1~4)?'))
     
     children_of_parent_file = open(sys.argv[1], "r")
@@ -71,19 +87,12 @@ if __name__ == '__main__':
                     top_users[long(splits[1].strip())] = long(splits[0].strip())
                 seen_time_window[time_window].add(int(splits[0].strip()))
         top_infl_file.close()
-        top_activities_file = open(each_infl_file+'_top_'+str(TOP_N)+'_'+str(depth)+"graph.dot", "w")
-        top_actors_odeg_file  = open(each_infl_file+'_top_'+str(TOP_N)+'_actors_odeg.csv', "w")
+        top_user_vs_child_odeg_file  = open(each_infl_file+'_top_'+str(TOP_N)+'user_vs_child_odeg.csv', "w")
         for a_top_user in top_users:
             infl_activities(a_top_user, depth)
-        top_activities_file.write('''digraph G {
-node [shape=circle,label="",width=0.1,height=0.1]
-''')#color=orange,style=filled,
         for i in range(len(top_activities)):
             if top_activities[i][0] in top_users:
-                top_actors_odeg_file.write('%s,%s\n'%(graph[top_activities[i][0]],graph[top_activities[i][1]]))
-            top_activities_file.write('%s -> %s;\n'%(top_activities[i][0],top_activities[i][1])) # [color=black] 
-        top_activities_file.write('}')
-        top_activities_file.close()
-        top_actors_odeg_file.close()
-        if raw_input('Build Graph') == '1':
-            os.popen("neato -Ksfdp -Tsvg "+each_infl_file+"_top_"+str(TOP_N)+'_'+str(depth)+"graph.dot"+">"+each_infl_file+'_top_'+str(TOP_N)+'_'+str(depth)+"graph.svg")
+                top_user_vs_child_odeg_file.write('%s,%s\n'%(graph[top_activities[i][0]],graph[top_activities[i][1]]))
+        top_user_vs_child_odeg_file.close()
+        if len(sys.argv) > 3:
+            visulization(each_infl_file, top_users, int(sys.argv[3]))
