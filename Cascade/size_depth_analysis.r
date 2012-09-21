@@ -104,6 +104,7 @@ depth_vs_expansion <- function(file_name){
 	library(plyr)
 	depth_expanstion <- as.data.frame(read.csv(file_name, header=FALSE))
 	colnames(depth_expanstion) <- c('depth', 'expansion', 'user_id')
+	alpha <- 
 	depth_expanstion$norm_expansion <- depth_expanstion$expansion/3^(depth_expanstion$depth)
 	print(head(depth_expanstion,50))
 	depth_expanstion$user_id <- factor(depth_expanstion$user_id)

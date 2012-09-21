@@ -77,7 +77,7 @@ def resolve_cascades (user_list):
     for (u,v) in sorted_user_list:
         depth_expansion_per_root = {}
         if cascade_traverse(u, MAX_DEPTH) == True:
-            root_users.append(u)
+            root_users.append(len(top_activities)-1)
             root_contains[u] = Set()
             for d in depth_expansion_per_root:
                 depth_expansion.append((d,depth_expansion_per_root[d],u))
@@ -87,11 +87,10 @@ def resolve_cascades (user_list):
     for i in range(len(top_activities)):
         if top_activities[i][0] in user_list:
             top_user_vs_child_odeg.append((graph[top_activities[i][0]],graph[top_activities[i][1]]))
-        if top_activities[i][2] == 0:
+        if i > root_users[next_root]:
             next_root += 1
-            continue
         if top_activities[i][0] in not_root_users: #Considering only parent by choosing top_activities[i][0] because leaves will not be the top users. 
-            root_contains[root_users[next_root]].add((top_activities[i][0],top_activities[i][2]))
+            root_contains[top_activities[root_users[next_root]][0]].add((top_activities[i][0],top_activities[i][2]))
     return root_contains
 
 graph = {}
@@ -141,10 +140,10 @@ if __name__ == '__main__':
         top_infl_file.close()
         top_user_vs_child_odeg_file  = open(each_infl_file+'_top_'+str(TOP_N)+'user_vs_child_odeg.csv', "w")
         depth_vs_expansion_file  = open(each_infl_file+'_top_'+str(TOP_N)+'_'+str(MAX_DEPTH)+'_depth_vs_expansion.csv', "w")
+#        top_user_contains_file  = open(each_infl_file+'_top_'+str(TOP_N)+'user_vs_child_odeg.csv', "w")
         initialize_traverse()
-        print resolve_cascades(top_users)
+        resolve_cascades(top_users)
         writer = csv.writer(depth_vs_expansion_file, quoting=csv.QUOTE_MINIMAL)
-        print depth_expansion
         writer.writerows(depth_expansion)
         depth_vs_expansion_file.close()
         writer = csv.writer(top_user_vs_child_odeg_file, quoting=csv.QUOTE_MINIMAL)
