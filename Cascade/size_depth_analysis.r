@@ -89,11 +89,27 @@ odeg_corr <- function(file_name){
 	library(plyr)
 	odeg <- as.data.frame(read.csv(file_name, header=FALSE))
 	colnames(odeg) <- c('top_user_odeg', 'neighbour_odeg')
-	odeg.df <- ddply(odeg, c('top_user_odeg'), summarise, avg_neighbour_odeg = mean(neighbour_odeg))
+	odeg.df <- ddply(odeg, c('top_user_odeg'), summarise, avg_neighbour_odeg = mean(neighbour_odeg), total_neighbour_odeg = sum(neighbour_odeg))
 	plot <- ggplot(odeg.df, aes(x = top_user_odeg, y = avg_neighbour_odeg)) + xlim(0,100) + geom_point() + geom_smooth(method=lm)
-	ggsave(plot,file=paste(file_name,'corr.eps'))
-	cor(odeg.df$top_user_odeg,odeg.df$avg_neighbour_odeg)
+	ggsave(plot,file=paste(file_name,'_avg_corr.eps'))
+	print(cor(odeg.df$top_user_odeg,odeg.df$avg_neighbour_odeg))
+	plot <- ggplot(odeg.df, aes(x = top_user_odeg, y = total_neighbour_odeg)) + xlim(0,100) + geom_point() + geom_smooth(method=lm)
+	ggsave(plot,file=paste(file_name,'_total_corr.eps'))
+	print(cor(odeg.df$top_user_odeg,odeg.df$total_neighbour_odeg))
+	print (head(odeg.df))
 }
+
+depth_vs_expansion <- function(file_name){
+	library(ggplot2)
+	library(plyr)
+	depth_expanstion <- as.data.frame(read.csv(file_name, header=FALSE))
+	colnames(depth_expanstion) <- c('depth', 'expansion', 'user_id')
+	depth_expanstion$user_id <- factor(depth_expanstion$user_id)
+	plot <- ggplot(depth_expanstion, aes(x = depth, y = expansion)) + geom_line(aes(group = user_id,colour = user_id))
+	ggsave(plot,file=paste(file_name,'_depth_expansion.eps'))
+	
+}
+
 
 parent_type_size_depth <- function(directoryname){
 	prev_dir = getwd()

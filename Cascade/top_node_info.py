@@ -63,6 +63,7 @@ def visulization (infl_file_name, user_list, max_depth):
         top_activities_file.write('}')
         top_activities_file.close()    
         os.popen("neato -Ksfdp -Tsvg "+infl_file_name+'_top_'+str(TOP_N)+'_'+str(i)+"graph.dot"+">"+infl_file_name+'_top_'+str(TOP_N)+'_'+str(i)+"graph.svg")
+        os.popen("rm "+infl_file_name+'_top_'+str(TOP_N)+'_'+str(i)+"graph.dot")
 
 graph = {}
 graph_node_count = 0
@@ -72,7 +73,7 @@ depth_expansion = {}
 
 TOP_N = int(raw_input('''Do you want to see subset of top users?
 then input your value: '''))
-MAX_DEPTH = int(raw_input('Graph traversal depth? (1~50)?'))
+MAX_DEPTH = int(raw_input('Graph traversal depth? (1~100)?'))
 
 CLR_MEM_THRESH = 10000
 if __name__ == '__main__': 
