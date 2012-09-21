@@ -104,8 +104,10 @@ depth_vs_expansion <- function(file_name){
 	library(plyr)
 	depth_expanstion <- as.data.frame(read.csv(file_name, header=FALSE))
 	colnames(depth_expanstion) <- c('depth', 'expansion', 'user_id')
+	depth_expanstion$norm_expansion <- depth_expanstion$expansion/3^(depth_expanstion$depth)
+	print(head(depth_expanstion,50))
 	depth_expanstion$user_id <- factor(depth_expanstion$user_id)
-	plot <- ggplot(depth_expanstion, aes(x = depth, y = expansion)) + geom_line(aes(group = user_id,colour = user_id))
+	plot <- ggplot(depth_expanstion, aes(x = depth, y = norm_expansion)) + geom_line(aes(group = user_id,colour = user_id))
 	ggsave(plot,file=paste(file_name,'_depth_expansion.eps'))
 	
 }
