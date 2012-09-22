@@ -67,18 +67,20 @@ def visulization (infl_file_name, user_list, max_depth):
         os.popen("rm "+infl_file_name+'_top_'+str(TOP_N)+'_'+str(i)+"graph.dot")
 
 def resolve_cascades (user_list):
-    global depth_expansion, depth_expansion_per_root, top_user_vs_child_odeg
+    global depth_expansion, depth_expansion_per_root, top_users_correlated_info
 #    sorted_user_list = sorted(user_list.iteritems(), key=operator.itemgetter(1), reverse=True)
     not_root_users = Set()
     root_contains = {}
     root_contains_users = {}
     depth_expansion = []
-    top_user_vs_child_odeg = []
+    top_users_correlated_info = []
+    top_users_info = {}
     for this_user in user_list:
-        if this_user in not_root_users:
-            continue
+#        if this_user in not_root_users:
+#            continue
         initialize_traverse()
         cascade_traverse(this_user, MAX_DEPTH)
+        top_users_info[this_user] = (len(graph), max(depth_expansion_per_root))
         root_contains_users[this_user] = Set()
         for other_user in user_list:
             if (other_user != this_user) and (other_user in graph):
@@ -96,10 +98,10 @@ def resolve_cascades (user_list):
             depth_expansion.append((d,depth_expansion_per_root[d],a_root))
         for i in range(len(activities_per_root)):
             if activities_per_root[i][0] == a_root:
-                top_user_vs_child_odeg.append((graph[activities_per_root[i][0]],graph[activities_per_root[i][1]]))
+                top_users_correlated_info.append((graph[activities_per_root[i][0]],graph[activities_per_root[i][1]],top_users_info[activities_per_root[i][0]][0],top_users_info[activities_per_root[i][0]][1]))
             if activities_per_root[i][0] in root_contains_users[a_root]:
                 root_contains[a_root].add((activities_per_root[i][0],activities_per_root[i][2]))
-                top_user_vs_child_odeg.append((graph[activities_per_root[i][0]],graph[activities_per_root[i][1]]))
+                top_users_correlated_info.append((graph[activities_per_root[i][0]],graph[activities_per_root[i][1]],top_users_info[activities_per_root[i][0]][0],top_users_info[activities_per_root[i][0]][1]))
     return root_contains
 
 graph = {}
@@ -107,7 +109,7 @@ graph_node_count = 0
 activities_per_root = []
 depth_expansion_per_root = {}
 depth_expansion = []
-top_user_vs_child_odeg = []
+top_users_correlated_info = []
 
 children_of_parent = {}
 
@@ -147,16 +149,16 @@ if __name__ == '__main__':
                     top_users[long(splits[1].strip())] = long(splits[0].strip())
                 seen_time_window[time_window].add(int(splits[0].strip()))
         top_infl_file.close()
-        top_user_vs_child_odeg_file  = open(each_infl_file+'_top_'+str(TOP_N)+'user_vs_child_odeg.csv', "w")
+        top_users_correlated_info_file  = open(each_infl_file+'_top_'+str(TOP_N)+'users_correlated_info.csv', "w")
         depth_vs_expansion_file  = open(each_infl_file+'_top_'+str(TOP_N)+'_'+str(MAX_DEPTH)+'_depth_vs_expansion.csv', "w")
         rooted_top_users_file  = open(each_infl_file+'_top_'+str(TOP_N)+'_rooted_top_users.csv', "w")
         rooted_top_users = resolve_cascades(top_users)
         writer = csv.writer(depth_vs_expansion_file, quoting=csv.QUOTE_MINIMAL)
         writer.writerows(depth_expansion)
         depth_vs_expansion_file.close()
-        writer = csv.writer(top_user_vs_child_odeg_file, quoting=csv.QUOTE_MINIMAL)
-        writer.writerows(top_user_vs_child_odeg)        
-        top_user_vs_child_odeg_file.close()
+        writer = csv.writer(top_users_correlated_info_file, quoting=csv.QUOTE_MINIMAL)
+        writer.writerows(top_users_correlated_info)        
+        top_users_correlated_info_file.close()
         for a_root in rooted_top_users:
             for (a_top_user, at_depth) in rooted_top_users[a_root]:
                 rooted_top_users_file.write('%s,%s,%s\n'%(a_top_user,at_depth,a_root))
@@ -167,8 +169,8 @@ if __name__ == '__main__':
 #                depth_vs_expansion_file.write('%s,%s,%s\n'%(d,depth_expansion_per_root[d],a_top_user))
 #            for i in range(len(activities_per_root)):
 #                if activities_per_root[i][0] == a_top_user:
-#                    top_user_vs_child_odeg_file.write('%s,%s\n'%(graph[activities_per_root[i][0]],graph[activities_per_root[i][1]]))
-#        top_user_vs_child_odeg_file.close()
+#                    top_users_correlated_info_file.write('%s,%s\n'%(graph[activities_per_root[i][0]],graph[activities_per_root[i][1]]))
+#        top_users_correlated_info_file.close()
         
         if len(sys.argv) > 3:
             visulization(each_infl_file, top_users, int(sys.argv[3]))

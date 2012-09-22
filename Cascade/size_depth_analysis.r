@@ -84,19 +84,36 @@ analyze_depth <- function(directoryname, plot_x_lim){
 	setwd(prev_dir)
 }
 
-odeg_corr <- function(file_name){
+top_size_analysis <- function(file_name){
 	library(ggplot2)
 	library(plyr)
-	odeg <- as.data.frame(read.csv(file_name, header=FALSE))
-	colnames(odeg) <- c('top_user_odeg', 'neighbour_odeg')
-	odeg.df <- ddply(odeg, c('top_user_odeg'), summarise, avg_neighbour_odeg = mean(neighbour_odeg), total_neighbour_odeg = sum(neighbour_odeg))
-	plot <- ggplot(odeg.df, aes(x = top_user_odeg, y = avg_neighbour_odeg)) + xlim(0,100) + geom_point() + geom_smooth(method=lm)
+	users_correlated_info <- as.data.frame(read.csv(file_name, header=FALSE))
+	colnames(users_correlated_info) <- c('top_user_odeg', 'neighbour_odeg', 'size', 'depth')	
+	users_correlated_info.df <- ddply(users_correlated_info, c('top_user_odeg','size','depth'), summarise, avg_neighbour_odeg = mean(neighbour_odeg), total_neighbour_odeg = sum(neighbour_odeg))
+	# top user's outged vs. avg neighbour outdeg
+	plot <- ggplot(users_correlated_info.df, aes(x = top_user_odeg, y = avg_neighbour_odeg)) + xlim(0,100) + geom_point() + geom_smooth(method=lm)
 	ggsave(plot,file=paste(file_name,'_avg_corr.eps'))
-	print(cor(odeg.df$top_user_odeg,odeg.df$avg_neighbour_odeg))
-	plot <- ggplot(odeg.df, aes(x = top_user_odeg, y = total_neighbour_odeg)) + xlim(0,100) + geom_point() + geom_smooth(method=lm)
+	print(cor(users_correlated_info.df$top_user_odeg,users_correlated_info.df$avg_neighbour_odeg))
+	# top user's outdeg vs. total neihbour outdeg
+	plot <- ggplot(users_correlated_info.df, aes(x = top_user_odeg, y = total_neighbour_odeg)) + xlim(0,100) + geom_point() + geom_smooth(method=lm)
 	ggsave(plot,file=paste(file_name,'_total_corr.eps'))
-	print(cor(odeg.df$top_user_odeg,odeg.df$total_neighbour_odeg))
-	print (head(odeg.df))
+	print(cor(users_correlated_info.df$top_user_odeg,users_correlated_info.df$total_neighbour_odeg))
+	# top user's size vs. outdeg
+	plot <- ggplot(users_correlated_info.df, aes(x = size, y = top_user_odeg)) + geom_point() + geom_smooth(method=lm)
+	ggsave(plot,file=paste(file_name,'_size_corr.eps'))
+	print(cor(users_correlated_info.df$size,users_correlated_info.df$top_user_odeg))
+	# top user's size vs. depth
+	plot <- ggplot(users_correlated_info.df, aes(x = size, y = depth)) + geom_point() + geom_smooth(method=lm)
+	ggsave(plot,file=paste(file_name,'_size_depth_corr.eps'))
+	print(cor(users_correlated_info.df$size,users_correlated_info.df$depth))
+	print (head(users_correlated_info.df,100))
+	# regression analysis
+	size_model <- glm(log(size)~top_user_odeg+total_neighbour_odeg, family="poisson",data= users_correlated_info.df)
+	print(summary(size_model))
+	sm <- summary(size_model)
+	pseudo_R_sq <- 1 - sm$deviance/sm$null.deviance
+	#plot(sm)
+	return(size_model)
 }
 
 depth_vs_expansion <- function(file_name){
@@ -107,17 +124,20 @@ depth_vs_expansion <- function(file_name){
 	depth_expanstion.df <- ddply(depth_expanstion, c('user_id'), function(one_partition){
 				one_partition = one_partition[order(one_partition$depth),]
 				one_partition$cum_expansion = cumsum(one_partition$expansion)
-				alpha <- max(one_partition$cum_expansion)^(1/max(one_partition$depth))
-				print(alpha)
-				one_partition$cum_expansion_norm = one_partition$cum_expansion / alpha^(one_partition$depth)
-				
+				one_partition$factor <- one_partition$expansion/c(1,one_partition$expansion[1:nrow(one_partition)-1])
+				factor_model_coeffs = coefficients(lm(factor~depth, data = one_partition))
+				print(factor_model_coeffs)
+				#alpha_coeff <- matrix(c(max(one_partition$cum_expansion)-1,-max(one_partition$cum_expansion),rep(0,max(one_partition$depth)-1),1))
+				#alpha <- (max(one_partition$expansion))^(1/min(one_partition[one_partition$expansion==max(one_partition$expansion),]$depth)) #polyroot(alpha_coeff)
+				#one_partition$cum_expansion_norm = one_partition$cum_expansion / ((alpha^(one_partition$depth + 1) - 1)/(alpha - 1))
+				#print(alpha)
+				one_partition$expansion_norm = one_partition$expansion / ((factor_model_coeffs[1]+factor_model_coeffs[2]*one_partition$depth)^one_partition$depth)
 				one_partition
 			})
-	print (head(depth_expanstion.df))
+	print (head(depth_expanstion.df,50))
 	depth_expanstion.df$user_id <- factor(depth_expanstion.df$user_id)
-	plot <- ggplot(depth_expanstion.df, aes(x = depth, y = cum_expansion_norm)) + geom_line(aes(group = user_id,colour = user_id))
+	plot <- ggplot(depth_expanstion.df, aes(x = depth, y = expansion_norm)) + ylim(0,10) + geom_line(aes(group = user_id,colour = user_id)) + geom_line(aes(x = depth, y = 1))
 	ggsave(plot,file=paste(file_name,'_depth_expansion.eps'))
-	
 }
 
 
