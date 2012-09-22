@@ -18,13 +18,11 @@ def manage_depth_expansion_per_root(depth,expansion):
         depth_expansion_per_root[depth] += expansion
 
 def initialize_traverse ():
-    global graph, graph_node_count, top_activities, depth_expansion_per_root, depth_expansion, top_user_vs_child_odeg
+    global graph, graph_node_count, activities_per_root, depth_expansion_per_root
     graph = {}
     graph_node_count = 0
-    top_activities = []
+    activities_per_root = []
     depth_expansion_per_root = {}
-    depth_expansion = []
-    top_user_vs_child_odeg = []
     
 def cascade_traverse (parent,depth):
     global graph_node_count
@@ -41,17 +39,17 @@ def cascade_traverse (parent,depth):
         if depth > 0:
             for each_child in children_of_parent[parent]:
                 if cascade_traverse(each_child, depth-1) == True:
-                    top_activities.append((parent,each_child,MAX_DEPTH-depth))
+                    activities_per_root.append((parent,each_child,MAX_DEPTH-depth))
         return True
     else:
         if depth > 0 and graph[parent] > 0:
             for each_child in children_of_parent[parent]:
                 if cascade_traverse(each_child, depth-1) == True:
-                    top_activities.append((parent,each_child,MAX_DEPTH-depth))
+                    activities_per_root.append((parent,each_child,MAX_DEPTH-depth))
         return False
 
 def visulization (infl_file_name, user_list, max_depth):
-    global top_activities
+    global activities_per_root
     if max_depth > 4:
         print "Unnecessary graph, skipping visualization, please provide value less than 5 as the last argument"
         return
@@ -59,43 +57,54 @@ def visulization (infl_file_name, user_list, max_depth):
         initialize_traverse()
         for a_top_user in user_list:
             cascade_traverse(a_top_user, i)
-        top_activities_file = open(infl_file_name+'_top_'+str(TOP_N)+'_'+str(i)+"graph.dot", "w")
-        top_activities_file.write('digraph G {\n node [shape=circle,label="",width=0.1,height=0.1]\n')#color=orange,style=filled,
-        for j in range(len(top_activities)):
-            top_activities_file.write('%s -> %s;\n'%(top_activities[j][0],top_activities[j][1])) # [color=black] 
-        top_activities_file.write('}')
-        top_activities_file.close()    
+        activities_per_root_file = open(infl_file_name+'_top_'+str(TOP_N)+'_'+str(i)+"graph.dot", "w")
+        activities_per_root_file.write('digraph G {\n node [shape=circle,label="",width=0.1,height=0.1]\n')#color=orange,style=filled,
+        for j in range(len(activities_per_root)):
+            activities_per_root_file.write('%s -> %s;\n'%(activities_per_root[j][0],activities_per_root[j][1])) # [color=black] 
+        activities_per_root_file.write('}')
+        activities_per_root_file.close()    
         os.popen("neato -Ksfdp -Tsvg "+infl_file_name+'_top_'+str(TOP_N)+'_'+str(i)+"graph.dot"+">"+infl_file_name+'_top_'+str(TOP_N)+'_'+str(i)+"graph.svg")
         os.popen("rm "+infl_file_name+'_top_'+str(TOP_N)+'_'+str(i)+"graph.dot")
 
 def resolve_cascades (user_list):
-    global depth_expansion, depth_expansion_per_root
-    sorted_user_list = sorted(user_list.iteritems(), key=operator.itemgetter(1), reverse=True)
-    root_users = []
-    not_root_users = []
+    global depth_expansion, depth_expansion_per_root, top_user_vs_child_odeg
+#    sorted_user_list = sorted(user_list.iteritems(), key=operator.itemgetter(1), reverse=True)
+    not_root_users = Set()
     root_contains = {}
-    for (u,v) in sorted_user_list:
-        depth_expansion_per_root = {}
-        if cascade_traverse(u, MAX_DEPTH) == True:
-            root_users.append(len(top_activities)-1)
-            root_contains[u] = Set()
-            for d in depth_expansion_per_root:
-                depth_expansion.append((d,depth_expansion_per_root[d],u))
-        else:
-            not_root_users.append(u)
-    next_root = 0
-    for i in range(len(top_activities)):
-        if top_activities[i][0] in user_list:
-            top_user_vs_child_odeg.append((graph[top_activities[i][0]],graph[top_activities[i][1]]))
-        if i > root_users[next_root]:
-            next_root += 1
-        if top_activities[i][0] in not_root_users: #Considering only parent by choosing top_activities[i][0] because leaves will not be the top users. 
-            root_contains[top_activities[root_users[next_root]][0]].add((top_activities[i][0],top_activities[i][2]))
+    root_contains_users = {}
+    depth_expansion = []
+    top_user_vs_child_odeg = []
+    for this_user in user_list:
+        if this_user in not_root_users:
+            continue
+        initialize_traverse()
+        cascade_traverse(this_user, MAX_DEPTH)
+        root_contains_users[this_user] = Set()
+        for other_user in user_list:
+            if (other_user != this_user) and (other_user in graph):
+                not_root_users.add(other_user)
+                root_contains_users[this_user].add(other_user)
+    for a_root in user_list:
+        if a_root in not_root_users:
+            if a_root in root_contains_users:
+                del root_contains_users[a_root]
+            continue
+        initialize_traverse()
+        cascade_traverse(a_root, MAX_DEPTH)
+        root_contains[a_root] = Set()
+        for d in depth_expansion_per_root:
+            depth_expansion.append((d,depth_expansion_per_root[d],a_root))
+        for i in range(len(activities_per_root)):
+            if activities_per_root[i][0] == a_root:
+                top_user_vs_child_odeg.append((graph[activities_per_root[i][0]],graph[activities_per_root[i][1]]))
+            if activities_per_root[i][0] in root_contains_users[a_root]:
+                root_contains[a_root].add((activities_per_root[i][0],activities_per_root[i][2]))
+                top_user_vs_child_odeg.append((graph[activities_per_root[i][0]],graph[activities_per_root[i][1]]))
     return root_contains
 
 graph = {}
 graph_node_count = 0
-top_activities = []
+activities_per_root = []
 depth_expansion_per_root = {}
 depth_expansion = []
 top_user_vs_child_odeg = []
@@ -140,23 +149,25 @@ if __name__ == '__main__':
         top_infl_file.close()
         top_user_vs_child_odeg_file  = open(each_infl_file+'_top_'+str(TOP_N)+'user_vs_child_odeg.csv', "w")
         depth_vs_expansion_file  = open(each_infl_file+'_top_'+str(TOP_N)+'_'+str(MAX_DEPTH)+'_depth_vs_expansion.csv', "w")
-#        top_user_contains_file  = open(each_infl_file+'_top_'+str(TOP_N)+'user_vs_child_odeg.csv', "w")
-        initialize_traverse()
-        resolve_cascades(top_users)
+        rooted_top_users_file  = open(each_infl_file+'_top_'+str(TOP_N)+'_rooted_top_users.csv', "w")
+        rooted_top_users = resolve_cascades(top_users)
         writer = csv.writer(depth_vs_expansion_file, quoting=csv.QUOTE_MINIMAL)
         writer.writerows(depth_expansion)
         depth_vs_expansion_file.close()
         writer = csv.writer(top_user_vs_child_odeg_file, quoting=csv.QUOTE_MINIMAL)
         writer.writerows(top_user_vs_child_odeg)        
         top_user_vs_child_odeg_file.close()
-
+        for a_root in rooted_top_users:
+            for (a_top_user, at_depth) in rooted_top_users[a_root]:
+                rooted_top_users_file.write('%s,%s,%s\n'%(a_top_user,at_depth,a_root))
+        rooted_top_users_file.close()
 #        for a_top_user in top_users:
 #            cascade_traverse(a_top_user, MAX_DEPTH)
 #            for d in depth_expansion_per_root:
 #                depth_vs_expansion_file.write('%s,%s,%s\n'%(d,depth_expansion_per_root[d],a_top_user))
-#            for i in range(len(top_activities)):
-#                if top_activities[i][0] == a_top_user:
-#                    top_user_vs_child_odeg_file.write('%s,%s\n'%(graph[top_activities[i][0]],graph[top_activities[i][1]]))
+#            for i in range(len(activities_per_root)):
+#                if activities_per_root[i][0] == a_top_user:
+#                    top_user_vs_child_odeg_file.write('%s,%s\n'%(graph[activities_per_root[i][0]],graph[activities_per_root[i][1]]))
 #        top_user_vs_child_odeg_file.close()
         
         if len(sys.argv) > 3:
