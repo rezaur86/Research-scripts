@@ -93,7 +93,7 @@ def resolve_cascades (user_list):
 #            continue
         initialize_traverse()
         cascade_traverse(a_root, MAX_DEPTH)
-        root_contains[a_root] = Set()
+        root_contains[(a_root,top_users_info[a_root][0],top_users_info[a_root][1])] = Set()
         if a_root not in not_root_users:
             for d in depth_expansion_per_root:
                 depth_expansion.append((d,depth_expansion_per_root[d],a_root))
@@ -101,7 +101,7 @@ def resolve_cascades (user_list):
             if activities_per_root[i][0] == a_root:
                 top_users_correlated_info.append((graph[activities_per_root[i][0]],graph[activities_per_root[i][1]],top_users_info[activities_per_root[i][0]][0],top_users_info[activities_per_root[i][0]][1]))
             if activities_per_root[i][0] in root_contains_users[a_root]:
-                root_contains[a_root].add((activities_per_root[i][0],activities_per_root[i][2],top_users_info[activities_per_root[i][0]][0],top_users_info[activities_per_root[i][0]][1]))
+                root_contains[(a_root,top_users_info[a_root][0],top_users_info[a_root][1])].add((activities_per_root[i][0],activities_per_root[i][2],top_users_info[activities_per_root[i][0]][0],top_users_info[activities_per_root[i][0]][1]))
 #                top_users_correlated_info.append((graph[activities_per_root[i][0]],graph[activities_per_root[i][1]],top_users_info[activities_per_root[i][0]][0],top_users_info[activities_per_root[i][0]][1]))
     return root_contains
 
@@ -160,9 +160,9 @@ if __name__ == '__main__':
         writer = csv.writer(top_users_correlated_info_file, quoting=csv.QUOTE_MINIMAL)
         writer.writerows(top_users_correlated_info)        
         top_users_correlated_info_file.close()
-        for a_root in rooted_top_users:
-            for (a_top_user, at_depth, of_size, of_depth) in rooted_top_users[a_root]:
-                rooted_top_users_file.write('%s,%s,%s,%s,%s\n'%(a_root,a_top_user,at_depth, of_size, of_depth))
+        for (a_root,root_size,root_depth) in rooted_top_users:
+            for (a_top_user, at_depth, of_size, of_depth) in rooted_top_users[(a_root,root_size,root_depth)]:
+                rooted_top_users_file.write('%s,%s,%s,%s,%s,%s,%s\n'%(a_root,root_size,root_depth,a_top_user,at_depth, of_size, of_depth))
         rooted_top_users_file.close()
 #        for a_top_user in top_users:
 #            cascade_traverse(a_top_user, MAX_DEPTH)
