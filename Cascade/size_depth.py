@@ -1,6 +1,7 @@
 import sys
 import array
 import operator
+from sets import Set
 from random import choice
 
 PARENT_TYPE_FIRST_PARENT = 0
@@ -238,3 +239,15 @@ for each_parent in children_of_parent:
         children_of_parent_file.write(' %s'%(each_child))
     children_of_parent_file.write('\n')
 children_of_parent_file.close()
+
+#size evolution of top users
+if len(sys.argv) > 4:
+    top_file = open(sys.argv[3]+"top_size.csv", "r")
+    top_user_set = Set()
+    for line in top_file:
+        top_user_set.add(long(line.split(',')[1].strip()))
+    for each_top_user in top_user_set:
+        sys.stdout.write("id_%d =[" %each_top_user )
+        for i in range(len(timeThrsh)):
+            sys.stdout.write("%d," %graph[each_top_user].size[i])
+        sys.stdout.write("];\n")
