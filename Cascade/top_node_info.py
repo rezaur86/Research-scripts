@@ -99,7 +99,7 @@ def resolve_cascades (user_list):
                 depth_expansion.append((d,depth_expansion_per_root[d],a_root))
         for i in range(len(activities_per_root)):
             if activities_per_root[i][0] == a_root:
-                top_users_correlated_info.append((graph[activities_per_root[i][0]],graph[activities_per_root[i][1]],top_users_info[activities_per_root[i][0]][0],top_users_info[activities_per_root[i][0]][1]))
+                top_users_correlated_info.append((a_root,graph[a_root],graph[activities_per_root[i][1]],top_users_info[a_root][0],top_users_info[a_root][1]))
             if activities_per_root[i][0] in root_contains_users[a_root]:
                 root_contains[(a_root,top_users_info[a_root][0],top_users_info[a_root][1])].add((activities_per_root[i][0],activities_per_root[i][2],top_users_info[activities_per_root[i][0]][0],top_users_info[activities_per_root[i][0]][1]))
 #                top_users_correlated_info.append((graph[activities_per_root[i][0]],graph[activities_per_root[i][1]],top_users_info[activities_per_root[i][0]][0],top_users_info[activities_per_root[i][0]][1]))
@@ -118,6 +118,11 @@ TOP_N = int(raw_input('''Do you want to see subset of top users?
 then input your value: '''))
 MAX_DEPTH = int(raw_input('Graph traversal depth? (1~100)?'))
 
+if len(sys.argv) > 3:
+    Special_time_window = int(sys.argv[3])
+else:
+    Special_time_window = -1
+
 CLR_MEM_THRESH = 10000
 if __name__ == '__main__': 
     children_of_parent_file = open(sys.argv[1], "r")
@@ -135,6 +140,9 @@ if __name__ == '__main__':
         for line in top_infl_file:
             splits = line.split(',')
             time_window = long(splits[2].strip())
+            if time_window < Special_time_window:
+                continue
+            print time_window
             if time_window in seen_time_window:
                 if len(seen_time_window[time_window]) <  TOP_N:
                     if long(splits[1].strip()) in top_users:
@@ -173,5 +181,5 @@ if __name__ == '__main__':
 #                    top_users_correlated_info_file.write('%s,%s\n'%(graph[activities_per_root[i][0]],graph[activities_per_root[i][1]]))
 #        top_users_correlated_info_file.close()
         
-        if len(sys.argv) > 3:
-            visulization(each_infl_file, top_users, int(sys.argv[3]))
+        if len(sys.argv) > 4:
+            visulization(each_infl_file, top_users, int(sys.argv[4]))
