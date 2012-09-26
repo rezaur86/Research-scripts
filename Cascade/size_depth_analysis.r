@@ -129,36 +129,49 @@ root_users_analysis <- function(file_name, file_root_info){
 				one_partition$depth_matching_prop = one_partition$depth-one_partition$of_depth
 				one_partition
 			})
-	users_correlated_info <- as.data.frame(read.csv(file_root_info, header=FALSE))
-	colnames(users_correlated_info) <- c('top_user','top_user_odeg', 'neighbour_odeg', 'size', 'depth')	
+	depth_expansion <- as.data.frame(read.csv(file_root_info, header=FALSE))
+	colnames(depth_expansion) <- c('depth', 'expansion', 'root_user_id')
 	plot <- ggplot(rooted_top_users.df, aes(x = at_depth, y = component_size_prop)) + geom_point() + xlab('Subrooted top user at depth') + ylab('Subrooted cascade size / rooted cascade size') #+ geom_smooth(method=lm)
 	ggsave(plot,file=paste(file_name,'_at_depth_size_prop_corr.eps'))
 	print(cor(rooted_top_users.df$at_depth,rooted_top_users.df$component_size_prop))
-	not_really_root <- rooted_top_users.df[((rooted_top_users.df$at_depth+rooted_top_users.df$of_dept)-rooted_top_users.df$depth<2) & (rooted_top_users.df$component_size_prop>0.80),]
-	real_root <- setdiff(unique(users_correlated_info$top_user),unique(not_really_root$root_user))
+	users_correlated_info <- depth_expansion
+	users_correlated_info.df <- ddply(users_correlated_info, c('root_user_id'), summarise, size = sum(expansion), total_1st_exp = expansion[depth==1], total_2nd_exp = expansion[depth==2], total_3rd_exp = expansion[depth==3],total_4th_exp = expansion[depth==4],total_5th_exp = expansion[depth==5])
+	# regression analysis
+	print(nrow(users_correlated_info.df))
+	size_model <- glm(log(size)~total_1st_exp+total_2nd_exp+total_3rd_exp+total_4th_exp, family="poisson",data= users_correlated_info.df) #+total_3rd_exp+total_4th_exp
+	sm <- summary(size_model)
+	print(summary(size_model))
+	pseudo_R_sq <- 1 - sm$deviance/sm$null.deviance
+	print(pseudo_R_sq)
+	print(cor(users_correlated_info.df$size,users_correlated_info.df$total_3rd_exp))
+	print(cor(users_correlated_info.df$size,users_correlated_info.df$total_4th_exp))
+	not_really_root <- rooted_top_users.df[((rooted_top_users.df$at_depth+rooted_top_users.df$of_dept)-rooted_top_users.df$depth<2) & (rooted_top_users.df$component_size_prop>0.8),]
+	real_root <- setdiff(unique(depth_expansion$root_user_id),unique(not_really_root$root_user))
 	rooted_top_users.df <- rooted_top_users.df[rooted_top_users.df$root_user%in%real_root,]
 	plot <- ggplot(rooted_top_users.df, aes(x = depth_matching_prop, y = component_size_prop)) + geom_point()  + xlab('Depth difference') + ylab('Subrooted cascade size / rooted cascade size') #+ geom_smooth(method=lm)
 	ggsave(plot,file=paste(file_name,'_at_real_root_depth_size_prop_corr.eps'))
-	print(cor(rooted_top_users.df$depth_matching_prop,rooted_top_users.df$component_size_prop))
-	users_correlated_info <- users_correlated_info[users_correlated_info$top_user%in%real_root,]
-	users_correlated_info.df <- ddply(users_correlated_info, c('top_user_odeg','size','depth'), summarise, avg_neighbour_odeg = mean(neighbour_odeg), total_neighbour_odeg = sum(neighbour_odeg))
+	print(cor(rooted_top_users.df$at_depth,rooted_top_users.df$component_size_prop))
+	users_correlated_info <- depth_expansion[depth_expansion$root_user_id%in%real_root,]
+	users_correlated_info.df <- ddply(users_correlated_info, c('root_user_id'), summarise, size = sum(expansion), total_1st_exp = expansion[depth==1], total_2nd_exp = expansion[depth==2], total_3rd_exp = expansion[depth==3],total_4th_exp = expansion[depth==4],total_5th_exp = expansion[depth==5])
+	print(nrow(users_correlated_info.df))
 	# regression analysis
-	size_model <- glm(log10(size)~top_user_odeg+total_neighbour_odeg, family="poisson",data= users_correlated_info.df)
+	size_model <- glm(log(size)~(total_1st_exp)+(total_2nd_exp)+total_3rd_exp+total_4th_exp, family="poisson", data=users_correlated_info.df) #+total_3rd_exp+total_4th_exp
 	#size_model <- lm(log(size)~top_user_odeg+total_neighbour_odeg, data= users_correlated_info.df)
-#	print(summary(size_model))
 	sm <- summary(size_model)
 	pseudo_R_sq <- 1 - sm$deviance/sm$null.deviance
 	#plot(sm)
 	print(pseudo_R_sq)
+	print(cor(users_correlated_info.df$size,users_correlated_info.df$total_1st_exp))
+	print(cor(users_correlated_info.df$size,users_correlated_info.df$total_2nd_exp))
 	return(size_model)
 }
 
 depth_vs_expansion <- function(file_name){
 	library(ggplot2)
 	library(plyr)
-	depth_expanstion <- as.data.frame(read.csv(file_name, header=FALSE))
-	colnames(depth_expanstion) <- c('depth', 'expansion', 'root_user_id')
-	depth_expanstion.df <- ddply(depth_expanstion, c('root_user_id'), function(one_partition){
+	depth_expansion <- as.data.frame(read.csv(file_name, header=FALSE))
+	colnames(depth_expansion) <- c('depth', 'expansion', 'root_user_id')
+	depth_expansion.df <- ddply(depth_expansion, c('root_user_id'), function(one_partition){
 				one_partition = one_partition[order(one_partition$depth),]
 				one_partition$cum_expansion = cumsum(one_partition$expansion)
 				one_partition$factor = one_partition$expansion/c(1,one_partition$expansion[1:nrow(one_partition)-1])
@@ -173,10 +186,10 @@ depth_vs_expansion <- function(file_name){
 				one_partition
 			})
 #	print (head(depth_expanstion.df,50))
-	depth_expanstion.df$root_user_id <- factor(depth_expanstion.df$root_user_id)
-	plot <- ggplot(depth_expanstion.df, aes(x = depth, y = log10(expansion))) + geom_line(aes(group = root_user_id,colour = root_user_id)) + xlab('Depth') + ylab('log of Expansion') 
+	depth_expansion.df$root_user_id <- factor(depth_expansion.df$root_user_id)
+	plot <- ggplot(depth_expansion.df, aes(x = depth, y = log10(expansion))) + geom_line(aes(group = root_user_id,colour = root_user_id)) + xlab('Depth') + ylab('log of Expansion') 
 	ggsave(plot,file=paste(file_name,'_depth_expansion.eps'))
-	plot <- ggplot(depth_expanstion.df, aes(x = depth, y = log10(expansion_norm))) + geom_line(aes(group = root_user_id,colour = root_user_id)) + xlab('Depth') + ylab('log of Normalized Expansion') #+ geom_line(aes(x = depth, y = 1)) 
+	plot <- ggplot(depth_expansion.df, aes(x = depth, y = log10(expansion_norm))) + geom_line(aes(group = root_user_id,colour = root_user_id)) + xlab('Depth') + ylab('log of Normalized Expansion') #+ geom_line(aes(x = depth, y = 1)) 
 	ggsave(plot,file=paste(file_name,'_depth_expansion_norm.eps'))
 }
 
@@ -209,12 +222,25 @@ parent_type_comp <- function(dir_vector){
 	}
 	colnames(cascade_comp$size) <- c('size', 'count', 'threshold', 'parent_type')
 	colnames(cascade_comp$depth) <- c('depth', 'count', 'threshold', 'parent_type')
-
+	cascade_comp$size <- ddply(cascade_comp$size, c('parent_type'), function(one_partition){
+				one_partition = one_partition[order(one_partition$size),]
+				one_partition$cum_count = cumsum(one_partition$count)
+				one_partition
+			})
+	cascade_comp$size.df <- ddply(cascade_comp$size, c('parent_type'), summarise, mean = sum(size*count)/sum(count), median = size[cum_count>=sum(count)/2][1], max=max(size), var=sum(count*(size-sum(size*count)/sum(count))^2)/sum(count))
 #	cascade_comp.size <- ddply(cascade_comp$size, c('parent_type'), function(one_partition){
 #				one_partition <- data.frame(fac = rep(cascade_comp$size$size, times = cascade_comp$size$count))
 #				one_partition
 #			})
 #	print (head(cascade_comp.size))
+	
+	cascade_comp$depth <- ddply(cascade_comp$depth, c('parent_type'), function(one_partition){
+				one_partition = one_partition[order(one_partition$depth),]
+				one_partition$cum_count = cumsum(one_partition$count)
+				one_partition
+			})
+	cascade_comp$depth.df <- ddply(cascade_comp$depth, c('parent_type'), summarise, mean = sum(depth*count)/sum(count), median = depth[cum_count>=sum(count)/2][1], max=max(depth), var=sum(count*(depth-sum(depth*count)/sum(count))^2)/sum(count))
+	print(cascade_comp$depth.df)
 	cascade_comp$size$parent_type <- factor(cascade_comp$size$parent_type)
 	plot <- ggplot(cascade_comp$size, aes(y=log10(size), x = parent_type)) + geom_boxplot()
 	ggsave(plot,file='parent_type_size_boxplot.eps')
@@ -223,5 +249,5 @@ parent_type_comp <- function(dir_vector){
 	plot <- ggplot(cascade_comp$depth, aes(y=depth, x = parent_type)) + geom_boxplot()
 	ggsave(plot,file='parent_type_depth_boxplot.eps')
 
-	return(cascade_comp)
+#	return(cascade_comp)
 }
