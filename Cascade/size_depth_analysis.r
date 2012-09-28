@@ -147,6 +147,8 @@ root_users_analysis <- function(file_name, file_root_info){
 	print(cor(users_correlated_info.df$size,users_correlated_info.df$total_4th_exp))
 	not_really_root <- rooted_top_users.df[((rooted_top_users.df$at_depth+rooted_top_users.df$of_dept)-rooted_top_users.df$depth<2) & (rooted_top_users.df$component_size_prop>0.8),]
 	real_root <- setdiff(unique(depth_expansion$root_user_id),unique(not_really_root$root_user))
+	#real_root <- sample(rooted_top_users.df$root_user, 200)
+	print(real_root)
 	rooted_top_users.df <- rooted_top_users.df[rooted_top_users.df$root_user%in%real_root,]
 	plot <- ggplot(rooted_top_users.df, aes(x = depth_matching_prop, y = component_size_prop)) + geom_point()  + xlab('Depth difference') + ylab('Subrooted cascade size / rooted cascade size') #+ geom_smooth(method=lm)
 	ggsave(plot,file=paste(file_name,'_at_real_root_depth_size_prop_corr.eps'))
@@ -170,26 +172,28 @@ depth_vs_expansion <- function(file_name){
 	library(ggplot2)
 	library(plyr)
 	depth_expansion <- as.data.frame(read.csv(file_name, header=FALSE))
-	colnames(depth_expansion) <- c('depth', 'expansion', 'root_user_id')
-	depth_expansion.df <- ddply(depth_expansion, c('root_user_id'), function(one_partition){
+	colnames(depth_expansion) <- c('depth', 'expansion', 'root_user_id','is_unique')
+	depth_expansion.df <- ddply(depth_expansion[depth_expansion$is_unique==1,], c('root_user_id'), function(one_partition){
 				one_partition = one_partition[order(one_partition$depth),]
 				one_partition$cum_expansion = cumsum(one_partition$expansion)
-				one_partition$factor = one_partition$expansion/c(1,one_partition$expansion[1:nrow(one_partition)-1])
-				factor_model_coeffs = coefficients(lm(factor~depth, data = one_partition))
+				one_partition$diff = (one_partition$expansion-c(NA,one_partition$expansion[1:nrow(one_partition)-1]))
+				one_partition$factor = ((one_partition$expansion-c(NA,one_partition$expansion[1:nrow(one_partition)-1]))/c(1,one_partition$expansion[1:nrow(one_partition)-1]))
+				#factor_model_coeffs = coefficients(lm(factor~depth, data = one_partition))
 				#alpha_coeff <- matrix(c(max(one_partition$cum_expansion)-1,-max(one_partition$cum_expansion),rep(0,max(one_partition$depth)-1),1))
-				alpha <- (max(one_partition$expansion))^(1/min(one_partition[one_partition$expansion==max(one_partition$expansion),]$depth)) #polyroot(alpha_coeff)
-				#alpha <- max(one_partition$cum_expansion)^(1/(max(one_partition$depth)+1)) #polyroot(alpha_coeff)
+				alpha <- (max(one_partition$expansion))^(1/min(one_partition[one_partition$expansion==max(one_partition$expansion),]$depth))
 				print(alpha)
 				one_partition$expansion_norm = one_partition$expansion / (alpha^(one_partition$depth))
-				#print(alpha)
 				#one_partition$expansion_norm = one_partition$expansion / ((factor_model_coeffs[1]+factor_model_coeffs[2]*one_partition$depth)^one_partition$depth)
 				one_partition
 			})
-#	print (head(depth_expanstion.df,50))
+	print (head(depth_expansion.df,100))
+	print (nrow(depth_expansion.df[depth_expansion.df$depth==0,]))
 	depth_expansion.df$root_user_id <- factor(depth_expansion.df$root_user_id)
-	plot <- ggplot(depth_expansion.df, aes(x = depth, y = log10(expansion))) + geom_line(aes(group = root_user_id,colour = root_user_id)) + xlab('Depth') + ylab('log of Expansion') 
+	plot <- ggplot(depth_expansion.df, aes(x = depth, y = (expansion))) + geom_line(aes(group = root_user_id,colour = root_user_id)) + xlab('Depth') + ylab('Shell size') 
 	ggsave(plot,file=paste(file_name,'_depth_expansion.eps'))
-	plot <- ggplot(depth_expansion.df, aes(x = depth, y = log10(expansion_norm))) + geom_line(aes(group = root_user_id,colour = root_user_id)) + xlab('Depth') + ylab('log of Normalized Expansion') #+ geom_line(aes(x = depth, y = 1)) 
+	plot <- ggplot(depth_expansion.df, aes(x = depth, y = log10(expansion))) + geom_line(aes(group = root_user_id,colour = root_user_id)) + xlab('Depth') + ylab('log of Shell size') 
+	ggsave(plot,file=paste(file_name,'_depth_log_expansion.eps'))
+	plot <- ggplot(depth_expansion.df, aes(x = depth, y = (diff))) + geom_line(aes(group = root_user_id,colour = root_user_id)) + xlab('Depth') + ylab('log of Normalized shell size') #+ geom_line(aes(x = depth, y = 1)) 
 	ggsave(plot,file=paste(file_name,'_depth_expansion_norm.eps'))
 }
 

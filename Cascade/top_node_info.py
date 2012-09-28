@@ -94,15 +94,17 @@ def resolve_cascades (user_list):
         initialize_traverse()
         cascade_traverse(a_root, MAX_DEPTH)
         root_contains[(a_root,top_users_info[a_root][0],top_users_info[a_root][1])] = Set()
-#        if a_root not in not_root_users:
-        for d in depth_expansion_per_root:
-            depth_expansion.append((d,depth_expansion_per_root[d],a_root))
+        if a_root in not_root_users:
+            for d in depth_expansion_per_root:
+                depth_expansion.append((d,depth_expansion_per_root[d],a_root,0)) # 0 for sub-root
+        else:
+            for d in depth_expansion_per_root:
+                depth_expansion.append((d,depth_expansion_per_root[d],a_root,1)) # 1 for distinct root
         for i in range(len(activities_per_root)):
             if activities_per_root[i][0] == a_root:
                 top_users_correlated_info.append((a_root,graph[a_root],graph[activities_per_root[i][1]],top_users_info[a_root][0],top_users_info[a_root][1]))
             if activities_per_root[i][0] in root_contains_users[a_root]:
                 root_contains[(a_root,top_users_info[a_root][0],top_users_info[a_root][1])].add((activities_per_root[i][0],activities_per_root[i][2],top_users_info[activities_per_root[i][0]][0],top_users_info[activities_per_root[i][0]][1]))
-#                top_users_correlated_info.append((graph[activities_per_root[i][0]],graph[activities_per_root[i][1]],top_users_info[activities_per_root[i][0]][0],top_users_info[activities_per_root[i][0]][1]))
     return root_contains
 
 graph = {}
