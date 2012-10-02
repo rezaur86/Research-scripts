@@ -30,8 +30,8 @@ def cascade_traverse (parent,depth):
         graph[parent] = 0
         manage_depth_expansion_per_root(MAX_DEPTH-depth, 1)
         graph_node_count += 1
-        if graph_node_count%10000 == 0:
-            print 'graph size:',graph_node_count
+#        if graph_node_count%10000 == 0:
+#            print 'graph size:',graph_node_count
         if parent in children_of_parent:
             graph[parent] = len(children_of_parent[parent])
         else:
@@ -75,6 +75,7 @@ def resolve_cascades (user_list):
     depth_expansion = []
     top_users_correlated_info = []
     top_users_info = {}
+    print user_list
     for this_user in user_list:
 #        if this_user in not_root_users:
 #            continue
@@ -144,7 +145,6 @@ if __name__ == '__main__':
             time_window = long(splits[2].strip())
             if time_window < Special_time_window:
                 continue
-            print time_window
             if time_window in seen_time_window:
                 if len(seen_time_window[time_window]) <  TOP_N:
                     if long(splits[1].strip()) in top_users:
