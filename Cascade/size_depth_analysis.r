@@ -197,15 +197,79 @@ root_users_analysis <- function(file_name, file_root_info){
 	return(size_model)
 }
 
-unique_cascade_summary <- function(file_root_info){
+unique_cascade_summary <- function(dir_vector, filename='top_size.csv_top_1000_100_depth_vs_expansion.csv'){
 	library(ggplot2)
 	library(plyr)
-	depth_expansion <- as.data.frame(read.csv(file_root_info, header=FALSE))
-	colnames(depth_expansion) <- c('depth', 'expansion', 'root_user_id','is_unique')
-	depth_expansion.df <- ddply(depth_expansion[depth_expansion$is_unique==1,], c('root_user_id'), summarise, size = sum(expansion), depth=max(depth))
-	return(depth_expansion.df)
+	cascade_comp <- c()
+	for (dir in dir_vector){
+		prev_dir = getwd()
+		setwd(dir)
+		depth_expansion <- as.data.frame(read.csv(filename, header=FALSE))
+		colnames(depth_expansion) <- c('depth', 'expansion', 'root_user_id','is_unique')
+		each_sub_cascade <- ddply(depth_expansion[depth_expansion$is_unique==1,], c('root_user_id'), summarise, size = sum(expansion), depth=max(depth))
+		each_sub_cascade[,4] <- dir
+		cascade_comp <- rbind(cascade_comp,each_sub_cascade)
+		setwd(prev_dir)
+	}
+	colnames(cascade_comp) <- c('root_user_id','size','depth','parent_type')
+	cascade_comp$parent_type <- factor(cascade_comp$parent_type)
+	plot <- ggplot(cascade_comp, aes(y=log10(size), x = parent_type)) + geom_boxplot() + scale_x_discrete(breaks=dir_vector, labels=c("First parent", "Highest Out deg parent", "Last parent","Random parent"))
+	ggsave(plot,file='parent_type_size_boxplot.eps')
+	
+	cascade_comp$parent_type <- factor(cascade_comp$parent_type)
+	plot <- ggplot(cascade_comp, aes(y=depth, x = parent_type)) + geom_boxplot() + scale_x_discrete(breaks=dir_vector, labels=c("First parent", "Highest Out deg parent", "Last parent","Random parent"))
+	ggsave(plot,file='parent_type_depth_boxplot.eps')
+#	return()
 }
 
+parent_type_comp <- function(dir_vector){
+	library(ggplot2)
+	library(plyr)
+	cascade_comp <- c()
+	cascade_comp$size <- c()
+	cascade_comp$depth <- c()
+	for (dir in dir_vector){
+		prev_dir = getwd()
+		setwd(directoryname)
+#		each_sub_cascade <- parent_type_size_depth(dir)
+		each_sub_cascade <- unique_cascade_summary('top_size.csv_top_1000_100_depth_vs_expansion.csv')
+		each_sub_cascade$size[,4] <- dir
+		cascade_comp$size <- rbind(cascade_comp$size,each_sub_cascade$size)
+		each_sub_cascade$depth[,4] <- dir
+		cascade_comp$depth <- rbind(cascade_comp$depth,each_sub_cascade$depth)
+		setwd(prev_dir)
+	}
+	colnames(cascade_comp$size) <- c('size', 'count', 'threshold', 'parent_type')
+	colnames(cascade_comp$depth) <- c('depth', 'count', 'threshold', 'parent_type')
+	cascade_comp$size <- ddply(cascade_comp$size, c('parent_type'), function(one_partition){
+				one_partition = one_partition[order(one_partition$size),]
+				one_partition$cum_count = cumsum(one_partition$count)
+				one_partition
+			})
+	cascade_comp$size.df <- ddply(cascade_comp$size, c('parent_type'), summarise, mean = sum(size*count)/sum(count), median = size[cum_count>=sum(count)/2][1], max=max(size), var=sum(count*(size-sum(size*count)/sum(count))^2)/sum(count))
+#	cascade_comp.size <- ddply(cascade_comp$size, c('parent_type'), function(one_partition){
+#				one_partition <- data.frame(fac = rep(cascade_comp$size$size, times = cascade_comp$size$count))
+#				one_partition
+#			})
+#	print (head(cascade_comp.size))
+	
+	cascade_comp$depth <- ddply(cascade_comp$depth, c('parent_type'), function(one_partition){
+				one_partition = one_partition[order(one_partition$depth),]
+				one_partition$cum_count = cumsum(one_partition$count)
+				one_partition
+			})
+	cascade_comp$depth.df <- ddply(cascade_comp$depth, c('parent_type'), summarise, mean = sum(depth*count)/sum(count), median = depth[cum_count>=sum(count)/2][1], max=max(depth), var=sum(count*(depth-sum(depth*count)/sum(count))^2)/sum(count))
+	print(cascade_comp$depth.df)
+	cascade_comp$size$parent_type <- factor(cascade_comp$size$parent_type)
+	plot <- ggplot(cascade_comp$size, aes(y=log10(size), x = parent_type)) + geom_boxplot()
+	ggsave(plot,file='parent_type_size_boxplot.eps')
+	
+	cascade_comp$depth$parent_type <- factor(cascade_comp$depth$parent_type)
+	plot <- ggplot(cascade_comp$depth, aes(y=depth, x = parent_type)) + geom_boxplot()
+	ggsave(plot,file='parent_type_depth_boxplot.eps')
+	
+#	return(cascade_comp)
+}
 parent_type_size_depth <- function(directoryname){
 	prev_dir = getwd()
 	setwd(directoryname)
