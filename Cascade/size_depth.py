@@ -33,10 +33,10 @@ def record_a_child(child_id, parent_list):
     global children_of_parent
     for (each_parent,receiving_time) in parent_list:
         if each_parent in children_of_parent:
-            children_of_parent[each_parent].append(child_id)
+            children_of_parent[each_parent].append((child_id,receiving_time))
         else:
             children_of_parent[each_parent] = []
-            children_of_parent[each_parent].append(child_id)
+            children_of_parent[each_parent].append((child_id,receiving_time))
 
 def parent_chooser (parent_list, choice_type):
     potential_parents = []
@@ -235,8 +235,8 @@ for i in range(len(timeThrsh)):
 top_n_depth_file.close()
 for each_parent in children_of_parent:
     children_of_parent_file.write('%s'%(each_parent))
-    for each_child in children_of_parent[each_parent]:
-        children_of_parent_file.write(' %s'%(each_child))
+    for (each_child,receiving_time) in children_of_parent[each_parent]:
+        children_of_parent_file.write(' %s,%s'%(each_child,receiving_time))
     children_of_parent_file.write('\n')
 children_of_parent_file.close()
 
