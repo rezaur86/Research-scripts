@@ -119,14 +119,73 @@ top_size_analysis <- function(file_name){
 	return(size_model)
 }
 
+shell_growth_state <- function(diff2){
+	state <- 0
+	v_size <- length(diff2)
+	state_out <- c(rep(0,v_size))
+	ampl <- c(rep(0,v_size))
+	ampl_state <- 0
+	ampl_idx <- 1
+	for (i in 2:v_size){
+		if (diff2[i]>0 & state==0){
+			state_out[i] <- 1
+			state <- 1
+		}
+		else if (diff2[i]<=0 & state==0){
+			state_out[i] <- -1
+			state <- -1
+		}
+		else if (diff2[i]>0 & state==1){
+			state_out[i] <- 2
+			state <- 2
+			ampl[ampl_idx] <- state - ampl_state
+		}
+		else if (diff2[i]<=0 & state==1){
+			state_out[i] <- -1
+			state <- -1
+		}
+		else if (diff2[i]>0 & state==2){
+			state_out[i] <- 2
+			ampl[ampl_idx] <- ampl[ampl_idx] + 1
+		}
+		else if (diff2[i]<=0 & state==2){
+			state_out[i] <- -1
+			state <- -1
+		}
+		else if (diff2[i]>0 & state==-1){
+			state_out[i] <- 0
+			state <- 0
+		}
+		else if (diff2[i]<=0 & state==-1){
+			state_out[i] <- -2
+			state <- -2
+		}
+		else if (diff2[i]>0 & state==-2){
+			state_out[i] <- -1
+			state <- -1
+		}
+		else if (diff2[i]<=0 & state==-2){
+			state_out[i] <- -2
+		}
+		if ((state_out[i] <= state_out[i-1]) & (state_out[i] != 2)){
+			ampl_state <- state
+			ampl_idx <- i
+		}
+	}
+	return(list(state=state_out, amplifier=ampl))
+}
+
 depth_vs_expansion <- function(file_name, depth_expansion){
 	library(ggplot2)
 	library(plyr)
-	depth_expansion.df <- ddply(depth_expansion[depth_expansion$is_unique<=1,], c('root_user_id'), function(one_partition){
+	depth_expansion.df <- ddply(depth_expansion[depth_expansion$is_unique==1,], c('root_user_id'), function(one_partition){
 				one_partition = one_partition[order(one_partition$depth),]
-				one_partition$cum_expansion = cumsum(one_partition$expansion)
-				one_partition$diff = (one_partition$expansion-c(NA,one_partition$expansion[1:nrow(one_partition)-1]))
-				one_partition$diff2 = (one_partition$diff-c(NA,one_partition$diff[1:nrow(one_partition)-1]))
+#				one_partition$cum_expansion = cumsum(one_partition$expansion)
+				one_partition$diff = (one_partition$expansion-c(0,one_partition$expansion[1:nrow(one_partition)-1]))
+				one_partition$diff2 = (one_partition$diff-c(0,one_partition$diff[1:nrow(one_partition)-1]))
+				sgs = shell_growth_state(one_partition$diff2)
+				one_partition$state = sgs$state
+				one_partition$ampl = sgs$amplifier
 				one_partition$time_interval = (one_partition$time-c(one_partition$time[1],one_partition$time[2],one_partition$time[3:nrow(one_partition)-1]))
 				one_partition$cum_time_interval = c(0,cumsum(one_partition$time_interval[2:nrow(one_partition)]))
 				one_partition$factor = ((one_partition$expansion-c(NA,one_partition$expansion[1:nrow(one_partition)-1]))/c(1,one_partition$expansion[1:nrow(one_partition)-1]))
@@ -137,7 +196,7 @@ depth_vs_expansion <- function(file_name, depth_expansion){
 				#one_partition$expansion_norm = one_partition$expansion / ((factor_model_coeffs[1]+factor_model_coeffs[2]*one_partition$depth)^one_partition$depth)
 				one_partition
 			})
-	print (head(depth_expansion.df,50))
+	print (head(depth_expansion.df,100))
 #	print (nrow(depth_expansion.df[depth_expansion.df$depth==0,]))
 	depth_expansion.df$root_user_id <- factor(depth_expansion.df$root_user_id)
 	pdf(file="time.pdf")
