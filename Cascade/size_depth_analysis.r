@@ -178,9 +178,8 @@ shell_growth_state <- function(diff2){
 depth_vs_expansion <- function(file_name, depth_expansion){
 	library(ggplot2)
 	library(plyr)
-	depth_expansion.df <- ddply(depth_expansion[depth_expansion$is_unique==1,], c('root_user_id'), function(one_partition){
+	depth_expansion.df <- ddply(depth_expansion[depth_expansion$is_unique<=1,], c('root_user_id'), function(one_partition){
 				one_partition = one_partition[order(one_partition$depth),]
-#				one_partition$cum_expansion = cumsum(one_partition$expansion)
 				one_partition$diff = (one_partition$expansion-c(0,one_partition$expansion[1:nrow(one_partition)-1]))
 				one_partition$diff2 = (one_partition$diff-c(0,one_partition$diff[1:nrow(one_partition)-1]))
 				sgs = shell_growth_state(one_partition$diff2)
@@ -188,6 +187,7 @@ depth_vs_expansion <- function(file_name, depth_expansion){
 				one_partition$ampl = sgs$amplifier
 				one_partition$time_interval = (one_partition$time-c(one_partition$time[1],one_partition$time[2],one_partition$time[3:nrow(one_partition)-1]))
 				one_partition$cum_time_interval = c(0,cumsum(one_partition$time_interval[2:nrow(one_partition)]))
+				one_partition$cum_expansion = cumsum(one_partition$expansion)
 				one_partition$factor = ((one_partition$expansion-c(NA,one_partition$expansion[1:nrow(one_partition)-1]))/c(1,one_partition$expansion[1:nrow(one_partition)-1]))
 				#factor_model_coeffs = coefficients(lm(factor~depth, data = one_partition))
 				alpha <- (max(one_partition$expansion))^(1/min(one_partition[one_partition$expansion==max(one_partition$expansion),]$depth))
@@ -201,11 +201,9 @@ depth_vs_expansion <- function(file_name, depth_expansion){
 	depth_expansion.df$root_user_id <- factor(depth_expansion.df$root_user_id)
 	pdf(file="time.pdf")
 	color <- rainbow(5)
-	print(color)
 	counter <- 0
 	for(root_user in unique(depth_expansion.df$root_user_id)){
 		sub_data <- subset(depth_expansion.df, root_user_id==root_user)
-		print(names(sub_data))
 		if(counter == 0){
 			plot(sub_data$cum_time_interval, y=sub_data$cum_expansion, ylim=c(0,1.5*max(sub_data$cum_expansion)),xlim=c(0,max(sub_data$cum_time_interval)),col=color[counter], type='l', main='Shell size and depth vs. time interval', xlab='Time', ylab='Shell size', xaxt='n', yaxt='n', lwd=2)
 			axis(2, pretty(c(0, 1.5*max(sub_data$cum_expansion))), col='blue')
@@ -221,7 +219,6 @@ depth_vs_expansion <- function(file_name, depth_expansion){
 	counter <- 0
 	for(root_user in unique(depth_expansion.df$root_user_id)){
 		sub_data <- subset(depth_expansion.df, root_user_id==root_user)
-		print(names(sub_data))
 		if(counter == 0){
 			plot(sub_data$cum_time_interval, y=sub_data$depth, ylim=c(0,1.5*max(sub_data$depth)),col=color[counter], type='l', lwd=0.75, xaxt='n', axes=F, ylab='', xlab='')
 			axis(4, pretty(c(0, 1.5*max(depth_expansion.df$depth))), col='green', labels=T)
@@ -240,6 +237,7 @@ depth_vs_expansion <- function(file_name, depth_expansion){
 	ggsave(plot,file=paste(file_name,'_depth_log_expansion.eps'))
 	plot <- ggplot(depth_expansion.df, aes(x = depth, y = (diff))) + geom_line(aes(group = root_user_id,colour = root_user_id)) + xlab('Depth') + ylab('Shell size growth') + scale_colour_hue(name  ="Top influencer")
 	ggsave(plot,file=paste(file_name,'_depth_expansion_norm.eps'))
+	return(depth_expansion.df)
 }
 
 root_users_analysis <- function(file_name, file_root_info){
@@ -254,7 +252,7 @@ root_users_analysis <- function(file_name, file_root_info){
 			})
 	depth_expansion <- as.data.frame(read.csv(file_root_info, header=FALSE))
 	colnames(depth_expansion) <- c('depth', 'expansion', 'root_user_id', 'is_unique', 'time')
-	depth_vs_expansion(file_root_info, depth_expansion)
+	depth_expansion.df <- depth_vs_expansion(file_root_info, depth_expansion)
 	plot <- ggplot(rooted_top_users.df, aes(x = at_depth, y = component_size_prop)) + geom_point() + xlab('Subrooted top user at depth') + ylab('Subrooted cascade size / rooted cascade size') #+ geom_smooth(method=lm)
 	ggsave(plot,file=paste(file_name,'_at_depth_size_prop_corr.eps'))
 #	print(cor(rooted_top_users.df$at_depth,rooted_top_users.df$component_size_prop))
@@ -268,15 +266,26 @@ root_users_analysis <- function(file_name, file_root_info){
 	pseudo_R_sq <- 1 - sm$deviance/sm$null.deviance
 	print(pseudo_R_sq)
 	not_really_root <- rooted_top_users.df[(rooted_top_users.df$depth-rooted_top_users.df$of_dept>=1) & (rooted_top_users.df$component_size_prop>0.80),]
-	real_root <- setdiff(unique(depth_expansion$root_user_id),unique(not_really_root$root_user))
-#	real_root <- sample(rooted_top_users.df$root_user, 300)
+	amplifiers <- c()
+	for(unique_root in unique(depth_expansion.df$root_user_id)){
+		depth_expansion.subdata <- subset(depth_expansion.df, root_user_id==unique_root)
+		rooted_top_users.subdata <- subset(rooted_top_users.df, root_user==unique_root)
+		for (each_subroot_depth in unique(rooted_top_users.subdata$at_depth)){
+			if(depth_expansion.subdata[depth_expansion.subdata$depth==each_subroot_depth,]$ampl > 0){
+				amplifiers <- c(amplifiers, rooted_top_users.subdata[rooted_top_users.subdata$at_depth==each_subroot_depth,]$component_top_user)
+			}
+		}
+	}
+	real_root <- union(setdiff(unique(depth_expansion$root_user_id),unique(not_really_root$root_user)), amplifiers)
+	print(length(real_root))
+	#	real_root <- sample(rooted_top_users.df$root_user, 300)
 #	print(real_root)
 	rooted_top_users.df <- rooted_top_users.df[rooted_top_users.df$root_user%in%real_root,]
 	plot <- ggplot(rooted_top_users.df, aes(x = depth_matching_prop, y = component_size_prop)) + geom_point()  + xlab('Depth difference') + ylab('Subrooted cascade size / rooted cascade size') #+ geom_smooth(method=lm)
 	ggsave(plot,file=paste(file_name,'_at_real_root_depth_size_prop_corr.eps'))
 #	print(cor(rooted_top_users.df$at_depth,rooted_top_users.df$component_size_prop))
 	users_correlated_info <- depth_expansion[depth_expansion$root_user_id%in%real_root,]
-#	depth_vs_expansion(file_root_info, users_correlated_info)
+	depth_vs_expansion(file_root_info, users_correlated_info)
 	users_correlated_info.df <- ddply(users_correlated_info, c('root_user_id'), summarise, size = sum(expansion), total_1st_exp = expansion[depth==1], total_2nd_exp = expansion[depth==2], total_3rd_exp = expansion[depth==3],total_4th_exp = expansion[depth==4],total_5th_exp = expansion[depth==5])
 	print(nrow(users_correlated_info.df))
 	# regression analysis
@@ -293,9 +302,9 @@ root_users_analysis <- function(file_name, file_root_info){
 	return(users_correlated_info.df)
 }
 
-nrr <- root_users_analysis('~/Documents/Code/Cascade/First_parent/top_size.csv_top_1000_rooted_top_users.csv','~/Documents/Code/Cascade/First_parent/top_size.csv_top_1000_100_depth_vs_expansion.csv')
-colnames(nrr)<-c('','size','hop 1 shell size','hop 2 shell size','hop 3 shell size','hop 4 shell size','')
-pairs(nrr[,2:6], panel = panel.smooth)
+#nrr <- root_users_analysis('~/Documents/Code/Cascade/First_parent/top_size.csv_top_1000_rooted_top_users.csv','~/Documents/Code/Cascade/First_parent/top_size.csv_top_1000_100_depth_vs_expansion.csv')
+#colnames(nrr)<-c('','size','hop 1 shell size','hop 2 shell size','hop 3 shell size','hop 4 shell size','')
+#pairs(nrr[,2:6], panel = panel.smooth)
 
 unique_cascade_summary <- function(dir_vector, filename='top_size.csv_top_1000_100_depth_vs_expansion.csv'){
 	library(ggplot2)
