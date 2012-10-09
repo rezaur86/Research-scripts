@@ -125,7 +125,8 @@ depth_expansion = []
 top_users_correlated_info = []
 
 children_of_parent = {}
-
+#rezaur@rahman:~/Documents/Code/Cascade$ python top_node_info.py test_case/children_of_parent.txt test_case/top_size.csv,test_case/top_depth.csv 20
+#rezaur@rahman:~/Documents/Code/Cascade$ python top_node_info.py First_parent/children_of_parent.txt First_parent/top_size.csv,First_parent/top_depth.csv 1814400
 TOP_N = int(raw_input('''Do you want to see subset of top users?
 then input your value: '''))
 MAX_DEPTH = int(raw_input('Graph traversal depth? (1~100)?'))

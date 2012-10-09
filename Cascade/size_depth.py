@@ -112,6 +112,7 @@ def clearHashTable(current_node):
                 result_depth[i][graph[node].depth[i]] = 1
         del graph[node]
 
+#rezaur@rahman:~/Documents/Code/Cascade$ python size_depth.py iheart_preprocessed_sorted.txt 86400,172800,259200,345600,432000,518400,604800,691200,777600,864000,1209600,1814400 First_parent/
 f = open(sys.argv[1], "r")
 timeThrsh = [] #[86400,172800,259200,345600,432000,518400,604800,691200,777600,864000,1209600,1814400]
 graph = {}

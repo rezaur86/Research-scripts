@@ -202,9 +202,9 @@ depth_vs_expansion <- function(file_name, depth_expansion){
 #	print (head(depth_expansion.df,100))
 #	print (nrow(depth_expansion.df[depth_expansion.df$depth==0,]))
 	depth_expansion.df$root_user_id <- factor(depth_expansion.df$root_user_id)
-	png(file="time.png",
-			width=10,
-			height=10)
+	pdf(file=paste(file_name,"time.pdf"), #convert -density 300x300 top_size.csv_top_10_100_depth_vs_expansion.csv\ time.pdf time.jpg
+			width=100,
+			height=100)
 	color <- rainbow(10)
 	counter <- 1
 	for(root_user in unique(depth_expansion.df$root_user_id)){
