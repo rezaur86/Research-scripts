@@ -196,39 +196,42 @@ depth_vs_expansion <- function(file_name, depth_expansion){
 				#one_partition$expansion_norm = one_partition$expansion / ((factor_model_coeffs[1]+factor_model_coeffs[2]*one_partition$depth)^one_partition$depth)
 				one_partition
 			})
-	print (head(depth_expansion.df,100))
+	print('total coverage')
+	print(nrow(depth_expansion.df))
+	print(sum(depth_expansion.df$expansion))
+#	print (head(depth_expansion.df,100))
 #	print (nrow(depth_expansion.df[depth_expansion.df$depth==0,]))
 	depth_expansion.df$root_user_id <- factor(depth_expansion.df$root_user_id)
-	pdf(file="time.pdf")
-	color <- rainbow(5)
-	counter <- 0
+	png(file="time.png",
+			width=10,
+			height=10)
+	color <- rainbow(10)
+	counter <- 1
 	for(root_user in unique(depth_expansion.df$root_user_id)){
 		sub_data <- subset(depth_expansion.df, root_user_id==root_user)
-		if(counter == 0){
-			plot(sub_data$cum_time_interval, y=sub_data$cum_expansion, ylim=c(0,1.5*max(sub_data$cum_expansion)),xlim=c(0,max(sub_data$cum_time_interval)),col=color[counter], type='l', main='Shell size and depth vs. time interval', xlab='Time', ylab='Shell size', xaxt='n', yaxt='n', lwd=2)
+		if(counter == 1){
+			plot(sub_data$cum_time_interval, y=sub_data$cum_expansion, ylim=c(0,1.5*max(sub_data$cum_expansion)),xlim=c(0,max(sub_data$cum_time_interval)),col=color[counter], type='n', main='Cumulative shell size and depth vs. arrival time', xlab='Arrival time', ylab='Cumulative shell size', xaxt='n', yaxt='n', lwd=.75)
 			axis(2, pretty(c(0, 1.5*max(sub_data$cum_expansion))), col='blue')
 			axis(1, pretty(c(0, max(sub_data$cum_time_interval))))
-			counter <- counter + 1
 		}
-		if(counter < 5){
-			lines(x=sub_data$cum_time_interval, y=sub_data$cum_expansion, col=color[counter], lwd=2)
-			counter <- counter + 1
+		if(counter <= 10){
+			lines(x=sub_data$cum_time_interval, y=sub_data$cum_expansion, col=color[counter], lwd=0.75, type="o", lty=2)
 		}
+		counter <- counter + 1
 	}
 	par(new=T)
-	counter <- 0
+	counter <- 1
 	for(root_user in unique(depth_expansion.df$root_user_id)){
 		sub_data <- subset(depth_expansion.df, root_user_id==root_user)
-		if(counter == 0){
-			plot(sub_data$cum_time_interval, y=sub_data$depth, ylim=c(0,1.5*max(sub_data$depth)),col=color[counter], type='l', lwd=0.75, xaxt='n', axes=F, ylab='', xlab='')
+		if(counter == 1){
+			plot(sub_data$cum_time_interval, y=sub_data$depth, ylim=c(0,1.5*max(sub_data$depth)),col=color[counter], type='n', lwd=0.75, xaxt='n', axes=F, ylab='', xlab='')
 			axis(4, pretty(c(0, 1.5*max(depth_expansion.df$depth))), col='green', labels=T)
 			mtext("Depth", side=4)
-			counter <- counter + 1
 		}
-		if(counter < 5){
-			lines(x=sub_data$cum_time_interval, y=sub_data$depth, col=color[counter])
-			counter <- counter + 1
+		if(counter <= 10){
+			lines(x=sub_data$cum_time_interval, y=sub_data$depth, col=color[counter], lwd=0.75, type = 's')
 		}
+		counter <- counter + 1
 	}
 	dev.off()
 	plot <- ggplot(depth_expansion.df, aes(x = depth, y = (expansion))) + geom_line(aes(group = root_user_id,colour = root_user_id)) + xlab('Depth') + ylab('Shell size') 
@@ -267,9 +270,9 @@ root_users_analysis <- function(file_name, file_root_info){
 	print(pseudo_R_sq)
 	not_really_root <- rooted_top_users.df[(rooted_top_users.df$depth-rooted_top_users.df$of_dept>=1) & (rooted_top_users.df$component_size_prop>0.80),]
 	amplifiers <- c()
-	for(unique_root in unique(depth_expansion.df$root_user_id)){
-		depth_expansion.subdata <- subset(depth_expansion.df, root_user_id==unique_root)
-		rooted_top_users.subdata <- subset(rooted_top_users.df, root_user==unique_root)
+	for(a_root in unique(depth_expansion.df$root_user_id)){
+		depth_expansion.subdata <- subset(depth_expansion.df, root_user_id==a_root)
+		rooted_top_users.subdata <- subset(rooted_top_users.df, root_user==a_root)
 		for (each_subroot_depth in unique(rooted_top_users.subdata$at_depth)){
 			if(depth_expansion.subdata[depth_expansion.subdata$depth==each_subroot_depth,]$ampl > 0){
 				amplifiers <- c(amplifiers, rooted_top_users.subdata[rooted_top_users.subdata$at_depth==each_subroot_depth,]$component_top_user)
@@ -285,7 +288,7 @@ root_users_analysis <- function(file_name, file_root_info){
 	ggsave(plot,file=paste(file_name,'_at_real_root_depth_size_prop_corr.eps'))
 #	print(cor(rooted_top_users.df$at_depth,rooted_top_users.df$component_size_prop))
 	users_correlated_info <- depth_expansion[depth_expansion$root_user_id%in%real_root,]
-	depth_vs_expansion(file_root_info, users_correlated_info)
+#	depth_vs_expansion(file_root_info, users_correlated_info)
 	users_correlated_info.df <- ddply(users_correlated_info, c('root_user_id'), summarise, size = sum(expansion), total_1st_exp = expansion[depth==1], total_2nd_exp = expansion[depth==2], total_3rd_exp = expansion[depth==3],total_4th_exp = expansion[depth==4],total_5th_exp = expansion[depth==5])
 	print(nrow(users_correlated_info.df))
 	# regression analysis
