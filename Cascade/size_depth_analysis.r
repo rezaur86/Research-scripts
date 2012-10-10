@@ -178,7 +178,7 @@ shell_growth_state <- function(diff2){
 depth_vs_expansion <- function(file_name, depth_expansion){
 	library(ggplot2)
 	library(plyr)
-	depth_expansion.df <- ddply(depth_expansion[depth_expansion$is_unique<=1,], c('root_user_id'), function(one_partition){
+	depth_expansion.df <- ddply(depth_expansion[depth_expansion$is_unique==1,], c('root_user_id'), function(one_partition){
 				one_partition = one_partition[order(one_partition$depth),]
 				one_partition$diff = (one_partition$expansion-c(0,one_partition$expansion[1:nrow(one_partition)-1]))
 				one_partition$diff2 = (one_partition$diff-c(0,one_partition$diff[1:nrow(one_partition)-1]))
@@ -197,14 +197,15 @@ depth_vs_expansion <- function(file_name, depth_expansion){
 				one_partition
 			})
 	print('total coverage')
-	print(nrow(depth_expansion.df))
-	print(sum(depth_expansion.df$expansion))
+	print(length(unique(depth_expansion[depth_expansion$is_unique==1,]$root_user_id)))
+	print(sum(depth_expansion[depth_expansion$is_unique==1,]$expansion))
 #	print (head(depth_expansion.df,100))
 #	print (nrow(depth_expansion.df[depth_expansion.df$depth==0,]))
 	depth_expansion.df$root_user_id <- factor(depth_expansion.df$root_user_id)
 	pdf(file=paste(file_name,"time.pdf"), #convert -density 300x300 top_size.csv_top_10_100_depth_vs_expansion.csv\ time.pdf time.jpg
-			width=100,
-			height=100)
+			#width=10,
+			#height=10
+			)
 	color <- rainbow(10)
 	counter <- 1
 	for(root_user in unique(depth_expansion.df$root_user_id)){
@@ -238,7 +239,7 @@ depth_vs_expansion <- function(file_name, depth_expansion){
 	ggsave(plot,file=paste(file_name,'_depth_expansion.eps'))
 	plot <- ggplot(depth_expansion.df, aes(x = depth, y = log10(expansion))) + geom_line(aes(group = root_user_id,colour = root_user_id)) + xlab('Depth') + ylab('log of Shell size') 
 	ggsave(plot,file=paste(file_name,'_depth_log_expansion.eps'))
-	plot <- ggplot(depth_expansion.df, aes(x = depth, y = (diff))) + geom_line(aes(group = root_user_id,colour = root_user_id)) + xlab('Depth') + ylab('Shell size growth') + scale_colour_hue(name  ="Top influencer")
+	plot <- ggplot(depth_expansion.df, aes(x = depth, y = (diff))) + geom_line(aes(group = root_user_id,colour = root_user_id)) + xlab('Depth') + ylab('Shell size growth') + scale_colour_hue(name  ="True influencer")
 	ggsave(plot,file=paste(file_name,'_depth_expansion_norm.eps'))
 	return(depth_expansion.df)
 }
@@ -270,15 +271,25 @@ root_users_analysis <- function(file_name, file_root_info){
 	print(pseudo_R_sq)
 	not_really_root <- rooted_top_users.df[(rooted_top_users.df$depth-rooted_top_users.df$of_dept>=1) & (rooted_top_users.df$component_size_prop>0.80),]
 	amplifiers <- c()
+	time_of_growth <- c()
+	depth_of_growth <- c()
+	amplifiers_count <- c()
 	for(a_root in unique(depth_expansion.df$root_user_id)){
 		depth_expansion.subdata <- subset(depth_expansion.df, root_user_id==a_root)
 		rooted_top_users.subdata <- subset(rooted_top_users.df, root_user==a_root)
+		time_of_growth <- c(time_of_growth,min(depth_expansion.subdata[depth_expansion.subdata$cum_expansion/max(depth_expansion.subdata$cum_expansion)>=0.99,]$cum_time_interval))
+		depth_of_growth <- c(depth_of_growth,min(depth_expansion.subdata[depth_expansion.subdata$cum_expansion/max(depth_expansion.subdata$cum_expansion)>=0.99,]$depth)/max(depth_expansion.subdata$depth))
+		amplifiers_count <- c(amplifiers_count, length(depth_expansion.subdata$ampl[depth_expansion.subdata$ampl > 0]))
 		for (each_subroot_depth in unique(rooted_top_users.subdata$at_depth)){
 			if(depth_expansion.subdata[depth_expansion.subdata$depth==each_subroot_depth,]$ampl > 0){
 				amplifiers <- c(amplifiers, rooted_top_users.subdata[rooted_top_users.subdata$at_depth==each_subroot_depth,]$component_top_user)
 			}
 		}
 	}
+	print(length(time_of_growth))
+	print(summary(time_of_growth[time_of_growth>0]/86400))
+	print(summary(depth_of_growth[depth_of_growth>0]))
+	print(summary(amplifiers_count))
 	real_root <- union(setdiff(unique(depth_expansion$root_user_id),unique(not_really_root$root_user)), amplifiers)
 	print(length(real_root))
 	#	real_root <- sample(rooted_top_users.df$root_user, 300)
@@ -288,7 +299,7 @@ root_users_analysis <- function(file_name, file_root_info){
 	ggsave(plot,file=paste(file_name,'_at_real_root_depth_size_prop_corr.eps'))
 #	print(cor(rooted_top_users.df$at_depth,rooted_top_users.df$component_size_prop))
 	users_correlated_info <- depth_expansion[depth_expansion$root_user_id%in%real_root,]
-#	depth_vs_expansion(file_root_info, users_correlated_info)
+	depth_vs_expansion(file_root_info, users_correlated_info)
 	users_correlated_info.df <- ddply(users_correlated_info, c('root_user_id'), summarise, size = sum(expansion), total_1st_exp = expansion[depth==1], total_2nd_exp = expansion[depth==2], total_3rd_exp = expansion[depth==3],total_4th_exp = expansion[depth==4],total_5th_exp = expansion[depth==5])
 	print(nrow(users_correlated_info.df))
 	# regression analysis
