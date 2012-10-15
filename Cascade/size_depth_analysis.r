@@ -277,8 +277,8 @@ root_users_analysis <- function(file_name, file_root_info){
 	for(a_root in unique(depth_expansion.df$root_user_id)){
 		depth_expansion.subdata <- subset(depth_expansion.df, root_user_id==a_root)
 		rooted_top_users.subdata <- subset(rooted_top_users.df, root_user==a_root)
-		time_of_growth <- c(time_of_growth,min(depth_expansion.subdata[depth_expansion.subdata$cum_expansion/max(depth_expansion.subdata$cum_expansion)>=0.99,]$cum_time_interval))
-		depth_of_growth <- c(depth_of_growth,min(depth_expansion.subdata[depth_expansion.subdata$cum_expansion/max(depth_expansion.subdata$cum_expansion)>=0.99,]$depth)/max(depth_expansion.subdata$depth))
+		time_of_growth <- c(time_of_growth,min(depth_expansion.subdata[depth_expansion.subdata$cum_expansion/max(depth_expansion.subdata$cum_expansion)>=0.95,]$cum_time_interval))
+		depth_of_growth <- c(depth_of_growth,min(depth_expansion.subdata[depth_expansion.subdata$cum_expansion/max(depth_expansion.subdata$cum_expansion)>=0.95,]$depth)/max(depth_expansion.subdata$depth))
 		amplifiers_count <- c(amplifiers_count, length(depth_expansion.subdata$ampl[depth_expansion.subdata$ampl > 0]))
 		for (each_subroot_depth in unique(rooted_top_users.subdata$at_depth)){
 			if(depth_expansion.subdata[depth_expansion.subdata$depth==each_subroot_depth,]$ampl > 0){
