@@ -149,8 +149,8 @@ shell_growth_state <- function(diff2){
 			ampl[ampl_idx] <- ampl[ampl_idx] + 1
 		}
 		else if (diff2[i]<=0 & state==2){
-			state_out[i] <- -1
-			state <- -1
+			state_out[i] <- 1
+			state <- 1
 		}
 		else if (diff2[i]>0 & state==-1){
 			state_out[i] <- 0
@@ -178,7 +178,7 @@ shell_growth_state <- function(diff2){
 depth_vs_expansion <- function(file_name, depth_expansion){
 	library(ggplot2)
 	library(plyr)
-	depth_expansion.df <- ddply(depth_expansion[depth_expansion$is_unique==1,], c('root_user_id'), function(one_partition){
+	depth_expansion.df <- ddply(depth_expansion[depth_expansion$is_unique<=1,], c('root_user_id'), function(one_partition){
 				one_partition = one_partition[order(one_partition$depth),]
 				one_partition$diff = (one_partition$expansion-c(0,one_partition$expansion[1:nrow(one_partition)-1]))
 				one_partition$diff2 = (one_partition$diff-c(0,one_partition$diff[1:nrow(one_partition)-1]))
@@ -206,7 +206,7 @@ depth_vs_expansion <- function(file_name, depth_expansion){
 			#width=10,
 			#height=10
 			)
-	color <- rainbow(10)
+	color <- rainbow(32)
 	counter <- 1
 	for(root_user in unique(depth_expansion.df$root_user_id)){
 		sub_data <- subset(depth_expansion.df, root_user_id==root_user)
@@ -215,7 +215,7 @@ depth_vs_expansion <- function(file_name, depth_expansion){
 			axis(2, pretty(c(0, 1.5*max(sub_data$cum_expansion))), col='blue')
 			axis(1, pretty(c(0, max(sub_data$cum_time_interval))))
 		}
-		if(counter <= 10){
+		if(counter <= 32){
 			lines(x=sub_data$cum_time_interval, y=sub_data$cum_expansion, col=color[counter], lwd=0.75, type="o", lty=2)
 		}
 		counter <- counter + 1
@@ -229,7 +229,7 @@ depth_vs_expansion <- function(file_name, depth_expansion){
 			axis(4, pretty(c(0, 1.5*max(depth_expansion.df$depth))), col='green', labels=T)
 			mtext("Depth", side=4)
 		}
-		if(counter <= 10){
+		if(counter <= 32){
 			lines(x=sub_data$cum_time_interval, y=sub_data$depth, col=color[counter], lwd=0.75, type = 's')
 		}
 		counter <- counter + 1
@@ -260,8 +260,8 @@ root_users_analysis <- function(file_name, file_root_info){
 	plot <- ggplot(rooted_top_users.df, aes(x = at_depth, y = component_size_prop)) + geom_point() + xlab('Subrooted top user at depth') + ylab('Subrooted cascade size / rooted cascade size') #+ geom_smooth(method=lm)
 	ggsave(plot,file=paste(file_name,'_at_depth_size_prop_corr.eps'))
 #	print(cor(rooted_top_users.df$at_depth,rooted_top_users.df$component_size_prop))
-	users_correlated_info <- depth_expansion
-	users_correlated_info.df <- ddply(users_correlated_info, c('root_user_id'), summarise, size = sum(expansion), total_1st_exp = expansion[depth==1], total_2nd_exp = expansion[depth==2], total_3rd_exp = expansion[depth==3],total_4th_exp = expansion[depth==4],total_5th_exp = expansion[depth==5])
+	users_correlated_info <- depth_expansion.df
+	users_correlated_info.df <- ddply(users_correlated_info, c('root_user_id'), summarise, size = sum(expansion), total_ampl=sum(ampl), total_1st_exp = expansion[depth==1], total_2nd_exp = expansion[depth==2], total_3rd_exp = expansion[depth==3],total_4th_exp = expansion[depth==4],total_5th_exp = expansion[depth==5])
 	# regression analysis
 	print(nrow(users_correlated_info.df))
 	size_model <- glm(log(size)~total_1st_exp+total_2nd_exp+total_3rd_exp+total_4th_exp, family="poisson",data= users_correlated_info.df) #+total_3rd_exp+total_4th_exp
@@ -269,6 +269,7 @@ root_users_analysis <- function(file_name, file_root_info){
 	print(summary(size_model))
 	pseudo_R_sq <- 1 - sm$deviance/sm$null.deviance
 	print(pseudo_R_sq)
+	print(cor(users_correlated_info.df$size,users_correlated_info.df$total_ampl))
 	not_really_root <- rooted_top_users.df[(rooted_top_users.df$depth-rooted_top_users.df$of_dept>=1) & (rooted_top_users.df$component_size_prop>0.80),]
 	amplifiers <- c()
 	time_of_growth <- c()

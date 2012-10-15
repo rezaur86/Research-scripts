@@ -13,33 +13,38 @@ if __name__ == '__main__':
     is_leaf = bitarray(MAX_USERS)
     is_leaf.setall(True)
     
-    out_degree = array.array('I')
+    out_degree = [] #array.array('I')
     potential_parents = []
-    born_time = array.array('l')
-    activation_time = array.array('l')
+    born_time = [] #array.array('l')
+    activation_time = [] #array.array('l')
     
     f = open(sys.argv[1], "r")
-    user_last_seen_time = array.array('l')
+    user_last_seen_act = array.array('l')
+    activity_line = 0
     for line in f:
+        activity_line += 1
         splits = line.split()
         sender = long(splits[0].strip())
         recv = long(splits[1].strip())
         timestamp = long(splits[2].strip())
-        if len(user_last_seen_time) > sender:
-            user_last_seen_time[sender] = max(user_last_seen_time[sender], timestamp)
+        if len(user_last_seen_act) > sender:
+            user_last_seen_act[sender] = max(user_last_seen_act[sender], activity_line)
         else:
-            user_last_seen_time.append(timestamp)          
-        if len(user_last_seen_time) > recv:
-            user_last_seen_time[recv] = max(user_last_seen_time[recv], timestamp)
+            user_last_seen_act.append(activity_line)          
+        if len(user_last_seen_act) > recv:
+            user_last_seen_act[recv] = max(user_last_seen_act[recv], activity_line)
         else:
-            user_last_seen_time.append(timestamp)
+            user_last_seen_act.append(activity_line)
     f.close()
-    
+    total_line = activity_line
+
     f = open(sys.argv[1], "r")
     o_f = open(sys.argv[2]+'.txt', "w")
     vertices_count = 0
-    users_done = []
+    users_done = Set()
+    activity_line = 0
     for line in f:
+        activity_line += 1
         splits = line.split()
         sender = long(splits[0].strip())
         recv = long(splits[1].strip())
@@ -75,20 +80,26 @@ if __name__ == '__main__':
                 if sender_is_already_parent == False:
                     potential_parents[recv].append((sender,timestamp))
         
-        if user_last_seen_time[sender]==timestamp:
-            users_done.append(sender)
-        if user_last_seen_time[recv]==timestamp: 
-            users_done.append(recv)
-        if len(users_done) >= 10000 or vertices_count==len(user_last_seen_time):
+        if sender == recv:
+            print sender
+        if user_last_seen_act[sender]==activity_line:
+            users_done.add(sender)
+        if user_last_seen_act[recv]==activity_line:
+            users_done.add(recv)
+        if len(users_done) >= 2 or activity_line==total_line:
             for i in users_done:
                 o_f.write('%s %s %s %s %s'%(i, born_time[i], activation_time[i], int(is_leaf[i]), out_degree[i]))
+                born_time[i] = None
+                activation_time[i] = None
+                out_degree[i] = None
                 if potential_parents[i] == NO_PARENT:
                     o_f.write(' -1')
                 else:
                     for (p,t) in potential_parents[i]:
                         o_f.write(' %s,%s'%(p,t))
+                potential_parents[i] = None
                 o_f.write('\n')
-            users_done = []
+            users_done = Set()
     f.close()
     o_f.close()
     
