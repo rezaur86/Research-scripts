@@ -189,20 +189,17 @@ depth_vs_expansion <- function(file_name, depth_expansion){
 				one_partition$cum_time_interval = c(0,cumsum(one_partition$time_interval[2:nrow(one_partition)]))
 				one_partition$cum_expansion = cumsum(one_partition$expansion)
 				one_partition$factor = ((one_partition$expansion-c(NA,one_partition$expansion[1:nrow(one_partition)-1]))/c(1,one_partition$expansion[1:nrow(one_partition)-1]))
-				#factor_model_coeffs = coefficients(lm(factor~depth, data = one_partition))
 				alpha <- (max(one_partition$expansion))^(1/min(one_partition[one_partition$expansion==max(one_partition$expansion),]$depth))
-#				print(alpha)
 				one_partition$expansion_norm = one_partition$expansion / (alpha^(one_partition$depth))
-				#one_partition$expansion_norm = one_partition$expansion / ((factor_model_coeffs[1]+factor_model_coeffs[2]*one_partition$depth)^one_partition$depth)
 				one_partition
 			})
 	print('total coverage')
-	print(length(unique(depth_expansion[depth_expansion$is_unique==1,]$root_user_id)))
+	print(length(unique(depth_expansion[depth_expansion$is_unique<=1,]$root_user_id)))
 	print(sum(depth_expansion[depth_expansion$is_unique==1,]$expansion))
 #	print (head(depth_expansion.df,100))
 #	print (nrow(depth_expansion.df[depth_expansion.df$depth==0,]))
 	depth_expansion.df$root_user_id <- factor(depth_expansion.df$root_user_id)
-	pdf(file=paste(file_name,"time.pdf"), #convert -density 300x300 top_size.csv_top_10_100_depth_vs_expansion.csv\ time.pdf time.jpg
+	pdf(file=paste(file_name,'time.pdf'), #convert -density 300x300 top_size.csv_top_10_100_depth_vs_expansion.csv\ time.pdf time.jpg
 			#width=10,
 			#height=10
 			)
@@ -261,15 +258,18 @@ root_users_analysis <- function(file_name, file_root_info){
 	ggsave(plot,file=paste(file_name,'_at_depth_size_prop_corr.eps'))
 #	print(cor(rooted_top_users.df$at_depth,rooted_top_users.df$component_size_prop))
 	users_correlated_info <- depth_expansion.df
-	users_correlated_info.df <- ddply(users_correlated_info, c('root_user_id'), summarise, size = sum(expansion), total_ampl=sum(ampl), total_1st_exp = expansion[depth==1], total_2nd_exp = expansion[depth==2], total_3rd_exp = expansion[depth==3],total_4th_exp = expansion[depth==4],total_5th_exp = expansion[depth==5])
+	users_correlated_info.df <- ddply(users_correlated_info, c('root_user_id'), summarise, size = sum(expansion), total_ampl=sum(ampl), ampl_4=sum(ampl[depth<=4]), total_1st_exp = expansion[depth==1], total_2nd_exp = expansion[depth==2], total_3rd_exp = expansion[depth==3],total_4th_exp = expansion[depth==4],total_5th_exp = expansion[depth==5])
 	# regression analysis
 	print(nrow(users_correlated_info.df))
-	size_model <- glm(log(size)~total_1st_exp+total_2nd_exp+total_3rd_exp+total_4th_exp, family="poisson",data= users_correlated_info.df) #+total_3rd_exp+total_4th_exp
+	size_model <- glm(log(size)~total_1st_exp+total_2nd_exp+total_3rd_exp+total_4th_exp+ampl_4, family="poisson",data= users_correlated_info.df) #+total_3rd_exp+total_4th_exp
 	sm <- summary(size_model)
 	print(summary(size_model))
 	pseudo_R_sq <- 1 - sm$deviance/sm$null.deviance
 	print(pseudo_R_sq)
 	print(cor(users_correlated_info.df$size,users_correlated_info.df$total_ampl))
+	plot <- ggplot(users_correlated_info.df, aes(x = total_ampl, y = size)) + geom_point() + geom_smooth(method=lm) + xlab('Total amplification') + ylab('Cascade size')
+	ggsave(plot,file=paste(file_name,'_ampl_size_corr.eps'))
+	
 	not_really_root <- rooted_top_users.df[(rooted_top_users.df$depth-rooted_top_users.df$of_dept>=1) & (rooted_top_users.df$component_size_prop>0.80),]
 	amplifiers <- c()
 	time_of_growth <- c()
@@ -299,12 +299,13 @@ root_users_analysis <- function(file_name, file_root_info){
 	plot <- ggplot(rooted_top_users.df, aes(x = depth_matching_prop, y = component_size_prop)) + geom_point()  + xlab('Depth difference') + ylab('Subrooted cascade size / rooted cascade size') #+ geom_smooth(method=lm)
 	ggsave(plot,file=paste(file_name,'_at_real_root_depth_size_prop_corr.eps'))
 #	print(cor(rooted_top_users.df$at_depth,rooted_top_users.df$component_size_prop))
-	users_correlated_info <- depth_expansion[depth_expansion$root_user_id%in%real_root,]
-	depth_vs_expansion(file_root_info, users_correlated_info)
-	users_correlated_info.df <- ddply(users_correlated_info, c('root_user_id'), summarise, size = sum(expansion), total_1st_exp = expansion[depth==1], total_2nd_exp = expansion[depth==2], total_3rd_exp = expansion[depth==3],total_4th_exp = expansion[depth==4],total_5th_exp = expansion[depth==5])
+	users_correlated_info <- depth_expansion.df[depth_expansion.df$root_user_id%in%real_root,]
+	depth_vs_expansion(file_root_info, depth_expansion[depth_expansion$root_user_id%in%real_root,])
+	users_correlated_info.df <- ddply(users_correlated_info, c('root_user_id'), summarise, size = sum(expansion), total_ampl=sum(ampl), ampl_4=sum(ampl[depth<=4]), total_1st_exp = expansion[depth==1], total_2nd_exp = expansion[depth==2], total_3rd_exp = expansion[depth==3],total_4th_exp = expansion[depth==4],total_5th_exp = expansion[depth==5])
 	print(nrow(users_correlated_info.df))
+	print(cor(users_correlated_info.df$size,users_correlated_info.df$total_ampl))
 	# regression analysis
-	size_model <- glm(log(size)~(total_1st_exp)+(total_2nd_exp)+total_3rd_exp+total_4th_exp, family="poisson", data=users_correlated_info.df) #+total_3rd_exp+total_4th_exp
+	size_model <- glm(log(size)~(total_1st_exp)+(total_2nd_exp)+total_3rd_exp+total_4th_exp+ampl_4, family="poisson", data=users_correlated_info.df) #+total_3rd_exp+total_4th_exp
 	#size_model <- lm(log(size)~top_user_odeg+total_neighbour_odeg, data= users_correlated_info.df)
 	sm <- summary(size_model)
 	pseudo_R_sq <- 1 - sm$deviance/sm$null.deviance
@@ -314,6 +315,7 @@ root_users_analysis <- function(file_name, file_root_info){
 	print(cor(users_correlated_info.df$size,users_correlated_info.df$total_2nd_exp))
 	print(cor(users_correlated_info.df$size,users_correlated_info.df$total_3rd_exp))
 	print(cor(users_correlated_info.df$size,users_correlated_info.df$total_4th_exp))
+	print(cor(users_correlated_info.df$size,users_correlated_info.df$ampl_4))
 	return(users_correlated_info.df)
 }
 

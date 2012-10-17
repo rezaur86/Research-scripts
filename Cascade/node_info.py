@@ -83,8 +83,6 @@ if __name__ == '__main__':
                     if sender_is_already_parent == False:
                         potential_parents[recv].append((sender,timestamp))
             
-            if sender == recv:
-                print sender
             if user_last_seen_act[sender]==activity_line:
                 users_done.add(sender)
             if user_last_seen_act[recv]==activity_line:
@@ -115,17 +113,21 @@ if __name__ == '__main__':
     count = 0
     f = open(sys.argv[2]+'.txt', "r")
     f_sorted = open(sys.argv[2]+'_sorted.txt', "w")
-    all_info = []
+    act_time = array.array('l')
     for line in f:
         element = line.split(' ')
-        element[2] = long(element[2].strip())
-        all_info.append(element)
+        element[2] = int(element[2].strip())
+        act_time.append(element[2])
         count = count+1
         if (count % 10000) == 0:
             print 'still reading at %s'%count
-    sorted_all_info = sorted(all_info, key = operator.itemgetter(2))
-    for i in range(count):
-        sorted_all_info[i][2] = str(sorted_all_info[i][2])
-        f_sorted.writelines(' '.join(sorted_all_info[i]))
     f.close()
+    sorted_line_idx = sorted(range(len(act_time)), key = act_time.__getitem__)
+    act_time = None
+    f = open(sys.argv[2]+'.txt', "r")
+    lines=f.readlines()
+    f.close()
+
+    for i in sorted_line_idx:
+        f_sorted.writelines(lines[i])
     f_sorted.close()
