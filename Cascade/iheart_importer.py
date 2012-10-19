@@ -3,6 +3,7 @@ import MySQLdb.cursors
 import time
 import datetime
 import csv, math
+import operator
 
 conn = MySQLdb.Connect(
     host='localhost', user='root',
@@ -19,12 +20,11 @@ results = {}
 last_day = ""
 
 while (batch_number < batch_count):
-    cursor.execute("SELECT id,to_uid,from_uid,hid,performed_at FROM hearts WHERE id >= "+str(batch_number*100000+1)+" AND id < "+str((batch_number+1)*100000+1))
+    cursor.execute("SELECT to_uid,from_uid,hid,performed_at FROM hearts WHERE id >= "+str(batch_number*batch+1)+" AND id < "+str((batch_number+1)*batch+1)+" order by performed_at")
     rows = cursor.fetchall()
-
     for row in rows:        
         rowtime = time.localtime(row["performed_at"])
-        rowtimestr = time.strftime("%Y-%U-%w", rowtime)# + '-' + str(rowtime.tm_wday)
+        rowtimestr = time.strftime("%Y-%U-%w", rowtime)
         if (last_day != rowtimestr):
             last_day = rowtimestr
         try:
