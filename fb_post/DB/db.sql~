@@ -102,6 +102,7 @@ alter table message_to drop CONSTRAINT message_to_pkey cascade;
 alter table likedby drop CONSTRAINT likedby_pkey cascade;
 drop index likedby_what_message_row_id_idx cascade;
 alter table tag drop CONSTRAINT tag_pkey cascade;
+alter table link drop CONSTRAINT link_row_id_pkey;
 alter table link drop CONSTRAINT link_message_row_id_fkey cascade;
 drop index link_message_row_id_idx cascade;
 drop index message_parent_message_row_id_idx;
@@ -145,6 +146,7 @@ alter table tag add CONSTRAINT tag_message_row_id_fkey FOREIGN KEY (message_row_
 alter table tag add CONSTRAINT tag_user_row_id_fkey FOREIGN KEY (user_row_id) REFERENCES fb_user(row_id) ON UPDATE CASCADE ON DELETE RESTRICT;
 
 alter table link add CONSTRAINT link_row_id_pkey PRIMARY KEY (row_id);
+alter table link add CONSTRAINT link_message_row_id_fkey cascade;
 create index link_message_row_id_idx on link using btree (message_row_id);
 
 alter table keyword add CONSTRAINT keyword_row_id_pkey PRIMARY KEY (row_id);

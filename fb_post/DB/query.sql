@@ -48,7 +48,10 @@ create index search_keyword_row_id_idx on search using btree (keyword_row_id);
 create index search_post_row_id_idx on search using btree (post_row_id);
 
 For Teng,
-\copy (select id, (select f1.id from fb_user as f1 where f1.row_id = l.who_user_row_id) as likedby_who_userID, (select f.id from fb_user as f where f.row_id = m.from_user_row_id) as likeToWho from message as m JOIN likedby as l ON m.row_id = l.what_message_row_id where fb_wall_row_id = 273) to 'occupyla_int.txt' with delimiter ',' CSV quote '"';
+\copy (select id, (select f1.id from fb_user as f1 where f1.row_id = l.who_user_row_id) as likedby_who_userID, (select f.id from fb_user as f where f.row_id = m.from_user_row_id) as likeToWho from message as m JOIN likedby as l ON m.row_id = l.what_message_row_id where fb_wall_row_id = 49) to 'occupy_ws.txt' with delimiter ',' CSV quote '"';
+\copy (select id, (select f1.id from fb_user as f1 where f1.row_id = l.who_user_row_id) as likedby_who_userID, (select f.id from fb_user as f where f.row_id = m.from_user_row_id) as likeToWho from message as m JOIN likedby as l ON m.row_id = l.what_message_row_id where fb_wall_row_id = 2) to 'occupy_tog.txt' with delimiter ',' CSV quote '"';
+\copy (select id, (select f1.id from fb_user as f1 where f1.row_id = l.who_user_row_id) as likedby_who_userID, (select f.id from fb_user as f where f.row_id = m.from_user_row_id) as likeToWho from message as m JOIN likedby as l ON m.row_id = l.what_message_row_id where fb_wall_row_id = 18560) to 'fox_news.txt' with delimiter ',' CSV quote '"';
+\copy (select id, (select f1.id from fb_user as f1 where f1.row_id = l.who_user_row_id) as likedby_who_userID, (select f.id from fb_user as f where f.row_id = m.from_user_row_id) as likeToWho from message as m JOIN likedby as l ON m.row_id = l.what_message_row_id where fb_wall_row_id = 31132) to 'cnn.txt' with delimiter ',' CSV quote '"';
 
 bug fixing:
 create table count_bug (

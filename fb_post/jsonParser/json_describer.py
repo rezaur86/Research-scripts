@@ -273,9 +273,11 @@ def parse_this_post (json_strings):
                 if message_row_id == -1:
                     return -1
                 if onedata.has_key("likes"):
-                    likes_count = onedata["likes"]["count"]
+                    if onedata["likes"].has_key("count"):
+                        likes_count = onedata["likes"]["count"]
                 if onedata.has_key("comments"):
-                    comments_count = onedata["comments"]["count"]
+                    if onedata["comments"].has_key("count"):
+                        comments_count = onedata["comments"]["count"]
             else:
                 if onedata.has_key("ep_likes"):
                     if onedata["ep_likes"].has_key("data"):

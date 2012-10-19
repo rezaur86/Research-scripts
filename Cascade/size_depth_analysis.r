@@ -272,6 +272,8 @@ root_users_analysis <- function(file_name, file_root_info){
 	
 	not_really_root <- rooted_top_users.df[(rooted_top_users.df$depth-rooted_top_users.df$of_dept>=1) & (rooted_top_users.df$component_size_prop>0.80),]
 	amplifiers <- c()
+	total_ampl_95 <- c()
+	growth_rate_95 <- c()
 	time_of_growth <- c()
 	depth_of_growth <- c()
 	amplifiers_count <- c()
@@ -279,6 +281,8 @@ root_users_analysis <- function(file_name, file_root_info){
 		depth_expansion.subdata <- subset(depth_expansion.df, root_user_id==a_root)
 		rooted_top_users.subdata <- subset(rooted_top_users.df, root_user==a_root)
 		time_of_growth <- c(time_of_growth,min(depth_expansion.subdata[depth_expansion.subdata$cum_expansion/max(depth_expansion.subdata$cum_expansion)>=0.95,]$cum_time_interval))
+		growth_rate_95 <- c(growth_rate_95,sum(depth_expansion.subdata[depth_expansion.subdata$cum_expansion/max(depth_expansion.subdata$cum_expansion)<=0.95,]$expansion)/max(depth_expansion.subdata[depth_expansion.subdata$cum_expansion/max(depth_expansion.subdata$cum_expansion)<=0.95,]$cum_time_interval))
+		total_ampl_95 <- c(total_ampl_95, sum(depth_expansion.subdata[depth_expansion.subdata$cum_expansion/max(depth_expansion.subdata$cum_expansion)<=0.95,]$ampl))
 		depth_of_growth <- c(depth_of_growth,min(depth_expansion.subdata[depth_expansion.subdata$cum_expansion/max(depth_expansion.subdata$cum_expansion)>=0.95,]$depth)/max(depth_expansion.subdata$depth))
 		amplifiers_count <- c(amplifiers_count, length(depth_expansion.subdata$ampl[depth_expansion.subdata$ampl > 0]))
 		for (each_subroot_depth in unique(rooted_top_users.subdata$at_depth)){
@@ -287,10 +291,18 @@ root_users_analysis <- function(file_name, file_root_info){
 			}
 		}
 	}
+	print (growth_rate_95)
+	print(total_ampl_95)
 	print(length(time_of_growth))
 	print(summary(time_of_growth[time_of_growth>0]/86400))
 	print(summary(depth_of_growth[depth_of_growth>0]))
 	print(summary(amplifiers_count))
+	print(cor(total_ampl_95,growth_rate_95*86400))
+	data_ampl_95 <- data.frame(total_ampl_95, growth_rate_95)
+	data_ampl_95$total_ampl_95 <- total_ampl_95 
+	data_ampl_95$growth_rate_95 <- growth_rate_95
+	plot <- ggplot(data_ampl_95, aes(x = total_ampl_95, y = growth_rate_95*86400)) + geom_point() + geom_smooth(method=lm) + xlab('Amplification till 95% of size') + ylab('95% size/arrival days')
+	ggsave(plot,file=paste(file_name,'_ampl_95_size_corr.eps'))
 	real_root <- union(setdiff(unique(depth_expansion$root_user_id),unique(not_really_root$root_user)), amplifiers)
 	print(length(real_root))
 	#	real_root <- sample(rooted_top_users.df$root_user, 300)
@@ -320,7 +332,7 @@ root_users_analysis <- function(file_name, file_root_info){
 }
 
 #nrr <- root_users_analysis('~/Documents/Code/Cascade/First_parent/top_size.csv_top_1000_rooted_top_users.csv','~/Documents/Code/Cascade/First_parent/top_size.csv_top_1000_100_depth_vs_expansion.csv')
-#colnames(nrr)<-c('','size','hop 1 shell size','hop 2 shell size','hop 3 shell size','hop 4 shell size','')
+#colnames(nrr)<-c('','size','total amplification','4 hops amplification','hop 1 shell size','hop 2 shell size','hop 3 shell size','hop 4 shell size','')
 #pairs(nrr[,2:6], panel = panel.smooth)
 
 unique_cascade_summary <- function(dir_vector, filename='top_size.csv_top_1000_100_depth_vs_expansion.csv'){
