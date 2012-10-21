@@ -10,6 +10,7 @@ conn = MySQLdb.Connect(
     passwd='', db='hearts')
 cursor = conn.cursor(cursorclass=MySQLdb.cursors.DictCursor)
 
+start_at = 1
 batch_number = 0
 batch = 100000
 batch_count = math.ceil(2128369625/batch)
@@ -20,7 +21,7 @@ results = {}
 last_day = ""
 
 while (batch_number < batch_count):
-    cursor.execute("SELECT to_uid,from_uid,hid,performed_at FROM hearts WHERE id >= "+str(batch_number*batch+1)+" AND id < "+str((batch_number+1)*batch+1)+" order by performed_at")
+    cursor.execute("SELECT to_uid,from_uid,hid,performed_at FROM hearts WHERE id >= "+str(batch_number*batch+start_at)+" AND id < "+str((batch_number+1)*batch+start_at)+" order by performed_at")
     rows = cursor.fetchall()
     for row in rows:        
         rowtime = time.localtime(row["performed_at"])
