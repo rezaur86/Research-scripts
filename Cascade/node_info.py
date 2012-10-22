@@ -91,7 +91,7 @@ if __name__ == '__main__':
                 user_last_seen_act[recv] = timestamp #Replacing the last seen line number with last seen time
             if len(users_done) >= 10000 or activity_line==total_line:
                 for i in users_done:
-                    o_f.write('%s %s %s %s %s'%(i, born_time[i], activation_time[i], user_last_seen_act[i], int(is_leaf[i]), out_degree[i]))
+                    o_f.write('%s %s %s %s %s %s'%(i, born_time[i], activation_time[i], user_last_seen_act[i], int(is_leaf[i]), out_degree[i]))
                     born_time[i] = None
                     activation_time[i] = None
                     out_degree[i] = None

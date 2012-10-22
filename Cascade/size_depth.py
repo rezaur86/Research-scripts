@@ -93,7 +93,7 @@ def process(child, end_time, thrsh_index):
         else:
             end_time = -1 # For considering next parent of this child, a provision if we consider multiple parents
     
-def clearHashTable(current_node):
+def clearMem(current_node):
     global result_size
     global result_depth
     record = []
@@ -144,12 +144,13 @@ for line in f:
     node_id = long(element[0].strip())
 #    born_time = int(element[1].strip())
     activation_time = int(element[2].strip())
-    is_leaf = bool(int(element[3].strip()))
-    odeg = int((element[4].strip()))
+    last_seen_time = int(element[3].strip())
+    is_leaf = bool(int(element[4].strip()))
+    odeg = int((element[5].strip()))
     newNode = Node()
 #    newNode.setBornTime(born_time)
     newNode.setActTime(activation_time)
-    newNode.setPotentialParent(parent_chooser(element[5:len(element)],parent_type))
+    newNode.setPotentialParent(parent_chooser(element[6:len(element)],parent_type))
     newNode.setOutDeg(odeg)
     record_a_child(node_id, newNode.parent_list)
     if is_leaf == False:
