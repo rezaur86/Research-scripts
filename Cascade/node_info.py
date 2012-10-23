@@ -38,11 +38,13 @@ if __name__ == '__main__':
             else:
                 user_last_seen_act.append(activity_line)
         f.close()
+        print each_file
     total_line = activity_line
+    print 'Total line read: ', total_line
 
     o_f = open(sys.argv[2]+'.txt', "w")
     vertices_count = 0
-    users_done = Set()
+    users_done = []
     activity_line = 0
     for each_file in file_list:
         f = open(sys.argv[1]+'/'+each_file, "r")
@@ -84,10 +86,10 @@ if __name__ == '__main__':
                         potential_parents[recv].append((sender,timestamp))
             
             if user_last_seen_act[sender]==activity_line:
-                users_done.add(sender)
+                users_done.append(sender)
                 user_last_seen_act[sender] = timestamp #Replacing the last seen line number with last seen time
-            if user_last_seen_act[recv]==activity_line:
-                users_done.add(recv)
+            if sender!=recv and user_last_seen_act[recv]==activity_line:
+                users_done.append(recv)
                 user_last_seen_act[recv] = timestamp #Replacing the last seen line number with last seen time
             if len(users_done) >= 10000 or activity_line==total_line:
                 for i in users_done:
@@ -102,7 +104,9 @@ if __name__ == '__main__':
                             o_f.write(' %s,%s'%(p,t))
                     potential_parents[i] = None
                     o_f.write('\n')
-                users_done = Set()
+                users_done = []
+            if activity_line%10000 == 0:
+                print activity_line*100/total_line, '% of', total_line
         f.close()
     o_f.close()
     
