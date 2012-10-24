@@ -94,23 +94,30 @@ def process(child, end_time, thrsh_index):
             end_time = -1 # For considering next parent of this child, a provision if we consider multiple parents
     
 def clearMem(current_node):
-    global result_size
-    global result_depth
-    record = []
-    for node in graph:
-        if current_node.bornTime-graph[node].bornTime > max(timeThrsh):
-            record.append(node)
-    for node in record:
-        for i in range(len(timeThrsh)):    
-            if graph[node].size[i] in result_size[i]:
-                result_size[i][graph[node].size[i]] += 1
-            else:
-                result_size[i][graph[node].size[i]] = 1
-            if graph[node].depth[i] in result_depth[i]:
-                result_depth[i][graph[node].depth[i]] += 1
-            else:
-                result_depth[i][graph[node].depth[i]] = 1
-        del graph[node]
+    global result_size, result_depth
+    global children_of_parent
+    for each_parent in children_of_parent:
+#        children_of_parent_file.write('%s'%(each_parent))
+        for (each_child,receiving_time) in children_of_parent[each_parent]:
+            children_of_parent_file.write('%s %s %s\n'%(each_parent,each_child,receiving_time))
+    children_of_parent = {}
+#        children_of_parent_file.write('\n')
+
+#    record = []
+#    for node in graph:
+#        if current_node.bornTime-graph[node].bornTime > max(timeThrsh):
+#            record.append(node)
+#    for node in record:
+#        for i in range(len(timeThrsh)):    
+#            if graph[node].size[i] in result_size[i]:
+#                result_size[i][graph[node].size[i]] += 1
+#            else:
+#                result_size[i][graph[node].size[i]] = 1
+#            if graph[node].depth[i] in result_depth[i]:
+#                result_depth[i][graph[node].depth[i]] += 1
+#            else:
+#                result_depth[i][graph[node].depth[i]] = 1
+#        del graph[node]
 
 #rezaur@rahman:~/Documents/Code/Cascade$ python size_depth.py iheart_preprocessed_sorted.txt 86400,172800,259200,345600,432000,518400,604800,691200,777600,864000,1209600,1814400 First_parent/
 f = open(sys.argv[1], "r")
@@ -158,13 +165,14 @@ for line in f:
     for i in range(len(timeThrsh)):
         process(newNode, -1, i)
     count = count+1
-    if (count % 1000) == 0:
+    if (count % (CLR_THRESHOLD/10)) == 0:
         print count
-#    if (count % CLR_THRESHOLD) == 0:
-#        print "Clearing"
-#        clearHashTable(newNode)
-                        
+    if (count % CLR_THRESHOLD) == 0:
+        print "Clearing"
+        clearMem(newNode)
 f.close()
+clearMem(-1)
+children_of_parent_file.close()
 for node in graph:
     for i in range(len(timeThrsh)):    
         if graph[node].size[i] in result_size[i]:
@@ -235,12 +243,6 @@ for i in range(len(timeThrsh)):
         for each_user in users:
             top_n_depth_file.write('%s,%s,%s\n'%(depth,each_user,timeThrsh[i]))
 top_n_depth_file.close()
-for each_parent in children_of_parent:
-    children_of_parent_file.write('%s'%(each_parent))
-    for (each_child,receiving_time) in children_of_parent[each_parent]:
-        children_of_parent_file.write(' %s,%s'%(each_child,receiving_time))
-    children_of_parent_file.write('\n')
-children_of_parent_file.close()
 
 #size evolution of top users
 if len(sys.argv) > 4:
