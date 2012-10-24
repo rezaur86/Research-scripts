@@ -139,13 +139,19 @@ else:
 CLR_MEM_THRESH = 10000
 if __name__ == '__main__': 
     children_of_parent_file = open(sys.argv[1], "r")
-    for line in children_of_parent_file:
+    lines = children_of_parent_file.readlines()
+    children_of_parent_file.close()
+    for line in lines:
         splits = line.split(' ')
-        parent = long(splits[0].strip())
-        children_of_parent[parent] = []
-        for each_child_receiving_time in splits[1:len(splits)]:
-            (each_child,receiving_time) = each_child_receiving_time.split(',')
-            children_of_parent[parent].append((long(each_child),long(receiving_time)))
+        parent = int(splits[0].strip())
+        a_child = int(splits[1].strip())
+        receiving_time = int(splits[2].strip())
+        if parent not in children_of_parent:
+            children_of_parent[parent] = []
+        children_of_parent[parent].append((a_child,receiving_time))
+#        for each_child_receiving_time in splits[1:len(splits)]:
+#            (each_child,receiving_time) = each_child_receiving_time.split(',')
+#            children_of_parent[parent].append((long(each_child),long(receiving_time)))
     print 'children_of_parent_file is read'
     for each_infl_file in sys.argv[2].split(','):
         top_users = {}
