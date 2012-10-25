@@ -12,7 +12,6 @@ draw_two_y_axes_graph <- function (o_file_name, max_curve_count, x_val, y_l_val,
 	for (i in 1:max_curve_count){
 		if(i == 1){
 			plot(x=x_val[[1]], y=y_l_val[[1]],col=color[1], type='n', main=graph_name, xlab=x_label, ylab=y_l_label, xaxt='n', yaxt='n', lwd=.75)
-			print (x_val[1])
 			if (typeof(x_mark) != 'list')
 				axis(1, pretty(lim_x))
 			else 
