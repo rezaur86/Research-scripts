@@ -189,7 +189,7 @@ draw_depth_expansion <- function(file_name,depth_expansion.df){
 	plot <- ggplot(depth_expansion.df, aes(x = depth, y = log10(expansion))) + geom_line(aes(group = root_user_id,colour = root_user_id)) + xlab('Depth') + ylab('log of Shell size') 
 	ggsave(plot,file=paste(file_name,'_depth_log_expansion.eps'))
 	plot <- ggplot(depth_expansion.df, aes(x = depth, y = (diff))) + geom_line(aes(group = root_user_id,colour = root_user_id)) + xlab('Depth') + ylab('Shell size growth') + scale_colour_hue(name  ="Cascade root")
-	ggsave(plot,file=paste(file_name,'_depth_expansion_norm.eps'))
+	save_ggplot(paste(c(file_name,'_depth_expansion_norm.eps'), collapse = ''), plot)
 }
 
 build_model <- function (trainer_cascade){
