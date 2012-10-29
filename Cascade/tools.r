@@ -1,19 +1,21 @@
+
 print_report <- function(title, variable){
 	cat(title, "=")
 	print (variable)
 	cat("\n")
 }
 
-save_ggplot <- function (file_name, plot){
+save_ggplot <- function (plot, file_name){
 	ggsave(plot,file=file_name)
+	
 	file_name_split <- strsplit(file_name,'\\.')[[1]]
-	file_name_split <- file_name_split[file_name_split!="eps"]
+	file_name_split <- file_name_split[file_name_split!="pdf"]
 	command <- paste("convert -density 300x300", file_name, paste(c(file_name_split,'png'), collapse = '.'))
 	system(command)
 }
 
-draw_two_y_axes_graph <- function (o_file_name, max_curve_count, x_val, y_l_val, y_r_val, lim_x, lim_l_y, lim_r_y, x_label, y_l_label, y_r_label, graph_name, x_mark=NA, y_l_mark=NA, y_r_mark=NA){
-	pdf(file=o_file_name,width=10,height=10)
+draw_two_y_axes_graph <- function (file_name, max_curve_count, x_val, y_l_val, y_r_val, lim_x, lim_l_y, lim_r_y, x_label, y_l_label, y_r_label, graph_name, x_mark=NA, y_l_mark=NA, y_r_mark=NA){
+	pdf(file=file_name,width=10,height=10)
 	color <- rainbow(max_curve_count)
 	par(mar=c(5, 5, 4, 5) + 0.1)
 	for (i in 1:max_curve_count){
@@ -47,4 +49,8 @@ draw_two_y_axes_graph <- function (o_file_name, max_curve_count, x_val, y_l_val,
 		}	
 	}
 	dev.off()	
+	file_name_split <- strsplit(file_name,'\\.')[[1]]
+	file_name_split <- file_name_split[file_name_split!="pdf"]
+	command <- paste("convert -density 300x300", file_name, paste(c(file_name_split,'png'), collapse = '.'))
+	system(command)
 } 

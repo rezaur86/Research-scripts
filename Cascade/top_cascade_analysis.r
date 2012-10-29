@@ -38,23 +38,23 @@ top_size_analysis <- function(file_name){
 	users_correlated_info.df <- ddply(users_correlated_info, c('top_user_odeg','size','depth'), summarise, avg_neighbour_odeg = mean(neighbour_odeg), total_neighbour_odeg = sum(neighbour_odeg))
 	# top user's outged vs. avg neighbour outdeg
 	plot <- ggplot(users_correlated_info.df, aes(x = top_user_odeg, y = avg_neighbour_odeg)) + xlim(0,100) + geom_point() + geom_smooth(method=lm)
-	ggsave(plot,file=paste(file_name,'_avg_odeg_corr.eps'))
+	save_ggplot(plot,file=paste(c(file_name,'_avg_odeg_corr.pdf'), collapse = ''))
 	print_report('Cor of top user outdeg vs. avg neighbour outdeg', cor(users_correlated_info.df$top_user_odeg,users_correlated_info.df$avg_neighbour_odeg))
 	# top user's outdeg vs. total neihbour outdeg
 	plot <- ggplot(users_correlated_info.df, aes(x = top_user_odeg, y = total_neighbour_odeg)) + xlim(0,100) + geom_point() + geom_smooth(method=lm) + xlab('Top users\' out degree') + ylab('Neighbor\'s total out degree')
-	ggsave(plot,file=paste(file_name,'_total_odeg_corr.eps'))
+	save_ggplot(plot,file=paste(c(file_name,'_total_odeg_corr.pdf', collapse = '')))
 	print_report('Cor of top user outdeg vs. total neighbour outdeg', cor(users_correlated_info.df$top_user_odeg,users_correlated_info.df$total_neighbour_odeg))
 	# top user's size vs. outdeg
 	plot <- ggplot(users_correlated_info.df, aes(x = top_user_odeg, y = log10(size))) + geom_point() + geom_smooth(method=lm) + xlim(0,300) + xlab('Top users\' out degree') + ylab('log of Cascade size')
-	ggsave(plot,file=paste(file_name,'_size_corr.eps'))
+	save_ggplot(plot,file=paste(c(file_name,'_size_corr.pdf'), collapse = ''))
 	print_report('Cor of top user outdeg vs. size', cor(users_correlated_info.df$top_user_odeg,users_correlated_info.df$size))
 	# top user's size vs. neighbour's total outdeg
 	plot <- ggplot(users_correlated_info.df, aes(x = log10(size), y = total_neighbour_odeg)) + geom_point() + geom_smooth(method=lm) + xlab('log of Cacade size') + ylab('Total neighbor out degree')
-	ggsave(plot,file=paste(file_name,'_size_total_outdeg_corr.eps'))
+	save_ggplot(plot,file=paste(c(file_name,'_size_total_outdeg_corr.pdf', collapse = '')))
 	print_report('Cor of size vs. total neighbour outdeg', cor(users_correlated_info.df$size,users_correlated_info.df$total_neighbour_odeg))
 	# top user's size vs. depth
 	plot <- ggplot(users_correlated_info.df, aes(x = log10(size), y = depth)) + geom_point() + geom_smooth(method=lm) + xlab('log of Cascade size') + ylab('Cascade depth')
-	ggsave(plot,file=paste(file_name,'_size_depth_corr.eps'))
+	save_ggplot(plot,file=paste(c(file_name,'_size_depth_corr.pdf', collapse = '')))
 	print_report('Cor of size vs. depth', cor(users_correlated_info.df$size,users_correlated_info.df$depth))
 	# regression analysis
 	size_model <- glm(log(size)~top_user_odeg+total_neighbour_odeg, family="poisson",data= users_correlated_info.df)
@@ -169,8 +169,7 @@ draw_depth_expansion <- function(file_name,depth_expansion.df){
 		max_l_y <- max(max_l_y, max(cum_expansion[[counter]]))
 		max_r_y <- max(max_r_y, max(depth[[counter]]))
 	}
-	#convert -density 300x300 o_file_name o_file_name.jpg
-	draw_two_y_axes_graph(o_file_name=paste(file_name,'time.pdf'), 
+	draw_two_y_axes_graph(file_name=paste(c(file_name,'time.pdf'), collapse =''), 
 			max_curve_count=counter, 
 			x_val=cum_time_interval,
 			y_l_val=cum_expansion,
@@ -185,11 +184,11 @@ draw_depth_expansion <- function(file_name,depth_expansion.df){
 			x_mark=list(at=c(86400*7,2*86400*7,3*86400*7,4*86400*7,8*86400*7,12*86400*7,16*86400*7), label=c('1 week','2 week','3 week','1 month','2 month','3 month','4 month')))
 	depth_expansion.df$root_user_id <- factor(depth_expansion.df$root_user_id)
 	plot <- ggplot(depth_expansion.df, aes(x = depth, y = (expansion))) + geom_line(aes(group = root_user_id,colour = root_user_id)) + xlab('Depth') + ylab('Shell size') 
-	ggsave(plot,file=paste(file_name,'_depth_expansion.eps'))
+	save_ggplot(plot, paste(c(file_name,'_depth_expansion.pdf'), collapse = ''))
 	plot <- ggplot(depth_expansion.df, aes(x = depth, y = log10(expansion))) + geom_line(aes(group = root_user_id,colour = root_user_id)) + xlab('Depth') + ylab('log of Shell size') 
-	ggsave(plot,file=paste(file_name,'_depth_log_expansion.eps'))
+	save_ggplot(plot, paste(c(file_name,'_depth_log_expansion.pdf'), collapse = ''))
 	plot <- ggplot(depth_expansion.df, aes(x = depth, y = (diff))) + geom_line(aes(group = root_user_id,colour = root_user_id)) + xlab('Depth') + ylab('Shell size growth') + scale_colour_hue(name  ="Cascade root")
-	save_ggplot(paste(c(file_name,'_depth_expansion_norm.eps'), collapse = ''), plot)
+	save_ggplot(plot, paste(c(file_name,'_depth_expansion_norm.pdf'), collapse = ''))
 }
 
 build_model <- function (trainer_cascade){
@@ -238,7 +237,7 @@ analyze_cascade_growth <- function (fraction, depth_expansion.df, rooted_top_use
 #	data_ampl_95$total_ampl_frac <- total_ampl_frac 
 #	data_ampl_95$growth_rate_frac <- growth_rate_frac
 #	plot <- ggplot(data_ampl_95, aes(x = total_ampl_frac, y = growth_rate_frac*86400)) + geom_point() + geom_smooth(method=lm) + xlab('Amplification till 95% of size') + ylab('95% size/arrival days')
-#	ggsave(plot,file=paste(rooted_top_users_file,'_ampl_95_size_corr.eps'))
+#	ggsave(plot,file=paste(rooted_top_users_file,'_ampl_95_size_corr.pdf'))
 	return (amplifiers)
 }
 
@@ -259,7 +258,7 @@ root_users_analysis <- function(rooted_top_users_file, depth_vs_expansion_file){
 	build_model(users_correlated_info.df)
 	print_report('Cor of size vs total amplification', cor(users_correlated_info.df$size,users_correlated_info.df$total_ampl))
 	plot <- ggplot(users_correlated_info.df, aes(x = total_ampl, y = size)) + geom_point() + geom_smooth(method=lm) + xlab('Total amplification') + ylab('Cascade size')
-	ggsave(plot,file=paste(rooted_top_users_file,'_ampl_size_corr.eps'))
+	save_ggplot(plot,file=paste(c(rooted_top_users_file,'_ampl_size_corr.pdf'), collapse = ''))
 	not_really_root <- rooted_top_users.df[(rooted_top_users.df$depth-rooted_top_users.df$of_dept>=1) & (rooted_top_users.df$component_size_prop>0.80),]
 	amplifiers <- analyze_cascade_growth(fraction = .95, depth_expansion.df, rooted_top_users.df)
 	real_root <- union(setdiff(unique(depth_expansion$root_user_id),unique(not_really_root$root_user)), amplifiers)
@@ -267,7 +266,7 @@ root_users_analysis <- function(rooted_top_users_file, depth_vs_expansion_file){
 #	real_root <- sample(rooted_top_users.df$root_user, 300)
 #	print(real_root)
 #	plot <- ggplot(rooted_top_users.df, aes(x = depth_matching_prop, y = component_size_prop)) + geom_point()  + xlab('Depth difference') + ylab('Subrooted cascade size / rooted cascade size') #+ geom_smooth(method=lm)
-#	ggsave(plot,file=paste(rooted_top_users_file,'_at_real_root_depth_size_prop_corr.eps'))
+#	ggsave(plot,file=paste(rooted_top_users_file,'_at_real_root_depth_size_prop_corr.pdf'))
 #	print(cor(rooted_top_users.df$at_depth,rooted_top_users.df$component_size_prop))
 	rooted_top_users.df <- rooted_top_users.df[rooted_top_users.df$root_user%in%real_root,]
 	users_correlated_info <- depth_expansion.df[depth_expansion.df$root_user_id%in%real_root,]
