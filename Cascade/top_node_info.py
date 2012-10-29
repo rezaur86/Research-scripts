@@ -17,19 +17,24 @@ def manage_depth_expansion_per_root(depth,expansion):
     else:
         depth_expansion_per_root[depth] += expansion
 def manage_depth_time_per_root(depth,time):
-    global depth_time_per_root
-    if depth not in depth_time_per_root:
-        depth_time_per_root[depth] = time
+    global depth_min_time_per_root, depth_max_time_per_root
+    if depth not in depth_min_time_per_root:
+        depth_min_time_per_root[depth] = time
     else:
-        depth_time_per_root[depth] = min(depth_time_per_root[depth], time)
+        depth_min_time_per_root[depth] = min(depth_min_time_per_root[depth], time)
+    if depth not in depth_max_time_per_root:
+        depth_max_time_per_root[depth] = time
+    else:
+        depth_max_time_per_root[depth] = max(depth_max_time_per_root[depth], time)
 
 def initialize_traverse ():
-    global graph, graph_node_count, activities_per_root, depth_expansion_per_root, depth_time_per_root
+    global graph, graph_node_count, activities_per_root, depth_expansion_per_root, depth_min_time_per_root, depth_max_time_per_root
     graph = {}
     graph_node_count = 0
     activities_per_root = []
     depth_expansion_per_root = {}
-    depth_time_per_root = {}
+    depth_min_time_per_root = {}
+    depth_max_time_per_root = {}
     
 def cascade_traverse (parent,depth):
     global graph_node_count
@@ -106,10 +111,10 @@ def resolve_cascades (user_list):
         root_contains[(a_root,top_users_info[a_root][0],top_users_info[a_root][1])] = Set()
         if a_root in not_root_users:
             for d in depth_expansion_per_root:
-                depth_expansion.append((d,depth_expansion_per_root[d],a_root,0,depth_time_per_root[d] if d in depth_time_per_root else None)) # 0 for sub-root
+                depth_expansion.append((d,depth_expansion_per_root[d],a_root,0,depth_min_time_per_root[d] if d in depth_min_time_per_root else None,depth_max_time_per_root[d] if d in depth_max_time_per_root else None)) # 0 for sub-root
         else:
             for d in depth_expansion_per_root:
-                depth_expansion.append((d,depth_expansion_per_root[d],a_root,1,depth_time_per_root[d] if d in depth_time_per_root else None)) # 1 for distinct root
+                depth_expansion.append((d,depth_expansion_per_root[d],a_root,1,depth_min_time_per_root[d] if d in depth_min_time_per_root else None,depth_max_time_per_root[d] if d in depth_max_time_per_root else None)) # 1 for distinct root
         for i in range(len(activities_per_root)):
             if activities_per_root[i][0] == a_root:
                 top_users_correlated_info.append((a_root,graph[a_root],graph[activities_per_root[i][1]],top_users_info[a_root][0],top_users_info[a_root][1]))
@@ -149,9 +154,6 @@ if __name__ == '__main__':
         if parent not in children_of_parent:
             children_of_parent[parent] = []
         children_of_parent[parent].append((a_child,receiving_time))
-#        for each_child_receiving_time in splits[1:len(splits)]:
-#            (each_child,receiving_time) = each_child_receiving_time.split(',')
-#            children_of_parent[parent].append((long(each_child),long(receiving_time)))
     print 'children_of_parent_file is read'
     for each_infl_file in sys.argv[2].split(','):
         top_users = {}
