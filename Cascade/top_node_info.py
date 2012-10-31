@@ -27,6 +27,20 @@ def manage_depth_time_per_root(depth,time):
     else:
         depth_max_time_per_root[depth] = max(depth_max_time_per_root[depth], time)
 
+def manage_outdegree_distribution(outdegree, manage_root=False):
+    global branching_dist_root, branching_dist_nonroot
+    if manage_root:
+        if outdegree in branching_dist_root:
+            branching_dist_root[outdegree] += 1
+        else:
+            branching_dist_root[outdegree] = 1
+    else:
+        if outdegree in branching_dist_nonroot:
+            branching_dist_nonroot[outdegree] += 1
+        else:
+            branching_dist_nonroot[outdegree] = 1
+        
+
 def initialize_traverse ():
     global graph, graph_node_count, activities_per_root, depth_expansion_per_root, depth_min_time_per_root, depth_max_time_per_root
     graph = {}
@@ -115,6 +129,12 @@ def resolve_cascades (user_list):
         else:
             for d in depth_expansion_per_root:
                 depth_expansion.append((d,depth_expansion_per_root[d],a_root,1,depth_min_time_per_root[d] if d in depth_min_time_per_root else None,depth_max_time_per_root[d] if d in depth_max_time_per_root else None)) # 1 for distinct root
+            for a_node in graph: #Collecting out degree distribution for branching process.
+                if a_node == a_root:
+                    manage_outdegree_distribution(graph[a_root], True)
+                else:
+                    manage_outdegree_distribution(graph[a_node], False)
+                
         for i in range(len(activities_per_root)):
             if activities_per_root[i][0] == a_root:
                 top_users_correlated_info.append((a_root,graph[a_root],graph[activities_per_root[i][1]],top_users_info[a_root][0],top_users_info[a_root][1]))
@@ -128,7 +148,8 @@ activities_per_root = []
 depth_expansion_per_root = {}
 depth_expansion = []
 top_users_correlated_info = []
-
+branching_dist_root = {}
+branching_dist_nonroot = {}
 children_of_parent = {}
 #rezaur@rahman:~/Documents/Code/Cascade$ python top_node_info.py test_case/children_of_parent.txt test_case/top_size.csv,test_case/top_depth.csv 20
 #rezaur@rahman:~/Documents/Code/Cascade$ python top_node_info.py First_parent/children_of_parent.txt First_parent/top_size.csv,First_parent/top_depth.csv 1814400
@@ -182,6 +203,7 @@ if __name__ == '__main__':
         top_users_correlated_info_file  = open(each_infl_file+'_top_'+str(TOP_N)+'users_correlated_info.csv', "w")
         depth_vs_expansion_file  = open(each_infl_file+'_top_'+str(TOP_N)+'_'+str(MAX_DEPTH)+'_depth_vs_expansion.csv', "w")
         rooted_top_users_file  = open(each_infl_file+'_top_'+str(TOP_N)+'_rooted_top_users.csv', "w")
+        branching_dist_file  = open(each_infl_file+'_top_'+str(TOP_N)+'_branching_dist.csv', "w")
         rooted_top_users = resolve_cascades(top_users)
         writer = csv.writer(depth_vs_expansion_file, quoting=csv.QUOTE_MINIMAL)
         writer.writerows(depth_expansion)
@@ -193,6 +215,11 @@ if __name__ == '__main__':
             for (a_top_user, at_depth, of_size, of_depth) in rooted_top_users[(a_root,root_size,root_depth)]:
                 rooted_top_users_file.write('%s,%s,%s,%s,%s,%s,%s\n'%(a_root,root_size,root_depth,a_top_user,at_depth, of_size, of_depth))
         rooted_top_users_file.close()
+        for outdeg in branching_dist_root:
+            branching_dist_file.write('%s,%s,%s\n' %(outdeg,branching_dist_root[outdeg],1))
+        for outdeg in branching_dist_nonroot:
+            branching_dist_file.write('%s,%s,%s\n' %(outdeg,branching_dist_nonroot[outdeg],0))
+        branching_dist_file.close()
 #        for a_top_user in top_users:
 #            cascade_traverse(a_top_user, MAX_DEPTH)
 #            for d in depth_expansion_per_root:

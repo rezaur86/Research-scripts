@@ -245,7 +245,7 @@ root_users_analysis <- function(rooted_top_users_file, depth_vs_expansion_file){
 	rooted_top_users <- as.data.frame(read.csv(rooted_top_users_file, header=FALSE))
 	colnames(rooted_top_users) <- c('root_user', 'size', 'depth', 'component_top_user', 'at_depth', 'of_size', 'of_depth')
 	depth_expansion <- as.data.frame(read.csv(depth_vs_expansion_file, header=FALSE))
-	colnames(depth_expansion) <- c('depth', 'expansion', 'root_user_id', 'is_unique', 'time')
+	colnames(depth_expansion) <- c('depth', 'expansion', 'root_user_id', 'is_unique', 'time', 'max_time')
 	framed_data <- process_data(rooted_top_users, depth_expansion)
 	rooted_top_users.df <- framed_data$rooted_top_users
 	depth_expansion.df <- framed_data$depth_expansion
@@ -278,6 +278,53 @@ root_users_analysis <- function(rooted_top_users_file, depth_vs_expansion_file){
 	return(users_correlated_info.df)
 }
 
-#nrr <- root_users_analysis('~/output_cascade/full_first_parent/top_size.csv_top_1000_rooted_top_users.csv','~/output_cascade/full_first_parent/top_size.csv_top_1000_100_depth_vs_expansion.csv')
+#nrr <- root_users_analysis('~/output_cascade/full_first_parent/top_size.csv_top_10_rooted_top_users.csv','~/output_cascade/full_first_parent/top_size.csv_top_10_100_depth_vs_expansion.csv')
 #colnames(nrr)<-c('','size','total amplification','4 hops amplification','hop 1 shell size','hop 2 shell size','hop 3 shell size','hop 4 shell size','')
 #pairs(nrr[,2:6], panel = panel.smooth)
+
+branching_process <- function(dist_file){
+	outdeg_dist <- as.data.frame(read.csv(dist_file, header=FALSE))
+	colnames(outdeg_dist) <- c('outdeg', 'count', 'is_root')
+	generation_population <- c()
+	random_outdeg_chooser <- function(dist) {
+		return(sample(x=dist$outdeg, size=1, prob=(dist$count/sum(dist$count))))
+	}
+	manage_generation_population <- function(generation, population){
+		if (length(generation_population) >= generation){
+			generation_population[generation] <<- generation_population[generation] + population
+		}
+		else{
+			generation_population <<- c(generation_population, population)
+		}
+	}
+	branching <- function(dist, generation){
+		outdeg <- random_outdeg_chooser(dist)
+		if (outdeg==0 | generation==100){
+			manage_generation_population(generation, 1)
+			return (1)
+		}
+		else{
+			manage_generation_population(generation, 1)
+			for (each_branch in 1:outdeg){	
+				branching(dist, generation+1)
+			}
+			return(1)
+		}
+	}
+	cascades <- vector("list")
+	for (i in 1:sum(outdeg_dist[outdeg_dist$is_root==1,]$count)){
+		cascades[i] <- list(size=c(1),depth=c(0),growth=c())
+		root_odeg <- random_outdeg_chooser(outdeg_dist[outdeg_dist$is_root==1,])
+		generation_population <- c()
+		if (root_odeg != 0){
+			for (j in 1:root_odeg){
+				branching(outdeg_dist[outdeg_dist$is_root==0,], 1)
+			}
+			cascades[[i]]$size <- sum(generation_population)
+			cascades[[i]]$depth <- length(generation_population)
+			cascades[[i]]$growth <- generation_population
+		}
+		print(cascades[[i]])
+	}
+	return(cascades)
+}
