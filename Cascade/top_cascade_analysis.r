@@ -136,8 +136,9 @@ process_data <- function (rooted_top_users, depth_expansion){
 				sgs = shell_growth_state(one_partition$diff2)
 				one_partition$state = sgs$state
 				one_partition$ampl = sgs$amplifier
-				one_partition$time_interval = (one_partition$time-c(one_partition$time[1],one_partition$time[2],one_partition$time[3:nrow(one_partition)-1]))
-				one_partition$cum_time_interval = c(0,cumsum(one_partition$time_interval[2:nrow(one_partition)]))
+#				one_partition$time_interval = (one_partition$time-c(one_partition$time[1],one_partition$time[2],one_partition$time[3:nrow(one_partition)-1]))
+				one_partition$cum_time_interval = one_partition$time - one_partition$time[2]
+				one_partition$relative_max_time = one_partition$max_time - one_partition$time[2]
 				one_partition$cum_expansion = cumsum(one_partition$expansion)
 				one_partition$factor = ((one_partition$expansion-c(NA,one_partition$expansion[1:nrow(one_partition)-1]))/c(1,one_partition$expansion[1:nrow(one_partition)-1]))
 				alpha <- (max(one_partition$expansion))^(1/min(one_partition[one_partition$expansion==max(one_partition$expansion),]$depth))
@@ -162,13 +163,17 @@ draw_depth_expansion <- function(file_name,depth_expansion.df){
 	for(root_user in unique(depth_expansion.df$root_user_id)){
 		counter <- counter + 1
 		sub_data <- subset(depth_expansion.df, root_user_id==root_user)
-		cum_time_interval[counter] <- list(sub_data$cum_time_interval)
-		cum_expansion[counter] <- list(sub_data$cum_expansion)
-		depth[counter] <- list(sub_data$depth)
-		max_x <- max(max_x, max(cum_time_interval[[counter]]))
+		sub_data_size <- nrow(sub_data)
+		cum_time_interval[2*counter-1] <- list(sub_data$cum_time_interval[2:sub_data_size])
+		cum_time_interval[2*counter] <- list(sub_data$relative_max_time[2:sub_data_size])
+		cum_expansion[counter] <- list(sub_data$cum_expansion[2:sub_data_size])
+		depth[counter] <- list(sub_data$depth[2:sub_data_size])
+		max_x <- max(max_x, max(cum_time_interval[[2*counter-1]]))
+		max_x <- max(max_x, max(cum_time_interval[[2*counter]]))
 		max_l_y <- max(max_l_y, max(cum_expansion[[counter]]))
 		max_r_y <- max(max_r_y, max(depth[[counter]]))
 	}
+	print(max_x)
 	draw_two_y_axes_graph(file_name=paste(c(file_name,'time.pdf'), collapse =''), 
 			max_curve_count=counter, 
 			x_val=cum_time_interval,
@@ -181,7 +186,8 @@ draw_depth_expansion <- function(file_name,depth_expansion.df){
 			y_l_label='Cumulative shell size',
 			y_r_label='Depth', 
 			graph_name='Cumulative shell size and depth vs. arrival time', 
-			x_mark=list(at=c(86400*7,2*86400*7,3*86400*7,4*86400*7,8*86400*7,12*86400*7,16*86400*7), label=c('1 week','2 week','3 week','1 month','2 month','3 month','4 month')))
+#			x_mark=list(at=c(86400*7,2*86400*7,3*86400*7,4*86400*7,8*86400*7,12*86400*7,16*86400*7), label=c('1 week','2 week','3 week','1 month','2 month','3 month','4 month'))
+			)
 	depth_expansion.df$root_user_id <- factor(depth_expansion.df$root_user_id)
 	plot <- ggplot(depth_expansion.df, aes(x = depth, y = (expansion))) + geom_line(aes(group = root_user_id,colour = root_user_id)) + xlab('Depth') + ylab('Shell size') 
 	save_ggplot(plot, paste(c(file_name,'_depth_expansion.pdf'), collapse = ''))
@@ -290,25 +296,22 @@ branching_process <- function(dist_file){
 		return(sample(x=dist$outdeg, size=1, prob=(dist$count/sum(dist$count))))
 	}
 	manage_generation_population <- function(generation, population){
-		if (length(generation_population) >= generation){
+		if (length(generation_population) >= generation)
 			generation_population[generation] <<- generation_population[generation] + population
-		}
-		else{
+		else
 			generation_population <<- c(generation_population, population)
-		}
 	}
 	branching <- function(dist, generation){
+		if(generation > 1000)
+			print('Branching forever')
 		outdeg <- random_outdeg_chooser(dist)
-		if (outdeg==0 | generation==100){
+		if (outdeg==0)
 			manage_generation_population(generation, 1)
-			return (1)
-		}
 		else{
 			manage_generation_population(generation, 1)
 			for (each_branch in 1:outdeg){	
 				branching(dist, generation+1)
 			}
-			return(1)
 		}
 	}
 	cascades <- vector("list")
@@ -324,7 +327,7 @@ branching_process <- function(dist_file){
 			cascades[[i]]$depth <- length(generation_population)
 			cascades[[i]]$growth <- generation_population
 		}
-		print(cascades[[i]])
 	}
 	return(cascades)
 }
+bp <- branching_process('~/output_cascade/full_first_parent/top_size.csv_top_100_branching_dist.csv')

@@ -16,10 +16,10 @@ save_ggplot <- function (plot, file_name){
 draw_two_y_axes_graph <- function (file_name, max_curve_count, x_val, y_l_val, y_r_val, lim_x, lim_l_y, lim_r_y, x_label, y_l_label, y_r_label, graph_name, x_mark=NA, y_l_mark=NA, y_r_mark=NA){
 	pdf(file=file_name,width=10,height=10)
 	color <- rainbow(max_curve_count)
-	par(mar=c(5, 5, 4, 5) + 0.1)
+	par(mar=c(5, 5, 5, 5))
 	for (i in 1:max_curve_count){
 		if(i == 1){
-			plot(x=x_val[[1]], y=y_l_val[[1]],col=color[1], type='n', main=graph_name, xlab=x_label, ylab=y_l_label, xaxt='n', yaxt='n', lwd=.75)
+			plot(x=x_val[[1]], y=y_l_val[[1]],col=color[1], type='n', main=graph_name, xlab=x_label, ylab=y_l_label, xlim=lim_x, xaxt='n', yaxt='n', lwd=.75)
 			if (typeof(x_mark) != 'list')
 				axis(1, pretty(lim_x))
 			else 
@@ -30,7 +30,8 @@ draw_two_y_axes_graph <- function (file_name, max_curve_count, x_val, y_l_val, y
 				axis(2, at=y_l_mark$at, labels=y_l_mark$label, col.axis="blue", las=2, cex.axis=0.7, tck=-.01)
 		}
 		if(i <= max_curve_count){
-			lines(x=x_val[[i]], y=y_l_val[[i]], col=color[i], lwd=0.75, type="o", lty=2)
+			lines(x=x_val[[2*i-1]], y=y_l_val[[i]], col=color[i], lwd=0.75, type="o", lty=2)
+			lines(x=x_val[[2*i]], y=y_l_val[[i]], col=color[i], lwd=0.75, type="o", lty=1, pch=22)
 		}	
 	}
 	par(new=T)
@@ -44,7 +45,7 @@ draw_two_y_axes_graph <- function (file_name, max_curve_count, x_val, y_l_val, y
 			mtext(y_r_label, side=4, line=3)
 		}
 		if(i <= max_curve_count){
-			lines(x=x_val[[i]], y=y_r_val[[i]], col=color[i], lwd=0.75, type="s")
+			lines(x=x_val[[2*i-1]], y=y_r_val[[i]], col=color[i], lwd=0.75, type="s")
 		}	
 	}
 	dev.off()	
