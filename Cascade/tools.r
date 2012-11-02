@@ -1,8 +1,7 @@
 
 print_report <- function(title, variable){
-	cat(title, "=")
+	cat("::",title,"::\n")
 	print (variable)
-	cat("\n")
 }
 
 save_ggplot <- function (plot, file_name){
