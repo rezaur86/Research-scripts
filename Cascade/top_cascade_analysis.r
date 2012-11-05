@@ -346,4 +346,13 @@ analyze_branching <- function(dist_file){
 	print_report('Summary depth', summary(simulated_cascades$depth))
 	return(simulated_cascades)
 }
-ab <- analyze_branching('~/output_cascade/full_first_parent/top_size.csv_top_100_branching_dist.csv')
+ab <- analyze_branching('~/output_cascade/full_first_parent/top_size.csv_top_1000_branching_dist.csv')
+
+ab.df <- data.frame(depth=0:length(ab$growth[[1]]), shell=c(1,ab$growth[[1]]), tree=rep(1, times=length(ab$growth[[1]])+1))
+for (i in 2:30){
+	data_f <- data.frame(depth=0:length(ab$growth[[i]]), shell=c(1,ab$growth[[i]]), tree=rep(i, times=length(ab$growth[[i]])+1))
+	ab.df <- rbind(ab.df,data_f)
+}
+ab.df$tree <- factor(ab.df$tree)
+plot <- ggplot(ab.df, aes(x = depth, y = (shell))) + geom_line(aes(group = tree,colour = tree)) + xlim(0,100) + xlab('Depth') + ylab('Shell size') 
+save_ggplot(plot, paste('~/output_cascade/full_first_parent/branching.pdf', collapse = ''))

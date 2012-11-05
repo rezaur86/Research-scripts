@@ -30,13 +30,12 @@ draw_two_y_axes_graph <- function (file_name, max_curve_count, x_val, y_l_val, y
 		}
 		if(i <= max_curve_count){
 			lines(x=x_val[[2*i-1]], y=y_l_val[[i]], col=color[i], lwd=0.75, type="o", lty=2)
-			lines(x=x_val[[2*i]], y=y_l_val[[i]], col=color[i], lwd=0.75, type="o", lty=1, pch=22)
 		}	
 	}
 	par(new=T)
 	for (i in 1:max_curve_count){
 		if(i == 1){
-			plot(x=x_val[[1]], y=y_r_val[[1]],col=color[1], type='n', xaxt='n', yaxt='n', lwd=.75, axes=F, ylab='', xlab='')
+			plot(x=x_val[[1]], y=y_r_val[[1]],col=color[1], xlim=lim_x, type='n', xaxt='n', yaxt='n', lwd=.75, axes=F, ylab='', xlab='')
 			if (typeof(y_r_mark) != 'list')
 				axis(4, pretty(lim_r_y), col='green', labels=T)
 			else
@@ -45,6 +44,7 @@ draw_two_y_axes_graph <- function (file_name, max_curve_count, x_val, y_l_val, y
 		}
 		if(i <= max_curve_count){
 			lines(x=x_val[[2*i-1]], y=y_r_val[[i]], col=color[i], lwd=0.75, type="s")
+			lines(x=x_val[[2*i]], y=y_r_val[[i]], col=color[i], lwd=0.75, type="o", lty=1, pch=22)
 		}	
 	}
 	dev.off()	

@@ -27,28 +27,22 @@ def manage_depth_time_per_root(depth,time):
     else:
         depth_max_time_per_root[depth] = max(depth_max_time_per_root[depth], time)
 
-def manage_outdegree_distribution(outdegree, manage_root=False):
-    global branching_dist_root, branching_dist_nonroot
-    if manage_root:
-        if outdegree in branching_dist_root:
-            branching_dist_root[outdegree] += 1
-        else:
-            branching_dist_root[outdegree] = 1
+def manage_outdegree_per_root(outdegree, depth):
+    global branching_dist_per_root
+    if (outdegree, depth) in branching_dist_per_root:
+        branching_dist_per_root[(outdegree, depth)] += 1
     else:
-        if outdegree in branching_dist_nonroot:
-            branching_dist_nonroot[outdegree] += 1
-        else:
-            branching_dist_nonroot[outdegree] = 1
-        
+        branching_dist_per_root[(outdegree, depth)] = 1        
 
 def initialize_traverse ():
-    global graph, graph_node_count, activities_per_root, depth_expansion_per_root, depth_min_time_per_root, depth_max_time_per_root
+    global graph, graph_node_count, activities_per_root, depth_expansion_per_root, depth_min_time_per_root, depth_max_time_per_root, branching_dist_per_root
     graph = {}
     graph_node_count = 0
     activities_per_root = []
     depth_expansion_per_root = {}
     depth_min_time_per_root = {}
     depth_max_time_per_root = {}
+    branching_dist_per_root = {}
     
 def cascade_traverse (parent,depth):
     global graph_node_count
@@ -60,7 +54,9 @@ def cascade_traverse (parent,depth):
 #            print 'graph size:',graph_node_count
         if parent in children_of_parent:
             graph[parent] = len(children_of_parent[parent])
+            manage_outdegree_per_root(graph[parent],MAX_DEPTH-depth)
         else:
+            manage_outdegree_per_root(0,MAX_DEPTH-depth)
             return True
         if depth > 0:
             for (each_child,receiving_time) in children_of_parent[parent]:
@@ -68,13 +64,6 @@ def cascade_traverse (parent,depth):
                     activities_per_root.append((parent,each_child,MAX_DEPTH-depth))
                     manage_depth_time_per_root(MAX_DEPTH-depth+1, receiving_time)
         return True
-    else:
-        if depth > 0 and graph[parent] > 0:
-            for (each_child,receiving_time) in children_of_parent[parent]:
-                if cascade_traverse(each_child, depth-1) == True:
-                    activities_per_root.append((parent,each_child,MAX_DEPTH-depth))
-                    manage_depth_time_per_root(MAX_DEPTH-depth+1, receiving_time)
-        return False
 
 def visulization (infl_file_name, user_list, max_depth):
     global activities_per_root
@@ -95,7 +84,7 @@ def visulization (infl_file_name, user_list, max_depth):
         os.popen("rm "+infl_file_name+'_top_'+str(TOP_N)+'_'+str(i)+"graph.dot")
 
 def resolve_cascades (user_list):
-    global depth_expansion, depth_expansion_per_root, top_users_correlated_info
+    global depth_expansion, depth_expansion_per_root, top_users_correlated_info, branching_dist
 #    sorted_user_list = sorted(user_list.iteritems(), key=operator.itemgetter(1), reverse=True)
     not_root_users = Set()
     root_contains = {}
@@ -129,11 +118,11 @@ def resolve_cascades (user_list):
         else:
             for d in depth_expansion_per_root:
                 depth_expansion.append((d,depth_expansion_per_root[d],a_root,1,depth_min_time_per_root[d] if d in depth_min_time_per_root else None,depth_max_time_per_root[d] if d in depth_max_time_per_root else None)) # 1 for distinct root
-            for a_node in graph: #Collecting out degree distribution for branching process.
-                if a_node == a_root:
-                    manage_outdegree_distribution(graph[a_root], True)
+            for (degree,depth) in branching_dist_per_root: #Collecting out degree distribution for branching process.
+                if (degree,depth) in branching_dist:
+                    branching_dist[(degree,depth)] += branching_dist_per_root[(degree,depth)]
                 else:
-                    manage_outdegree_distribution(graph[a_node], False)
+                    branching_dist[(degree,depth)] = branching_dist_per_root[(degree,depth)]
                 
         for i in range(len(activities_per_root)):
             if activities_per_root[i][0] == a_root:
@@ -148,8 +137,8 @@ activities_per_root = []
 depth_expansion_per_root = {}
 depth_expansion = []
 top_users_correlated_info = []
-branching_dist_root = {}
-branching_dist_nonroot = {}
+branching_dist_per_root = {}
+branching_dist = {}
 children_of_parent = {}
 #rezaur@rahman:~/Documents/Code/Cascade$ python top_node_info.py test_case/children_of_parent.txt test_case/top_size.csv,test_case/top_depth.csv 20
 #rezaur@rahman:~/Documents/Code/Cascade$ python top_node_info.py First_parent/children_of_parent.txt First_parent/top_size.csv,First_parent/top_depth.csv 1814400
@@ -215,10 +204,8 @@ if __name__ == '__main__':
             for (a_top_user, at_depth, of_size, of_depth) in rooted_top_users[(a_root,root_size,root_depth)]:
                 rooted_top_users_file.write('%s,%s,%s,%s,%s,%s,%s\n'%(a_root,root_size,root_depth,a_top_user,at_depth, of_size, of_depth))
         rooted_top_users_file.close()
-        for outdeg in branching_dist_root:
-            branching_dist_file.write('%s,%s,%s\n' %(outdeg,branching_dist_root[outdeg],1))
-        for outdeg in branching_dist_nonroot:
-            branching_dist_file.write('%s,%s,%s\n' %(outdeg,branching_dist_nonroot[outdeg],0))
+        for (outdeg,depth) in branching_dist:
+            branching_dist_file.write('%s,%s,%s\n' %(outdeg,branching_dist[(outdeg,depth)],depth))
         branching_dist_file.close()
 #        for a_top_user in top_users:
 #            cascade_traverse(a_top_user, MAX_DEPTH)
