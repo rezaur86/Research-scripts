@@ -287,7 +287,7 @@ root_users_analysis <- function(rooted_top_users_file, depth_vs_expansion_file){
 #colnames(nrr)<-c('','size','total amplification','4 hops amplification','hop 1 shell size','hop 2 shell size','hop 3 shell size','hop 4 shell size','')
 #pairs(nrr[,2:6], panel = panel.smooth)
 
-branching_process <- function(outdeg_dist, trial=0){
+branching_process <- function(outdeg_dist, trial=0, max_generation){
 	generation_population <- c()
 	random_outdeg_chooser <- function(dist) {
 		return(sample(x=dist$outdeg, size=1, prob=(dist$count/sum(dist$count))))
@@ -298,55 +298,59 @@ branching_process <- function(outdeg_dist, trial=0){
 		else
 			generation_population <<- c(generation_population, population)
 	}
-	branching <- function(dist, generation){
-		if(generation > 1000){
-			print('Branching forever')
+	branching <- function(dist, generation, max_generation){
+		if(generation > 60){ #We don't care any population in later generations
 		}
 		else{
-			outdeg <- random_outdeg_chooser(dist)
-			if (outdeg==0)
+			if (generation < max_generation)
+				outdeg <- random_outdeg_chooser(dist[[generation+1]])
+			else
+				outdeg <- random_outdeg_chooser(dist[[max_generation+1]])
+			if(generation > 0)
 				manage_generation_population(generation, 1)
-			else{
-				manage_generation_population(generation, 1)
+			if (outdeg > 0){
 				for (each_branch in 1:outdeg){	
-					branching(dist, generation+1)
+					branching(dist, generation+1, max_generation)
 				}
 			}
 		}
 	}
 	cascades <- list(size=c(),depth=c(),growth=vector("list"))
-	for (i in 1:max(sum(outdeg_dist[outdeg_dist$is_root==1,]$count),trial)){
-		root_odeg <- random_outdeg_chooser(outdeg_dist[outdeg_dist$is_root==1,])
+	for (i in 1:trial){
 		generation_population <- c()
-		if (root_odeg != 0){
-			for (j in 1:root_odeg){
-				branching(outdeg_dist[outdeg_dist$is_root==0,], 1)
-			}
-			cascades$size <- c(cascades$size, sum(generation_population)+1)
-			cascades$depth <- c(cascades$depth, length(generation_population))
-			cascades$growth[[i]] <- generation_population
-		}
+		branching(outdeg_dist, 0, max_generation)
+		cascades$size <- c(cascades$size, sum(generation_population)+1)
+		cascades$depth <- c(cascades$depth, length(generation_population))
+		cascades$growth[[i]] <- generation_population
 	}
 	return(cascades)
 }
 
-analyze_branching <- function(dist_file){
+analyze_branching <- function(dist_file, bin_size){
 	outdeg_dist <- as.data.frame(read.csv(dist_file, header=FALSE))
-	colnames(outdeg_dist) <- c('outdeg', 'count', 'is_root')
-	root_deg_dist <- outdeg_dist[outdeg_dist$is_root==1,]
-	nonroot_deg_dist <- outdeg_dist[outdeg_dist$is_root==0,]
-	print_report('P(0 out degree)',nonroot_deg_dist$count[1]/sum(nonroot_deg_dist$count))
-	expected_root_odeg <- sum(root_deg_dist$outdeg*(root_deg_dist$count/sum(root_deg_dist$count)))
-	expected_nonroot_odeg <- sum(nonroot_deg_dist$outdeg*(nonroot_deg_dist$count/sum(nonroot_deg_dist$count)))
-	print_report('expected root degree', expected_root_odeg)
-	print_report('expected nonroot degree', expected_nonroot_odeg)
+	colnames(outdeg_dist) <- c('outdeg', 'count', 'depth')
+	outdeg_dist <- outdeg_dist[order(outdeg_dist$depth,outdeg_dist$outdeg),]
+	max_depth <- max(outdeg_dist$depth)
+	dist_bin <- list()
+	for (i in seq(0,max_depth, by=bin_size)){
+		binned_data <- outdeg_dist[(outdeg_dist$depth>=i & outdeg_dist$depth<i+bin_size),]
+		binned_dist <- ddply(binned_data, c('outdeg'), summarise, count=sum(count))
+		for (j in i:min((i+bin_size),max_depth)){
+			dist_bin[[j+1]] <- binned_dist
+		}
+	}
+#	print_report('P(0 out degree)',nonroot_deg_dist$count[1]/sum(nonroot_deg_dist$count))
+#	expected_root_odeg <- sum(root_deg_dist$outdeg*(root_deg_dist$count/sum(root_deg_dist$count)))
+#	expected_nonroot_odeg <- sum(nonroot_deg_dist$outdeg*(nonroot_deg_dist$count/sum(nonroot_deg_dist$count)))
+#	print_report('expected root degree', expected_root_odeg)
+#	print_report('expected nonroot degree', expected_nonroot_odeg)
 	options(expressions = 10000)
-	simulated_cascades <- branching_process(outdeg_dist,1000)
-	print_report('Summary size', summary(simulated_cascades$size))
-	print_report('Summary depth', summary(simulated_cascades$depth))
+	simulated_cascades <- branching_process(dist_bin,trial=100000,max_depth)
+#	print_report('Summary size', summary(simulated_cascades$size))
+#	print_report('Summary depth', summary(simulated_cascades$depth))
 	return(simulated_cascades)
 }
-ab <- analyze_branching('~/output_cascade/full_first_parent/top_size.csv_top_1000_branching_dist.csv')
+ab <- analyze_branching('~/output_cascade/full_first_parent/top_size.csv_top_1000_branching_dist.csv',10)
 
 ab.df <- data.frame(depth=0:length(ab$growth[[1]]), shell=c(1,ab$growth[[1]]), tree=rep(1, times=length(ab$growth[[1]])+1))
 for (i in 2:30){
