@@ -1,4 +1,4 @@
-source('/home/rezaur/Documents/Code/Cascade/tools.r')
+source('~/scripts/cascade/tools.r')
 
 library(ggplot2)
 library(plyr)
@@ -332,7 +332,9 @@ analyze_branching <- function(dist_file, bin_size){
 	outdeg_dist <- outdeg_dist[order(outdeg_dist$depth,outdeg_dist$outdeg),]
 	max_depth <- max(outdeg_dist$depth)
 	dist_bin <- list()
-	for (i in seq(0,max_depth, by=bin_size)){
+	root_outdeg <- outdeg_dist[(outdeg_dist$depth==0),]
+	dist_bin[[1]] <- ddply(root_outdeg, c('outdeg'), summarise, count=sum(count))
+	for (i in seq(1,max_depth, by=bin_size)){
 		binned_data <- outdeg_dist[(outdeg_dist$depth>=i & outdeg_dist$depth<i+bin_size),]
 		binned_dist <- ddply(binned_data, c('outdeg'), summarise, count=sum(count))
 		for (j in i:min((i+bin_size),max_depth)){
@@ -345,18 +347,48 @@ analyze_branching <- function(dist_file, bin_size){
 #	print_report('expected root degree', expected_root_odeg)
 #	print_report('expected nonroot degree', expected_nonroot_odeg)
 	options(expressions = 10000)
-	simulated_cascades <- branching_process(dist_bin,trial=100000,max_depth)
-#	print_report('Summary size', summary(simulated_cascades$size))
-#	print_report('Summary depth', summary(simulated_cascades$depth))
+	simulated_cascades <- branching_process(dist_bin,trial=10000,max_depth)
 	return(simulated_cascades)
 }
-ab <- analyze_branching('~/output_cascade/full_first_parent/top_size.csv_top_1000_branching_dist.csv',10)
+ab_10 <- analyze_branching('~/output_cascade/full_first_parent/top_size.csv_top_1000_branching_dist.csv',10)
+print_report('Summary size', summary(ab_10$size))
+print_report('Summary depth', summary(ab_10$depth))
+ab_5 <- analyze_branching('~/output_cascade/full_first_parent/top_size.csv_top_1000_branching_dist.csv',5)
+print_report('Summary size', summary(ab_5$size))
+print_report('Summary depth', summary(ab_5$depth))
+ab_1 <- analyze_branching('~/output_cascade/full_first_parent/top_size.csv_top_1000_branching_dist.csv',1)
+print_report('Summary size', summary(ab_1$size))
+print_report('Summary depth', summary(ab_1$depth))
 
-ab.df <- data.frame(depth=0:length(ab$growth[[1]]), shell=c(1,ab$growth[[1]]), tree=rep(1, times=length(ab$growth[[1]])+1))
+idx <- c(1:length(ab_10$size))
+sorted_idx <- idx[order(-ab_10$size)]
+ab_10.df <- data.frame(depth=0:length(ab_10$growth[[sorted_idx[1]]]), shell=c(1,ab_10$growth[[sorted_idx[1]]]), tree=rep(1, times=length(ab_10$growth[[sorted_idx[1]]])+1))
 for (i in 2:30){
-	data_f <- data.frame(depth=0:length(ab$growth[[i]]), shell=c(1,ab$growth[[i]]), tree=rep(i, times=length(ab$growth[[i]])+1))
-	ab.df <- rbind(ab.df,data_f)
+	data_f <- data.frame(depth=0:length(ab_10$growth[[sorted_idx[i]]]), shell=c(1,ab_10$growth[[sorted_idx[i]]]), tree=rep(i, times=length(ab_10$growth[[sorted_idx[i]]])+1))
+	ab_10.df <- rbind(ab_10.df,data_f)
 }
-ab.df$tree <- factor(ab.df$tree)
-plot <- ggplot(ab.df, aes(x = depth, y = (shell))) + geom_line(aes(group = tree,colour = tree)) + xlim(0,100) + xlab('Depth') + ylab('Shell size') 
-save_ggplot(plot, paste('~/output_cascade/full_first_parent/branching.pdf', collapse = ''))
+ab_10.df$tree <- factor(ab_10.df$tree)
+plot <- ggplot(ab_10.df, aes(x = depth, y = (shell))) + geom_line(aes(group = tree,colour = tree)) + xlab('Depth') + ylab('Shell size') 
+save_ggplot(plot, paste('~/output_cascade/full_first_parent/branching_bin_10.pdf', collapse = ''))
+
+idx <- c(1:length(ab_5$size))
+sorted_idx <- idx[order(-ab_5$size)]
+ab_5.df <- data.frame(depth=0:length(ab_5$growth[[sorted_idx[1]]]), shell=c(1,ab_5$growth[[sorted_idx[1]]]), tree=rep(1, times=length(ab_5$growth[[sorted_idx[1]]])+1))
+for (i in 2:30){
+	data_f <- data.frame(depth=0:length(ab_5$growth[[sorted_idx[i]]]), shell=c(1,ab_5$growth[[sorted_idx[i]]]), tree=rep(i, times=length(ab_5$growth[[sorted_idx[i]]])+1))
+	ab_5.df <- rbind(ab_5.df,data_f)
+}
+ab_5.df$tree <- factor(ab_5.df$tree)
+plot <- ggplot(ab_5.df, aes(x = depth, y = (shell))) + geom_line(aes(group = tree,colour = tree)) + xlab('Depth') + ylab('Shell size') 
+save_ggplot(plot, paste('~/output_cascade/full_first_parent/branching_bin_5.pdf', collapse = ''))
+
+idx <- c(1:length(ab_1$size))
+sorted_idx <- idx[order(-ab_1$size)]
+ab_1.df <- data.frame(depth=0:length(ab_1$growth[[sorted_idx[1]]]), shell=c(1,ab_1$growth[[sorted_idx[1]]]), tree=rep(1, times=length(ab_1$growth[[sorted_idx[1]]])+1))
+for (i in 2:30){
+	data_f <- data.frame(depth=0:length(ab_1$growth[[sorted_idx[i]]]), shell=c(1,ab_1$growth[[sorted_idx[i]]]), tree=rep(i, times=length(ab_1$growth[[sorted_idx[i]]])+1))
+	ab_1.df <- rbind(ab_1.df,data_f)
+}
+ab_1.df$tree <- factor(ab_1.df$tree)
+plot <- ggplot(ab_1.df, aes(x = depth, y = (shell))) + geom_line(aes(group = tree,colour = tree)) + xlab('Depth') + ylab('Shell size') 
+save_ggplot(plot, paste('~/output_cascade/full_first_parent/branching_bin_1.pdf', collapse = ''))
