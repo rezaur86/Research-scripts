@@ -83,6 +83,7 @@ def process(child, end_time, thrsh_index):
         if end_time == -1:
             end_time = receiving_time
         if pID not in graph:
+            print 'Out of graph', pID
             return
 #        if (child.bornTime-graph[pID].bornTime) <= timeThrsh[thrsh_index]:
         if (end_time-graph[pID].actTime) <= timeThrsh[thrsh_index]:
@@ -247,11 +248,13 @@ top_n_depth_file.close()
 #size evolution of top users
 if len(sys.argv) > 4:
     top_file = open(sys.argv[3]+"top_size.csv", "r")
+    top_user_growth_file = open(sys.argv[3]+"top_user_growth.txt", "w")
     top_user_set = Set()
     for line in top_file:
         top_user_set.add(long(line.split(',')[1].strip()))
     for each_top_user in top_user_set:
-        sys.stdout.write("id_%d =[" %each_top_user )
+        top_user_growth_file.write("id_%d =[" %each_top_user )
         for i in range(len(timeThrsh)):
-            sys.stdout.write("%d," %graph[each_top_user].size[i])
-        sys.stdout.write("];\n")
+            top_user_growth_file.write("%d," %graph[each_top_user].size[i])
+        top_user_growth_file.write("];\n")
+    top_user_growth_file.close()
