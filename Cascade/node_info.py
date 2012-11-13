@@ -119,11 +119,12 @@ if __name__ == '__main__':
     count = 0
     f = open(sys.argv[2]+'.txt', "r")
     f_sorted = open(sys.argv[2]+'_sorted.txt', "w")
-    act_time = array.array('l')
+    act_time = []#array.array('l')
     for line in f:
         element = line.split(' ')
+        element[0] = int(element[0].strip())
         element[2] = int(element[2].strip())
-        act_time.append(element[2])
+        act_time.append((element[2],element[0]))
         count = count+1
         if (count % 10000) == 0:
             print 'still reading at %s'%count
