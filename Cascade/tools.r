@@ -4,7 +4,8 @@ print_report <- function(title, variable){
 	print (variable)
 }
 
-save_ggplot <- function (plot, file_name){
+save_ggplot <- function (plot, file){
+	file_name <- file
 	ggsave(plot,file=file_name)
 	file_name_split <- strsplit(file_name,'\\.')[[1]]
 	file_name_split <- file_name_split[file_name_split!="pdf"]
