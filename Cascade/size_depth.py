@@ -38,26 +38,29 @@ def record_a_child(child_id, parent_list):
             children_of_parent[each_parent] = []
             children_of_parent[each_parent].append((child_id,receiving_time))
 
-def parent_chooser (parent_list, choice_type):
+def parent_chooser (parent_list, choice_type, activation_time):
     potential_parents = []
-    
+    l = len(parent_list)
+    for i in range(l-1,-1,-1):
+        u_p = parent_list[i].strip().split(',')
+        if u_p[0] == '-1':
+            return potential_parents
+        if int(u_p[1]) == activation_time:
+            parent_list.pop()
+        else:
+            break
+            
     if choice_type == PARENT_TYPE_FIRST_PARENT:
         first_parent = parent_list[0].strip().split(',')
-        if first_parent[0] == '-1':
-            return potential_parents
-        potential_parents.append((long(first_parent[0]), long(first_parent[1])))
+        potential_parents.append((long(first_parent[0]), int(first_parent[1])))
         
     if choice_type == PARENT_TYPE_LAST_PARENT:
         last_parent = parent_list[len(parent_list)-1].strip().split(',')
-        if last_parent[0] == '-1':
-            return potential_parents
-        potential_parents.append((long(last_parent[0]), long(last_parent[1])))
+        potential_parents.append((long(last_parent[0]), int(last_parent[1])))
         
     if choice_type == PARENT_TYPE_RANDOM_PARENT:
         random_parent = choice(parent_list).strip().split(',')
-        if random_parent[0] == '-1':
-            return potential_parents
-        potential_parents.append((long(random_parent[0]), long(random_parent[1])))
+        potential_parents.append((long(random_parent[0]), int(random_parent[1])))
 
     if choice_type == PARENT_TYPE_HIGHEST_ODEG:
         chosen_pid_odeg = -1
@@ -65,15 +68,12 @@ def parent_chooser (parent_list, choice_type):
         chosen_receiving_time = -1
         for element in parent_list:
             a_parent = element.strip().split(',')
-            if a_parent == '-1':
-                return potential_parents
-            else:
-                pID = long(a_parent[0])
-                if pID in graph:
-                    if graph[pID].odeg > chosen_pid_odeg :
-                        chosen_pid = pID
-                        chosen_pid_odeg = graph[pID].odeg
-                        chosen_receiving_time = long(a_parent[1])
+            pID = long(a_parent[0])
+            if pID in graph:
+                if graph[pID].odeg > chosen_pid_odeg :
+                    chosen_pid = pID
+                    chosen_pid_odeg = graph[pID].odeg
+                    chosen_receiving_time = int(a_parent[1])
         if chosen_pid != -1:
             potential_parents.append((chosen_pid, chosen_receiving_time))
     return potential_parents
@@ -158,7 +158,7 @@ for line in f:
     newNode = Node()
 #    newNode.setBornTime(born_time)
     newNode.setActTime(activation_time)
-    newNode.setPotentialParent(parent_chooser(element[6:len(element)],parent_type))
+    newNode.setPotentialParent(parent_chooser(element[6:len(element)],parent_type,activation_time))
     newNode.setOutDeg(odeg)
     record_a_child(node_id, newNode.parent_list)
     if is_leaf == False:
