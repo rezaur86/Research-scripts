@@ -49,7 +49,8 @@ def parent_chooser (parent_list, choice_type, activation_time):
             parent_list.pop()
         else:
             break
-            
+    if len(parent_list) < 1:
+        return potential_parents
     if choice_type == PARENT_TYPE_FIRST_PARENT:
         first_parent = parent_list[0].strip().split(',')
         potential_parents.append((long(first_parent[0]), int(first_parent[1])))
@@ -83,7 +84,10 @@ def process(child, end_time, thrsh_index):
         if end_time == -1:
             end_time = receiving_time
         if pID not in graph:
+            log_file = open('size_depth.log','a')
             print 'Out of graph', pID
+            log_file.write('Out of graph, %s' %pID)
+            log_file.close()
             return
 #        if (child.bornTime-graph[pID].bornTime) <= timeThrsh[thrsh_index]:
         if (end_time-graph[pID].actTime) <= timeThrsh[thrsh_index]:
