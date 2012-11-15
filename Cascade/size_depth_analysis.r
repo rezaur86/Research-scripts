@@ -1,9 +1,13 @@
+source('~/scripts/cascade/tools.r')
+library(ggplot2)
+library(plyr)
+library(Hmisc)
+
 change_plot_attributes <- function(plot, xlabel, ylabel){
 	plot <- plot + scale_colour_hue(name  ="Window", breaks=c("86400","172800","259200","345600","432000","518400","604800","691200","777600","864000","1209600","1814400"), 
 					labels=c("1 day", "2 day", "3 day", "4 day", "5 day", "6 day", "7 day", "8 day", "9 day", "10 day", "2 weeks", "3 weeks")) +
 	scale_shape_discrete(name  ="Threshold", breaks=c("86400","172800","259200","345600","432000","518400","604800","691200","777600","864000","1209600","1814400"), 
-					labels=c("1 day", "2 day", "3 day", "4 day", "5 day", "6 day", "7 day", "8 day", "9 day", "10 day", "2 week", "3 week"))
-	
+					labels=c("1 day", "2 day", "3 day", "4 day", "5 day", "6 day", "7 day", "8 day", "9 day", "10 day", "2 week", "3 week"))	
 	plot <- plot + xlab(xlabel) + ylab(ylabel)
 	return(plot)
 }
@@ -163,17 +167,15 @@ parent_type_size_depth <- function(directoryname){
 	sub_cascade <- c()
 	cascade_size <- as.data.frame(read.csv('size.csv', header=FALSE))
 	colnames(cascade_size) <- c('size', 'count', 'threshold')
-	sub_cascade$size <- cascade_size[cascade_size$threshold == max(cascade_size$threshold),]
+	sub_cascade$size <- cascade_size#[cascade_size$threshold == max(cascade_size$threshold),]
 	cascade_depth <- as.data.frame(read.csv('depth.csv', header=FALSE))
 	colnames(cascade_depth) <- c('depth', 'count', 'threshold')
-	sub_cascade$depth <- cascade_depth[cascade_depth$threshold == max(cascade_depth$threshold),]
+	sub_cascade$depth <- cascade_depth#[cascade_depth$threshold == max(cascade_depth$threshold),]
 	setwd(prev_dir)
 	return(sub_cascade)
 }
 
 parent_type_comp <- function(dir_vector){
-	library(ggplot2)
-	library(plyr)
 	cascade_comp <- c()
 	cascade_comp$size <- c()
 	cascade_comp$depth <- c()
@@ -186,32 +188,39 @@ parent_type_comp <- function(dir_vector){
 	}
 	colnames(cascade_comp$size) <- c('size', 'count', 'threshold', 'parent_type')
 	colnames(cascade_comp$depth) <- c('depth', 'count', 'threshold', 'parent_type')
-	cascade_comp$size <- ddply(cascade_comp$size, c('parent_type'), function(one_partition){
+	cascade_comp$size <- ddply(cascade_comp$size, c('threshold','parent_type'), function(one_partition){
 				one_partition = one_partition[order(one_partition$size),]
 				one_partition$cum_count = cumsum(one_partition$count)
 				one_partition
 			})
-	cascade_comp$size.df <- ddply(cascade_comp$size, c('parent_type'), summarise, mean = sum(size*count)/sum(count), median = size[cum_count>=sum(count)/2][1], max=max(size), var=sum(count*(size-sum(size*count)/sum(count))^2)/sum(count))
+	cascade_comp$size.df <- ddply(cascade_comp$size, c('threshold','parent_type'), summarise, mean = sum(size*count)/sum(count), quart_1=size[cum_count>=sum(count)/4][1],
+			median = size[cum_count>=sum(count)/2][1], quart_3=size[cum_count>=3*sum(count)/4][1], max=max(size), var=sum(count*(size-sum(size*count)/sum(count))^2)/sum(count))
 #	cascade_comp.size <- ddply(cascade_comp$size, c('parent_type'), function(one_partition){
 #				one_partition <- data.frame(fac = rep(cascade_comp$size$size, times = cascade_comp$size$count))
 #				one_partition
 #			})
 #	print (head(cascade_comp.size))
 	
-	cascade_comp$depth <- ddply(cascade_comp$depth, c('parent_type'), function(one_partition){
+	cascade_comp$depth <- ddply(cascade_comp$depth, c('threshold','parent_type'), function(one_partition){
 				one_partition = one_partition[order(one_partition$depth),]
 				one_partition$cum_count = cumsum(one_partition$count)
 				one_partition
 			})
-	cascade_comp$depth.df <- ddply(cascade_comp$depth, c('parent_type'), summarise, mean = sum(depth*count)/sum(count), median = depth[cum_count>=sum(count)/2][1], max=max(depth), var=sum(count*(depth-sum(depth*count)/sum(count))^2)/sum(count))
-	print(cascade_comp$depth.df)
-	cascade_comp$size$parent_type <- factor(cascade_comp$size$parent_type)
-	plot <- ggplot(cascade_comp$size, aes(y=log10(size), x = parent_type)) + geom_boxplot()
-	ggsave(plot,file='parent_type_size_boxplot.eps')
-	
-	cascade_comp$depth$parent_type <- factor(cascade_comp$depth$parent_type)
-	plot <- ggplot(cascade_comp$depth, aes(y=depth, x = parent_type)) + geom_boxplot()
-	ggsave(plot,file='parent_type_depth_boxplot.eps')
+	cascade_comp$depth.df <- ddply(cascade_comp$depth, c('threshold','parent_type'), summarise, mean = sum(depth*count)/sum(count), quart_1=depth[cum_count>=sum(count)/4][1],
+			median = depth[cum_count>=sum(count)/2][1], quart_3=depth[cum_count>=3*sum(count)/4][1], max=max(depth), var=sum(count*(depth-sum(depth*count)/sum(count))^2)/sum(count))
+	d <- cascade_comp$size.df
+	latex(d, file="comp_size.tex", digits = 6, rowname = latexTranslate(rownames(d)))            # If you want all the data
+	d <- cascade_comp$depth.df
+	latex(d, file="comp_depth.tex", digits = 6, rowname = latexTranslate(rownames(d)))            # If you want all the data
+	print('hello')
+#	latex(describe(d), file="comp_summary.lex")  # If you just want a summary
+#	cascade_comp$size$parent_type <- factor(cascade_comp$size$parent_type)
+#	plot <- ggplot(cascade_comp$size, aes(y=log10(size), x = parent_type)) + geom_boxplot()
+#	ggsave(plot,file='parent_type_size_boxplot.eps')
+#	
+#	cascade_comp$depth$parent_type <- factor(cascade_comp$depth$parent_type)
+#	plot <- ggplot(cascade_comp$depth, aes(y=depth, x = parent_type)) + geom_boxplot()
+#	ggsave(plot,file='parent_type_depth_boxplot.eps')
 
 #	return(cascade_comp)
 }
