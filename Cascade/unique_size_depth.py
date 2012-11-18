@@ -15,18 +15,30 @@ MAX_USERS = 2**29 - 1
 NO_PARENT = MAX_USERS + 1
 
 class Node:
-    def __init__(self):
-        self.size = [1]*len(timeThrsh)
-        self.depth = [0]*len(timeThrsh)
-        self.root_id = None
-#    def setBornTime(self, bornTime):
-#        self.bornTime = bornTime
-    def setActTime(self, actTime):
-        self.actTime = actTime
+    def __init__(self, bornTime, actTime, odeg):
+        self.cascade_att = array.array('l',[1,0,-1,0]*len(timeThrsh))
+        self.node_att = (actTime, odeg)
+    def setSize(self, idx, value):
+        self.cascade_att[idx*4+0] = value
+    def getSize(self, idx):
+        return self.cascade_att[idx*4+0]
+    def setDepth(self, idx, value):
+        self.cascade_att[idx*4+1] = value
+    def getDepth(self, idx):
+        return self.cascade_att[idx*4+1]
+    def setRoot(self, idx, root_and_distance):
+        self.cascade_att[idx*4+2] = root_and_distance[0]
+        self.cascade_att[idx*4+3] = root_and_distance[1]
+    def getRoot(self, idx):
+        return (self.cascade_att[idx*4+2], self.cascade_att[idx*4+3])
+    def getBornTime(self):
+        return self.node_att[3]
+    def getActTime(self):
+        return self.node_att[0]
+    def getOutDeg(self):
+        return self.node_att[1]
     def setPotentialParent(self, p_list):
         self.parent_list = p_list
-    def setOutDeg(self, odeg):
-        self.odeg = odeg
 #    def print_node(self):
 #        print self.size,self.depth, self.root_id
 
@@ -72,16 +84,16 @@ def parent_chooser (parent_list, choice_type, activation_time):
             a_parent = element.strip().split(',')
             pID = int(a_parent[0])
             if pID in graph:
-                if graph[pID].odeg > chosen_pid_odeg :
+                if graph[pID].getOutDeg() > chosen_pid_odeg :
                     chosen_pid = pID
-                    chosen_pid_odeg = graph[pID].odeg
+                    chosen_pid_odeg = graph[pID].getOutDeg()
                     chosen_receiving_time = int(a_parent[1])
         if chosen_pid != -1:
             potential_parents.append((chosen_pid, chosen_receiving_time))
     return potential_parents
 
 def process(child, end_time, thrsh_index):
-    cascade_root = None
+    cascade_root = (-1,0)
     for (pID,receiving_time) in child.parent_list:
         if end_time == -1:
             end_time = receiving_time
@@ -92,14 +104,18 @@ def process(child, end_time, thrsh_index):
             log_file.close()
             return cascade_root
 #        if (child.bornTime-graph[pID].bornTime) <= timeThrsh[thrsh_index]:
-        if (end_time-graph[pID].actTime) <= timeThrsh[thrsh_index]:
-            graph[pID].size[thrsh_index] += 1
-            if graph[pID].depth[thrsh_index] <= child.depth[thrsh_index]:
-                graph[pID].depth[thrsh_index] = child.depth[thrsh_index]+1
+        if (end_time-graph[pID].getActTime()) <= timeThrsh[thrsh_index]:
+            graph[pID].setSize(thrsh_index, graph[pID].getSize(thrsh_index)+1)
+            if graph[pID].getDepth(thrsh_index) <= child.getDepth(thrsh_index):
+                graph[pID].setDepth(thrsh_index, child.getDepth(thrsh_index)+1)
             cascade_root = process(graph[pID], end_time, thrsh_index)
-            if cascade_root == None:
-                cascade_root = pID
-            child.root_id = cascade_root
+            if cascade_root[0] == -1:
+                root_id = pID
+            else:
+                root_id = cascade_root[0]
+            root_distance = cascade_root[1] + 1
+            cascade_root = (root_id, root_distance)
+            child.setRoot(thrsh_index, cascade_root)
         else:
             end_time = -1 # For considering next parent of this child, a provision if we consider multiple parents
     return cascade_root
@@ -139,6 +155,7 @@ size_file = open(sys.argv[3]+"size.csv", "w")
 depth_file = open(sys.argv[3]+"depth.csv", "w")
 top_n_size_file = open(sys.argv[3]+"top_size.csv", "w")
 top_n_depth_file = open(sys.argv[3]+"top_depth.csv", "w")
+rooted_top_users_file = open(sys.argv[3]+"rooted_top_users.csv", "w")
 children_of_parent = {} # To hold children of all parents
 children_of_parent_file = open(sys.argv[3]+"children_of_parent.txt", "w")
 parent_type = int(raw_input(
@@ -155,16 +172,13 @@ count = 0
 for line in f:
     element = line.split(' ')
     node_id = int(element[0].strip())
-#    born_time = int(element[1].strip())
+    born_time = int(element[1].strip())
     activation_time = int(element[2].strip())
     last_seen_time = int(element[3].strip())
     is_leaf = bool(int(element[4].strip()))
     odeg = int((element[5].strip()))
-    newNode = Node()
-#    newNode.setBornTime(born_time)
-    newNode.setActTime(activation_time)
+    newNode = Node(born_time,activation_time,odeg)
     newNode.setPotentialParent(parent_chooser(element[6:len(element)],parent_type,activation_time))
-    newNode.setOutDeg(odeg)
     record_a_child(node_id, newNode.parent_list)
     if is_leaf == False:
         graph[node_id] = newNode
@@ -173,20 +187,17 @@ for line in f:
 #    print (gc.get_referents(newNode))
     if is_leaf == True:
         newNode.parent_list = None
-        newNode.actTime = None
-        newNode.size = None
-        newNode.depth = None
-        newNode.root_id = None
-        newNode.odeg = None
+        newNode.cascade_att = None
+        newNode.node_att = None
         newNode = None
 #    print (gc.get_referents(newNode))
     count = count+1
     if (count % (CLR_THRESHOLD/10)) == 0:
-        print count, sys.getsizeof(graph)
+        print count
     if (count % CLR_THRESHOLD) == 0:
         print "Clearing"
         clearMem()
-        dump_garbage()      
+#        dump_garbage()      
 f.close()
 clearMem()
 children_of_parent_file.close()
@@ -194,16 +205,16 @@ children_of_parent_file.close()
 for node_id in graph:
 #    print node_id
 #    graph[node_id].print_node()
-    if graph[node_id].root_id == None:
-        for i in range(len(timeThrsh)):    
-            if graph[node_id].size[i] in result_size[i]:
-                result_size[i][graph[node_id].size[i]] += 1
+    for i in range(len(timeThrsh)):    
+        if graph[node_id].getRoot(i)[0] == -1:
+            if graph[node_id].getSize(i) in result_size[i]:
+                result_size[i][graph[node_id].getSize(i)] += 1
             else:
-                result_size[i][graph[node_id].size[i]] = 1
-            if graph[node_id].depth[i] in result_depth[i]:
-                result_depth[i][graph[node_id].depth[i]] += 1
+                result_size[i][graph[node_id].getSize(i)] = 1
+            if graph[node_id].getDepth(i) in result_depth[i]:
+                result_depth[i][graph[node_id].getDepth(i)] += 1
             else:
-                result_depth[i][graph[node_id].depth[i]] = 1
+                result_depth[i][graph[node_id].getDepth(i)] = 1
 print result_size
 print result_depth
 
@@ -239,15 +250,33 @@ for i in range(len(timeThrsh)):
     for j in range(len(top_n_depths[i])):
         top_n_depth_users[i][top_n_depths[i][j][0]] = []
 
-for node_id in graph:
-    if graph[node_id].root_id == None:
-        for i in range(len(timeThrsh)):
-            if graph[node_id].size[i] in top_n_size_users[i]:
-                top_n_size_users[i][graph[node_id].size[i]].append(node_id)
-            if graph[node_id].depth[i] in top_n_depth_users[i]:
-                top_n_depth_users[i][graph[node_id].depth[i]].append(node_id)
+root_contains = []
+for i in range(len(timeThrsh)):
+    root_contains.append({})
+    for node_id in graph:
+        if graph[node_id].getRoot(i)[0] == -1:
+            if graph[node_id].getSize(i) in top_n_size_users[i]:
+                top_n_size_users[i][graph[node_id].getSize(i)].append(node_id)
+            if graph[node_id].getDepth(i) in top_n_depth_users[i]:
+                top_n_depth_users[i][graph[node_id].getDepth(i)].append(node_id)
+            root_contains[i][node_id] = []
+        else:
+            root_id = graph[node_id].getRoot(i)[0]
+            if graph[node_id].getSize(i) >= 0.75*graph[root_id].getSize(i):
+                root_contains[i][root_id].append(node_id)
 print top_n_size_users
 print top_n_depth_users
+
+for i in range(len(timeThrsh)):
+    for a_root in root_contains[i]:
+        root_size = graph[a_root].getSize(i)
+        root_depth = graph[a_root].getDepth(i)
+        for a_top_user in root_contains[i][a_root]:
+            top_of_size = graph[a_top_user].getSize(i)
+            top_of_depth = graph[a_top_user].getDepth(i)
+            top_at_depth = graph[a_top_user].getRoot(i)[1]
+            rooted_top_users_file.write('%s,%s,%s,%s,%s,%s,%s\n'%(a_root,root_size,root_depth,a_top_user,top_at_depth,top_of_size,top_of_depth))
+rooted_top_users_file.close()
 
 for i in range(len(timeThrsh)):
     temp = sorted(top_n_size_users[i].iteritems(), key=operator.itemgetter(0), reverse=True)
@@ -276,6 +305,6 @@ if len(sys.argv) > 4:
     for each_top_user in top_user_set:
         top_user_growth_file.write("id_%d =[" %each_top_user )
         for i in range(len(timeThrsh)):
-            top_user_growth_file.write("%d," %graph[each_top_user].size[i])
+            top_user_growth_file.write("%d," %graph[each_top_user].getSize(i))
         top_user_growth_file.write("];\n")
     top_user_growth_file.close()
