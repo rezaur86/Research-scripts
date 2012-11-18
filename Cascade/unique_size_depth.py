@@ -1,4 +1,4 @@
-import sys
+import sys, gc
 import array
 import operator
 from sets import Set
@@ -18,16 +18,17 @@ class Node:
     def __init__(self):
         self.size = [1]*len(timeThrsh)
         self.depth = [0]*len(timeThrsh)
-    def setBornTime(self, bornTime):
-        self.bornTime = bornTime
+        self.root_id = None
+#    def setBornTime(self, bornTime):
+#        self.bornTime = bornTime
     def setActTime(self, actTime):
         self.actTime = actTime
     def setPotentialParent(self, p_list):
         self.parent_list = p_list
     def setOutDeg(self, odeg):
         self.odeg = odeg
-    def print_node(self):
-        print self.size,self.depth
+#    def print_node(self):
+#        print self.size,self.depth, self.root_id
 
 def record_a_child(child_id, parent_list):
     global children_of_parent
@@ -53,15 +54,15 @@ def parent_chooser (parent_list, choice_type, activation_time):
         return potential_parents
     if choice_type == PARENT_TYPE_FIRST_PARENT:
         first_parent = parent_list[0].strip().split(',')
-        potential_parents.append((long(first_parent[0]), int(first_parent[1])))
+        potential_parents.append((int(first_parent[0]), int(first_parent[1])))
         
     if choice_type == PARENT_TYPE_LAST_PARENT:
         last_parent = parent_list[len(parent_list)-1].strip().split(',')
-        potential_parents.append((long(last_parent[0]), int(last_parent[1])))
+        potential_parents.append((int(last_parent[0]), int(last_parent[1])))
         
     if choice_type == PARENT_TYPE_RANDOM_PARENT:
         random_parent = choice(parent_list).strip().split(',')
-        potential_parents.append((long(random_parent[0]), int(random_parent[1])))
+        potential_parents.append((int(random_parent[0]), int(random_parent[1])))
 
     if choice_type == PARENT_TYPE_HIGHEST_ODEG:
         chosen_pid_odeg = -1
@@ -69,7 +70,7 @@ def parent_chooser (parent_list, choice_type, activation_time):
         chosen_receiving_time = -1
         for element in parent_list:
             a_parent = element.strip().split(',')
-            pID = long(a_parent[0])
+            pID = int(a_parent[0])
             if pID in graph:
                 if graph[pID].odeg > chosen_pid_odeg :
                     chosen_pid = pID
@@ -80,6 +81,7 @@ def parent_chooser (parent_list, choice_type, activation_time):
     return potential_parents
 
 def process(child, end_time, thrsh_index):
+    cascade_root = None
     for (pID,receiving_time) in child.parent_list:
         if end_time == -1:
             end_time = receiving_time
@@ -88,43 +90,42 @@ def process(child, end_time, thrsh_index):
             print 'Out of graph', pID
             log_file.write('Out of graph, %s' %pID)
             log_file.close()
-            return
+            return cascade_root
 #        if (child.bornTime-graph[pID].bornTime) <= timeThrsh[thrsh_index]:
         if (end_time-graph[pID].actTime) <= timeThrsh[thrsh_index]:
             graph[pID].size[thrsh_index] += 1
             if graph[pID].depth[thrsh_index] <= child.depth[thrsh_index]:
                 graph[pID].depth[thrsh_index] = child.depth[thrsh_index]+1
-            process(graph[pID], end_time, thrsh_index)
+            cascade_root = process(graph[pID], end_time, thrsh_index)
+            if cascade_root == None:
+                cascade_root = pID
+            child.root_id = cascade_root
         else:
             end_time = -1 # For considering next parent of this child, a provision if we consider multiple parents
+    return cascade_root
     
-def clearMem(current_node):
+def dump_garbage():
+    """
+    show us what's the garbage about
+    """        
+    # force collection
+    print "\nGARBAGE:"
+    gc.collect()
+    print "\nGARBAGE OBJECTS:"
+    for x in gc.garbage:
+        s = str(x)
+        if len(s) > 80: s = s[:80]
+        print type(x),"\n  ", s
+
+def clearMem():
     global result_size, result_depth
     global children_of_parent
     for each_parent in children_of_parent:
-#        children_of_parent_file.write('%s'%(each_parent))
         for (each_child,receiving_time) in children_of_parent[each_parent]:
             children_of_parent_file.write('%s %s %s\n'%(each_parent,each_child,receiving_time))
     children_of_parent = {}
-#        children_of_parent_file.write('\n')
 
-#    record = []
-#    for node in graph:
-#        if current_node.bornTime-graph[node].bornTime > max(timeThrsh):
-#            record.append(node)
-#    for node in record:
-#        for i in range(len(timeThrsh)):    
-#            if graph[node].size[i] in result_size[i]:
-#                result_size[i][graph[node].size[i]] += 1
-#            else:
-#                result_size[i][graph[node].size[i]] = 1
-#            if graph[node].depth[i] in result_depth[i]:
-#                result_depth[i][graph[node].depth[i]] += 1
-#            else:
-#                result_depth[i][graph[node].depth[i]] = 1
-#        del graph[node]
-
-#rezaur@rahman:~/Documents/Code/Cascade$ python size_depth.py iheart_preprocessed_sorted.txt 86400,172800,259200,345600,432000,518400,604800,691200,777600,864000,1209600,1814400 First_parent/
+#python size_depth.py iheart_preprocessed_sorted.txt 86400,172800,259200,345600,432000,518400,604800,691200,777600,864000,1209600,1814400 First_parent/
 f = open(sys.argv[1], "r")
 timeThrsh = [] #[86400,172800,259200,345600,432000,518400,604800,691200,777600,864000,1209600,1814400]
 graph = {}
@@ -153,7 +154,7 @@ Your input 0~1000? '''))
 count = 0
 for line in f:
     element = line.split(' ')
-    node_id = long(element[0].strip())
+    node_id = int(element[0].strip())
 #    born_time = int(element[1].strip())
     activation_time = int(element[2].strip())
     last_seen_time = int(element[3].strip())
@@ -169,26 +170,40 @@ for line in f:
         graph[node_id] = newNode
     for i in range(len(timeThrsh)):
         process(newNode, -1, i)
+#    print (gc.get_referents(newNode))
+    if is_leaf == True:
+        newNode.parent_list = None
+        newNode.actTime = None
+        newNode.size = None
+        newNode.depth = None
+        newNode.root_id = None
+        newNode.odeg = None
+        newNode = None
+#    print (gc.get_referents(newNode))
     count = count+1
     if (count % (CLR_THRESHOLD/10)) == 0:
-        print count
+        print count, sys.getsizeof(graph)
     if (count % CLR_THRESHOLD) == 0:
         print "Clearing"
-        clearMem(newNode)
+        clearMem()
+        dump_garbage()      
 f.close()
-clearMem(-1)
+clearMem()
 children_of_parent_file.close()
-for node in graph:
-    if len(graph[node].parent_list) == 0:
+
+for node_id in graph:
+#    print node_id
+#    graph[node_id].print_node()
+    if graph[node_id].root_id == None:
         for i in range(len(timeThrsh)):    
-            if graph[node].size[i] in result_size[i]:
-                result_size[i][graph[node].size[i]] += 1
+            if graph[node_id].size[i] in result_size[i]:
+                result_size[i][graph[node_id].size[i]] += 1
             else:
-                result_size[i][graph[node].size[i]] = 1
-            if graph[node].depth[i] in result_depth[i]:
-                result_depth[i][graph[node].depth[i]] += 1
+                result_size[i][graph[node_id].size[i]] = 1
+            if graph[node_id].depth[i] in result_depth[i]:
+                result_depth[i][graph[node_id].depth[i]] += 1
             else:
-                result_depth[i][graph[node].depth[i]] = 1
+                result_depth[i][graph[node_id].depth[i]] = 1
 print result_size
 print result_depth
 
@@ -225,7 +240,7 @@ for i in range(len(timeThrsh)):
         top_n_depth_users[i][top_n_depths[i][j][0]] = []
 
 for node_id in graph:
-    if len(graph[node_id].parent_list) == 0:    
+    if graph[node_id].root_id == None:
         for i in range(len(timeThrsh)):
             if graph[node_id].size[i] in top_n_size_users[i]:
                 top_n_size_users[i][graph[node_id].size[i]].append(node_id)
@@ -257,7 +272,7 @@ if len(sys.argv) > 4:
     top_user_growth_file = open(sys.argv[3]+"top_user_growth.txt", "w")
     top_user_set = Set()
     for line in top_file:
-        top_user_set.add(long(line.split(',')[1].strip()))
+        top_user_set.add(int(line.split(',')[1].strip()))
     for each_top_user in top_user_set:
         top_user_growth_file.write("id_%d =[" %each_top_user )
         for i in range(len(timeThrsh)):
