@@ -4,10 +4,14 @@ library(plyr)
 library(Hmisc)
 
 change_plot_attributes <- function(plot, xlabel, ylabel){
-	plot <- plot + scale_colour_hue(name  ="Window", breaks=c("86400","172800","259200","345600","432000","518400","604800","691200","777600","864000","1209600","1814400"), 
-					labels=c("1 day", "2 day", "3 day", "4 day", "5 day", "6 day", "7 day", "8 day", "9 day", "10 day", "2 weeks", "3 weeks")) +
-	scale_shape_discrete(name  ="Threshold", breaks=c("86400","172800","259200","345600","432000","518400","604800","691200","777600","864000","1209600","1814400"), 
-					labels=c("1 day", "2 day", "3 day", "4 day", "5 day", "6 day", "7 day", "8 day", "9 day", "10 day", "2 week", "3 week"))	
+#	plot <- plot + scale_colour_hue(name  ="Window", breaks=c("86400","172800","259200","345600","432000","518400","604800","691200","777600","864000","1209600","1814400"), 
+#					labels=c("1 day", "2 day", "3 day", "4 day", "5 day", "6 day", "7 day", "8 day", "9 day", "10 day", "2 weeks", "3 weeks")) +
+#			scale_shape_discrete(name  ="Threshold", breaks=c("86400","172800","259200","345600","432000","518400","604800","691200","777600","864000","1209600","1814400"), 
+#					labels=c("1 day", "2 day", "3 day", "4 day", "5 day", "6 day", "7 day", "8 day", "9 day", "10 day", "2 week", "3 week"))	
+	plot <- plot + scale_colour_hue(name  ="Parent type", breaks=c("0","1","2","3"), 
+					labels=c("First parent", "Higest outdeg parent", "Last parent", "Random parent")) +
+			scale_shape_discrete(name  ="Parent type",  breaks=c("0","1","2","3"), 
+					labels=c("First parent", "Higest outdeg parent", "Last parent", "Random parent"))
 	plot <- plot + xlab(xlabel) + ylab(ylabel)
 	return(plot)
 }
@@ -176,23 +180,48 @@ parent_type_size_depth <- function(directoryname){
 }
 
 parent_type_comp <- function(dir_vector){
+	plot_x_lim <- 100
 	cascade_comp <- c()
 	cascade_comp$size <- c()
 	cascade_comp$depth <- c()
+	parent_type <- 0
 	for (dir in dir_vector){
 		each_sub_cascade <- parent_type_size_depth(dir)
-		each_sub_cascade$size[,4] <- dir
+		each_sub_cascade$size[,4] <- parent_type
 		cascade_comp$size <- rbind(cascade_comp$size,each_sub_cascade$size)
-		each_sub_cascade$depth[,4] <- dir
+		each_sub_cascade$depth[,4] <- parent_type
 		cascade_comp$depth <- rbind(cascade_comp$depth,each_sub_cascade$depth)
+		parent_type <- parent_type + 1
 	}
 	colnames(cascade_comp$size) <- c('size', 'count', 'threshold', 'parent_type')
 	colnames(cascade_comp$depth) <- c('depth', 'count', 'threshold', 'parent_type')
 	cascade_comp$size <- ddply(cascade_comp$size, c('threshold','parent_type'), function(one_partition){
 				one_partition = one_partition[order(one_partition$size),]
 				one_partition$cum_count = cumsum(one_partition$count)
+				one_partition$cdf_val = one_partition$cum_count / max(one_partition$cum_count)
+				one_partition$pdf_val = one_partition$count / max(one_partition$cum_count)
 				one_partition
 			})
+	cascade_comp$size$parent_type <- factor(cascade_comp$size$parent_type)
+	plot_x_lim <- min(plot_x_lim,max(cascade_comp$size$size))
+	plot <- ggplot(cascade_comp$size,aes(x = size, y = cdf_val)) + xlim(0,plot_x_lim) + geom_line(aes(group = parent_type,colour = parent_type))
+	plot <- change_plot_attributes(plot, "Cascade Size", "Cumulative Proportion")
+	save_ggplot(plot,file='size_cdf.pdf')
+	plot <- ggplot(cascade_comp$size,aes(x = log10(size), y = cdf_val)) + xlim(0,log10(plot_x_lim)) + geom_line(aes(group = parent_type,colour = parent_type))
+	plot <- change_plot_attributes(plot, "log of Cascade Size", "Cumulative Proportion")
+	save_ggplot(plot,file='size_cdf_logx.pdf')
+	plot <- ggplot(cascade_comp$size,aes(x = log10(size), y = log10(cdf_val))) + xlim(0,log10(plot_x_lim)) + geom_line(aes(group = parent_type,colour = parent_type))
+	plot <- change_plot_attributes(plot, "log of Cascade Size", "log of Cumulative Proportion")
+	save_ggplot(plot,file='size_cdf_log_log.pdf')
+	plot <- ggplot(cascade_comp$size,aes(x = size, y = pdf_val)) + xlim(0,plot_x_lim) + geom_point(aes(group = parent_type,colour = parent_type))
+	plot <- change_plot_attributes(plot, "Cascade Size", "Proportion")
+	save_ggplot(plot,file='size_pdf.pdf')
+	plot <- ggplot(cascade_comp$size,aes(x = size, y = log10(pdf_val))) + xlim(0,plot_x_lim) + geom_point(aes(group = parent_type,colour = parent_type))
+	plot <- change_plot_attributes(plot, "Cascade Size", "log of Proportion")
+	save_ggplot(plot,file='size_pdf_plot_logy.pdf')
+	plot <- ggplot(cascade_comp$size,aes(x = size, y = log10(pdf_val))) + xlim(0,plot_x_lim) + geom_line(aes(group = parent_type,colour = parent_type))
+	plot <- change_plot_attributes(plot, "Cascade Size", "log of Proportion")
+	save_ggplot(plot,file='size_pdf_line_logy.pdf')
 	cascade_comp$size.df <- ddply(cascade_comp$size, c('threshold','parent_type'), summarise, mean = sum(size*count)/sum(count), quart_1=size[cum_count>=sum(count)/4][1],
 			median = size[cum_count>=sum(count)/2][1], quart_3=size[cum_count>=3*sum(count)/4][1], max=max(size), var=sum(count*(size-sum(size*count)/sum(count))^2)/sum(count))
 #	cascade_comp.size <- ddply(cascade_comp$size, c('parent_type'), function(one_partition){
