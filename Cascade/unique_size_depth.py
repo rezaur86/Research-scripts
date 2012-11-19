@@ -158,15 +158,14 @@ top_n_depth_file = open(sys.argv[3]+"top_depth.csv", "w")
 rooted_top_users_file = open(sys.argv[3]+"rooted_top_users.csv", "w")
 children_of_parent = {} # To hold children of all parents
 children_of_parent_file = open(sys.argv[3]+"children_of_parent.txt", "w")
-parent_type = int(raw_input(
-'''PARENT_TYPE_FIRST_PARENT = 0
+parent_type = int(sys.argv[4])#int(raw_input(
+print '''PARENT_TYPE_FIRST_PARENT = 0
 PARENT_TYPE_HIGHEST_ODEG = 1
 PARENT_TYPE_LAST_PARENT = 2
 PARENT_TYPE_RANDOM_PARENT = 3
-Your choice? '''))
-TOP_N = int(raw_input(
-'''How many top nodes' sizes/depths you want to see?
-Your input 0~1000? '''))
+Your choice %s''' %parent_type 
+TOP_N = int(sys.argv[5]) #int(raw_input(
+print '''Top nodes' sizes/depths you want to see is %s''' %TOP_N 
 
 count = 0
 for line in f:
@@ -184,19 +183,19 @@ for line in f:
         graph[node_id] = newNode
     for i in range(len(timeThrsh)):
         process(newNode, -1, i)
-#    print (gc.get_referents(newNode))
     if is_leaf == True:
         newNode.parent_list = None
         newNode.cascade_att = None
         newNode.node_att = None
         newNode = None
-#    print (gc.get_referents(newNode))
     count = count+1
     if (count % (CLR_THRESHOLD/10)) == 0:
         print count
     if (count % CLR_THRESHOLD) == 0:
         print "Clearing"
         clearMem()
+#    if (count % (10*CLR_THRESHOLD)) == 0:
+#        break
 #        dump_garbage()      
 f.close()
 clearMem()
@@ -257,10 +256,13 @@ for i in range(len(timeThrsh)):
         if graph[node_id].getRoot(i)[0] == -1:
             if graph[node_id].getSize(i) in top_n_size_users[i]:
                 top_n_size_users[i][graph[node_id].getSize(i)].append(node_id)
+                root_contains[i][node_id] = []
             if graph[node_id].getDepth(i) in top_n_depth_users[i]:
                 top_n_depth_users[i][graph[node_id].getDepth(i)].append(node_id)
-            root_contains[i][node_id] = []
-        else:
+for i in range(len(timeThrsh)):
+    root_contains.append({})
+    for node_id in graph:
+        if graph[node_id].getRoot(i)[0] in root_contains[i]:
             root_id = graph[node_id].getRoot(i)[0]
             if graph[node_id].getSize(i) >= 0.75*graph[root_id].getSize(i):
                 root_contains[i][root_id].append(node_id)
@@ -296,7 +298,7 @@ for i in range(len(timeThrsh)):
 top_n_depth_file.close()
 
 #size evolution of top users
-if len(sys.argv) > 4:
+if len(sys.argv) > 6:
     top_file = open(sys.argv[3]+"top_size.csv", "r")
     top_user_growth_file = open(sys.argv[3]+"top_user_growth.txt", "w")
     top_user_set = Set()
