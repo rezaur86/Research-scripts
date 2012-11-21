@@ -41,8 +41,9 @@ top_size_analysis <- function(file_name){
 	save_ggplot(plot,file=paste(c(file_name,'_avg_odeg_corr.pdf'), collapse = ''))
 	print_report('Cor of top user outdeg vs. avg neighbour outdeg', cor(users_correlated_info.df$top_user_odeg,users_correlated_info.df$avg_neighbour_odeg))
 	# top user's outdeg vs. total neihbour outdeg
+	print(head(users_correlated_info.df))
 	plot <- ggplot(users_correlated_info.df, aes(x = top_user_odeg, y = total_neighbour_odeg)) + xlim(0,100) + geom_point() + geom_smooth(method=lm) + xlab('Top users\' out degree') + ylab('Neighbor\'s total out degree')
-	save_ggplot(plot,file=paste(c(file_name,'_total_odeg_corr.pdf', collapse = '')))
+	save_ggplot(plot,file=paste(c(file_name,'_total_odeg_corr.pdf'), collapse = ''))
 	print_report('Cor of top user outdeg vs. total neighbour outdeg', cor(users_correlated_info.df$top_user_odeg,users_correlated_info.df$total_neighbour_odeg))
 	# top user's size vs. outdeg
 	plot <- ggplot(users_correlated_info.df, aes(x = top_user_odeg, y = log10(size))) + geom_point() + geom_smooth(method=lm) + xlim(0,300) + xlab('Top users\' out degree') + ylab('log of Cascade size')
@@ -50,11 +51,11 @@ top_size_analysis <- function(file_name){
 	print_report('Cor of top user outdeg vs. size', cor(users_correlated_info.df$top_user_odeg,users_correlated_info.df$size))
 	# top user's size vs. neighbour's total outdeg
 	plot <- ggplot(users_correlated_info.df, aes(x = log10(size), y = total_neighbour_odeg)) + geom_point() + geom_smooth(method=lm) + xlab('log of Cacade size') + ylab('Total neighbor out degree')
-	save_ggplot(plot,file=paste(c(file_name,'_size_total_outdeg_corr.pdf', collapse = '')))
+	save_ggplot(plot,file=paste(c(file_name,'_size_total_outdeg_corr.pdf'), collapse = ''))
 	print_report('Cor of size vs. total neighbour outdeg', cor(users_correlated_info.df$size,users_correlated_info.df$total_neighbour_odeg))
 	# top user's size vs. depth
 	plot <- ggplot(users_correlated_info.df, aes(x = log10(size), y = depth)) + geom_point() + geom_smooth(method=lm) + xlab('log of Cascade size') + ylab('Cascade depth')
-	save_ggplot(plot,file=paste(c(file_name,'_size_depth_corr.pdf', collapse = '')))
+	save_ggplot(plot,file=paste(c(file_name,'_size_depth_corr.pdf'), collapse = ''))
 	print_report('Cor of size vs. depth', cor(users_correlated_info.df$size,users_correlated_info.df$depth))
 	# regression analysis
 	size_model <- glm(log(size)~top_user_odeg+total_neighbour_odeg, family="poisson",data= users_correlated_info.df)
@@ -62,7 +63,7 @@ top_size_analysis <- function(file_name){
 	sm <- summary(size_model)
 	pseudo_R_sq <- 1 - sm$deviance/sm$null.deviance
 	#plot(sm)
-	return(size_model)
+	return(users_correlated_info.df)
 }
 
 shell_growth_state <- function(diff2){
@@ -193,7 +194,7 @@ draw_depth_expansion <- function(file_name,depth_expansion.df){
 	plot <- ggplot(depth_expansion.df, aes(x = depth, y = log10(expansion))) + geom_line(aes(group = root_user_id,colour = root_user_id)) + xlab('Depth') + ylab('log of Shell size') 
 	save_ggplot(plot, paste(c(file_name,'_depth_log_expansion.pdf'), collapse = ''))
 	plot <- ggplot(depth_expansion.df, aes(x = depth, y = (diff))) + geom_line(aes(group = root_user_id,colour = root_user_id)) + xlab('Depth') + ylab('Shell size growth') + scale_colour_hue(name  ="Cascade root")
-	save_ggplot(plot, paste(c(file_name,'_depth_expansion_norm.pdf'), collapse = ''))
+	save_ggplot(plot, paste(c(file_name,'_depth_expansion_diff.pdf'), collapse = ''))
 }
 
 build_model <- function (trainer_cascade){
@@ -257,9 +258,9 @@ root_users_analysis <- function(rooted_top_users_file, depth_vs_expansion_file){
 	unique_cascade <- get_unique_cascade(depth_expansion.df)
 	print_report('Unique cascade count', unique_cascade$count)
 	print_report('Unique cascade covers', sum(unique_cascade$depth_expansion$expansion))
+	draw_depth_expansion(depth_vs_expansion_file, unique_cascade$depth_expansion[1:25,])
 	users_correlated_info <- depth_expansion.df
 	users_correlated_info.df <- ddply(users_correlated_info, c('root_user_id'), summarise, size = sum(expansion), total_ampl=sum(ampl), ampl_4=sum(ampl[depth<=4]), total_1st_exp = expansion[depth==1], total_2nd_exp = expansion[depth==2], total_3rd_exp = expansion[depth==3],total_4th_exp = expansion[depth==4],total_5th_exp = expansion[depth==5])
-	draw_depth_expansion(depth_vs_expansion_file, unique_cascade$depth_expansion)
 	build_model(users_correlated_info.df)
 	print_report('Cor of size vs total amplification', cor(users_correlated_info.df$size,users_correlated_info.df$total_ampl))
 	plot <- ggplot(users_correlated_info.df, aes(x = total_ampl, y = size)) + geom_point() + geom_smooth(method=lm) + xlab('Total amplification') + ylab('Cascade size')
