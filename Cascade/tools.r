@@ -1,3 +1,4 @@
+library(ggplot2)
 
 print_report <- function(title, variable){
 	cat("::",title,"::\n")

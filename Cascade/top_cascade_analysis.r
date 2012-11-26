@@ -1,41 +1,9 @@
 source('~/scripts/cascade/tools.r')
 
-library(ggplot2)
 library(plyr)
 
-read_data <- function(rooted_top_users_file, depth_vs_expansion_file, users_correlated_info_file){
-	depth_expansion <- as.data.frame(read.csv(depth_vs_expansion_file, header=FALSE))
-	colnames(depth_expansion) <- c('depth', 'expansion', 'root_user_id', 'is_unique', 'time')
-	users_correlated_info <- as.data.frame(read.csv(users_correlated_info_file, header=FALSE))
-	colnames(users_correlated_info) <- c('top_user','top_user_odeg', 'neighbour_odeg', 'size', 'depth')	
-	rooted_top_users <- as.data.frame(read.csv(rooted_top_users_file, header=FALSE))
-	colnames(rooted_top_users) <- c('root_user', 'size', 'depth', 'component_top_user', 'at_depth', 'of_size', 'of_depth')
-	return(list(depth_expansion,users_correlated_info,rooted_top_users))
-}
-
-load_data <- function(dir_name, top_n){
-	prev_dir = getwd()
-	setwd(dir_name)
-	if (top_n == 10){
-		data <- read_data('top_size.csv_top_10_rooted_top_users.csv','top_size.csv_top_10_100_depth_vs_expansion.csv', 'top_size.csv_top_10users_correlated_info.csv')
-	}
-	if (top_n == 100){
-		data <- read_data('top_size.csv_top_100_rooted_top_users.csv','top_size.csv_top_100_100_depth_vs_expansion.csv', 'top_size.csv_top_100users_correlated_info.csv')		
-	}
-	if (top_n == 1000){
-		data <- read_data('top_size.csv_top_1000_rooted_top_users.csv','top_size.csv_top_1000_100_depth_vs_expansion.csv', 'top_size.csv_top_1000users_correlated_info.csv')
-	}
-	if (top_n == 10000){
-		data <- read_data('top_size.csv_top_10000_rooted_top_users.csv','top_size.csv_top_10000_100_depth_vs_expansion.csv', 'top_size.csv_top_10000users_correlated_info.csv')
-	}
-	setwd(prev_dir)
-	return (data)
-}
-
 top_size_analysis <- function(file_name){
-	users_correlated_info <- as.data.frame(read.csv(file_name, header=FALSE))
-	colnames(users_correlated_info) <- c('top_user','top_user_odeg', 'neighbour_odeg', 'size', 'depth')	
-	users_correlated_info.df <- ddply(users_correlated_info, c('top_user_odeg','size','depth'), summarise, avg_neighbour_odeg = mean(neighbour_odeg), total_neighbour_odeg = sum(neighbour_odeg))
+	users_correlated_info.df <- ddply(g_prep.df$users_correlated_info, c('top_user_odeg','size','depth'), summarise, avg_neighbour_odeg = mean(neighbour_odeg), total_neighbour_odeg = sum(neighbour_odeg))
 	# top user's outged vs. avg neighbour outdeg
 	plot <- ggplot(users_correlated_info.df, aes(x = top_user_odeg, y = avg_neighbour_odeg)) + xlim(0,100) + geom_point() + geom_smooth(method=lm)
 	save_ggplot(plot,file=paste(c(file_name,'_avg_odeg_corr.pdf'), collapse = ''))
@@ -66,93 +34,6 @@ top_size_analysis <- function(file_name){
 	return(users_correlated_info.df)
 }
 
-shell_growth_state <- function(diff2){
-	state <- 0
-	v_size <- length(diff2)
-	state_out <- c(rep(0,v_size))
-	ampl <- c(rep(0,v_size))
-	ampl_state <- 0
-	ampl_idx <- 1
-	for (i in 2:v_size){
-		if (diff2[i]>0 & state==0){
-			state_out[i] <- 1
-			state <- 1
-		}
-		else if (diff2[i]<=0 & state==0){
-			state_out[i] <- -1
-			state <- -1
-		}
-		else if (diff2[i]>0 & state==1){
-			state_out[i] <- 2
-			state <- 2
-			ampl[ampl_idx] <- state - ampl_state
-		}
-		else if (diff2[i]<=0 & state==1){
-			state_out[i] <- -1
-			state <- -1
-		}
-		else if (diff2[i]>0 & state==2){
-			state_out[i] <- 2
-			ampl[ampl_idx] <- ampl[ampl_idx] + 1
-		}
-		else if (diff2[i]<=0 & state==2){
-			state_out[i] <- 1
-			state <- 1
-		}
-		else if (diff2[i]>0 & state==-1){
-			state_out[i] <- 0
-			state <- 0
-		}
-		else if (diff2[i]<=0 & state==-1){
-			state_out[i] <- -2
-			state <- -2
-		}
-		else if (diff2[i]>0 & state==-2){
-			state_out[i] <- -1
-			state <- -1
-		}
-		else if (diff2[i]<=0 & state==-2){
-			state_out[i] <- -2
-		}
-		if ((state_out[i] <= state_out[i-1]) & (state_out[i] != 2)){
-			ampl_state <- state
-			ampl_idx <- i
-		}
-	}
-	return(list(state=state_out, amplifier=ampl))
-}
-
-get_unique_cascade <- function (depth_expansion){
-	unique_cascade <- depth_expansion[depth_expansion$is_unique==1,]
-	return (list(depth_expansion=unique_cascade, count=length(unique(unique_cascade$root_user_id))))
-}
-get_non_unique_cascade <- function (depth_expansion){
-	return (depth_expansion[depth_expansion$is_unique==0,])
-}
-process_data <- function (rooted_top_users, depth_expansion){
-	depth_expansion.df <- ddply(depth_expansion, c('root_user_id'), function(one_partition){
-				one_partition = one_partition[order(one_partition$depth),]
-				one_partition$diff = (one_partition$expansion-c(0,one_partition$expansion[1:nrow(one_partition)-1]))
-				one_partition$diff2 = (one_partition$diff-c(0,one_partition$diff[1:nrow(one_partition)-1]))
-				sgs = shell_growth_state(one_partition$diff2)
-				one_partition$state = sgs$state
-				one_partition$ampl = sgs$amplifier
-#				one_partition$time_interval = (one_partition$time-c(one_partition$time[1],one_partition$time[2],one_partition$time[3:nrow(one_partition)-1]))
-				one_partition$cum_time_interval = one_partition$time - one_partition$time[2]
-				one_partition$relative_max_time = one_partition$max_time - one_partition$time[2]
-				one_partition$cum_expansion = cumsum(one_partition$expansion)
-				one_partition$factor = ((one_partition$expansion-c(NA,one_partition$expansion[1:nrow(one_partition)-1]))/c(1,one_partition$expansion[1:nrow(one_partition)-1]))
-				alpha <- (max(one_partition$expansion))^(1/min(one_partition[one_partition$expansion==max(one_partition$expansion),]$depth))
-				one_partition$expansion_norm = one_partition$expansion / (alpha^(one_partition$depth))
-				one_partition
-			})
-	rooted_top_users.df <- ddply(rooted_top_users, c('root_user','size','depth'), function(one_partition){
-				one_partition$component_size_prop = one_partition$of_size/one_partition$size
-				one_partition$depth_matching_prop = one_partition$depth-one_partition$of_depth
-				one_partition
-			})
-	return(list(rooted_top_users=rooted_top_users.df,depth_expansion=depth_expansion.df))
-}
 draw_depth_expansion <- function(file_name,depth_expansion.df){
 	cum_time_interval <- vector("list")
 	cum_expansion <- vector("list")
@@ -227,7 +108,7 @@ analyze_cascade_growth <- function (fraction, depth_expansion.df, rooted_top_use
 		amplifiers_count <- c(amplifiers_count, length(depth_expansion.subdata$ampl[depth_expansion.subdata$ampl > 0]))
 		for (each_subroot_depth in unique(rooted_top_users.subdata$at_depth)){
 			if(depth_expansion.subdata[depth_expansion.subdata$depth==each_subroot_depth,]$ampl > 0){
-				amplifiers <- c(amplifiers, rooted_top_users.subdata[rooted_top_users.subdata$at_depth==each_subroot_depth,]$component_top_user)
+				amplifiers <- c(amplifiers, rooted_top_users.subdata[rooted_top_users.subdata$at_depth==each_subroot_depth,]$top_user)
 			}
 		}
 	}
@@ -248,35 +129,25 @@ analyze_cascade_growth <- function (fraction, depth_expansion.df, rooted_top_use
 }
 
 root_users_analysis <- function(rooted_top_users_file, depth_vs_expansion_file){
-	rooted_top_users <- as.data.frame(read.csv(rooted_top_users_file, header=FALSE))
-	colnames(rooted_top_users) <- c('root_user', 'size', 'depth', 'component_top_user', 'at_depth', 'of_size', 'of_depth')
-	depth_expansion <- as.data.frame(read.csv(depth_vs_expansion_file, header=FALSE))
-	colnames(depth_expansion) <- c('depth', 'expansion', 'root_user_id', 'is_unique', 'time', 'max_time')
-	framed_data <- process_data(rooted_top_users, depth_expansion)
-	rooted_top_users.df <- framed_data$rooted_top_users
-	depth_expansion.df <- framed_data$depth_expansion
-	unique_cascade <- get_unique_cascade(depth_expansion.df)
-	print_report('Unique cascade count', unique_cascade$count)
-	print_report('Unique cascade covers', sum(unique_cascade$depth_expansion$expansion))
-	draw_depth_expansion(depth_vs_expansion_file, unique_cascade$depth_expansion[1:25,])
-	users_correlated_info <- depth_expansion.df
-	users_correlated_info.df <- ddply(users_correlated_info, c('root_user_id'), summarise, size = sum(expansion), total_ampl=sum(ampl), ampl_4=sum(ampl[depth<=4]), total_1st_exp = expansion[depth==1], total_2nd_exp = expansion[depth==2], total_3rd_exp = expansion[depth==3],total_4th_exp = expansion[depth==4],total_5th_exp = expansion[depth==5])
-	build_model(users_correlated_info.df)
-	print_report('Cor of size vs total amplification', cor(users_correlated_info.df$size,users_correlated_info.df$total_ampl))
-	plot <- ggplot(users_correlated_info.df, aes(x = total_ampl, y = size)) + geom_point() + geom_smooth(method=lm) + xlab('Total amplification') + ylab('Cascade size')
+	draw_depth_expansion(depth_vs_expansion_file, g_prep.df$depth_expansion)
+	cascade_info.df <- ddply(g_prep.df$depth_expansion, c('root_user_id'), summarise, size = sum(expansion), total_ampl=sum(ampl), ampl_4=sum(ampl[depth<=4]), 
+			total_1st_exp = expansion[depth==1], total_2nd_exp = expansion[depth==2], total_3rd_exp = expansion[depth==3],total_4th_exp = expansion[depth==4],total_5th_exp = expansion[depth==5])
+	build_model(cascade_info.df)
+	print_report('Cor of size vs total amplification', cor(cascade_info.df$size,cascade_info.df$total_ampl))
+	plot <- ggplot(cascade_info.df, aes(x = total_ampl, y = size)) + geom_point() + geom_smooth(method=lm) + xlab('Total amplification') + ylab('Cascade size')
 	save_ggplot(plot,file=paste(c(rooted_top_users_file,'_ampl_size_corr.pdf'), collapse = ''))
-	not_really_root <- rooted_top_users.df[(rooted_top_users.df$depth-rooted_top_users.df$of_dept>=1) & (rooted_top_users.df$component_size_prop>0.80),]
-	amplifiers <- analyze_cascade_growth(fraction = .95, depth_expansion.df, rooted_top_users.df)
-	real_root <- union(setdiff(unique(depth_expansion$root_user_id),unique(not_really_root$root_user)), amplifiers)
+	not_really_root <- g_prep.df$rooted_top_users[(g_prep.df$rooted_top_users$depth_matching<=5) & (g_prep.df$rooted_top_users$component_size_prop>0.80),]
+	amplifiers <- analyze_cascade_growth(fraction = .95, g_prep.df$depth_expansion, g_prep.df$rooted_top_users)
+	real_root <- union(setdiff(unique(g_prep$depth_expansion$root_user_id),unique(not_really_root$root_user)), amplifiers)
 	print_report('Real root count', length(real_root))
-#	real_root <- sample(rooted_top_users.df$root_user, 300)
+#	real_root <- sample(g_prep.df$rooted_top_users$root_user, 300)
 #	print(real_root)
-#	plot <- ggplot(rooted_top_users.df, aes(x = depth_matching_prop, y = component_size_prop)) + geom_point()  + xlab('Depth difference') + ylab('Subrooted cascade size / rooted cascade size') #+ geom_smooth(method=lm)
+#	plot <- ggplot(g_prep.df$rooted_top_users, aes(x = depth_matching_prop, y = component_size_prop)) + geom_point()  + xlab('Depth difference') + ylab('Subrooted cascade size / rooted cascade size') #+ geom_smooth(method=lm)
 #	ggsave(plot,file=paste(rooted_top_users_file,'_at_real_root_depth_size_prop_corr.pdf'))
-#	print(cor(rooted_top_users.df$at_depth,rooted_top_users.df$component_size_prop))
-	rooted_top_users.df <- rooted_top_users.df[rooted_top_users.df$root_user%in%real_root,]
-	users_correlated_info <- depth_expansion.df[depth_expansion.df$root_user_id%in%real_root,]
-#	draw_depth_expansion(depth_vs_expansion_file, depth_expansion.df[depth_expansion.df$root_user_id%in%real_root,])
+#	print(cor(g_prep.df$rooted_top_users$at_depth,g_prep.df$rooted_top_users$component_size_prop))
+	g_prep.df$rooted_top_users <- g_prep.df$rooted_top_users[g_prep.df$rooted_top_users$root_user%in%real_root,]
+	users_correlated_info <- g_prep.df$depth_expansion[g_prep.df$depth_expansion$root_user_id%in%real_root,]
+#	draw_depth_expansion(depth_vs_expansion_file, g_prep.df$depth_expansion[g_prep.df$depth_expansion$root_user_id%in%real_root,])
 	users_correlated_info.df <- ddply(users_correlated_info, c('root_user_id'), summarise, size = sum(expansion), total_ampl=sum(ampl), ampl_4=sum(ampl[depth<=4]), total_1st_exp = expansion[depth==1], total_2nd_exp = expansion[depth==2], total_3rd_exp = expansion[depth==3],total_4th_exp = expansion[depth==4],total_5th_exp = expansion[depth==5])
 	print(nrow(users_correlated_info.df))
 	print(cor(users_correlated_info.df$size,users_correlated_info.df$total_ampl))
