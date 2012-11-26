@@ -65,25 +65,27 @@ def cascade_traverse (parent,depth):
 
 def visulization (infl_file_name, user_list, max_depth):
     global activities_per_root
+    VIZ_CUT_OFF = 100
     if max_depth > 4:
-        print "Unnecessary graph, skipping visualization, please provide value less than 5 as the last argument"
-        return
+        print "Unnecessary graph, visualizing only one cascade"
+        VIZ_CUT_OFF = 1
     for i in range(1,max_depth+1):
         cut_off = 0
+        activities_per_root_file = open(infl_file_name+'_'+str(VIZ_CUT_OFF)+'_'+str(i)+"graph.dot", "w")
+        activities_per_root_file.write('graph G {\n node [shape=circle,label="",width=0.1,height=0.1,style=filled,fillcolor=white];\n')#color=orange,style=filled,
         initialize_traverse()
         for a_top_user in user_list:
-            if cut_off >= 100:
+            if cut_off >= VIZ_CUT_OFF:
                 break
+            activities_per_root_file.write('%s [fillcolor = red];\n'%a_top_user)
             cascade_traverse(a_top_user, i)
             cut_off += 1
-        activities_per_root_file = open(infl_file_name+'_'+str(cut_off)+'_'+str(i)+"graph.dot", "w")
-        activities_per_root_file.write('digraph G {\n node [shape=circle,label="",width=0.1,height=0.1]\n')#color=orange,style=filled,
         for j in range(len(activities_per_root)):
-            activities_per_root_file.write('%s -> %s;\n'%(activities_per_root[j][0],activities_per_root[j][1])) # [color=black] 
+            activities_per_root_file.write('%s -- %s;\n'%(activities_per_root[j][0],activities_per_root[j][1])) # [color=black] 
         activities_per_root_file.write('}')
         activities_per_root_file.close()    
-        os.popen("neato -Ksfdp -Tsvg "+infl_file_name+'_'+str(cut_off)+'_'+str(i)+"graph.dot"+">"+infl_file_name+'_'+str(cut_off)+'_'+str(i)+"_graph.svg")
-        os.popen("rm "+infl_file_name+'_'+str(cut_off)+'_'+str(i)+"graph.dot")
+        os.popen("neato -Ksfdp -Tsvg "+infl_file_name+'_'+str(VIZ_CUT_OFF)+'_'+str(i)+"graph.dot"+">"+infl_file_name+'_'+str(VIZ_CUT_OFF)+'_'+str(i)+"_graph.svg")
+        os.popen("rm "+infl_file_name+'_'+str(VIZ_CUT_OFF)+'_'+str(i)+"graph.dot")
 
 def resolve_cascades (user_list):
     global depth_expansion, depth_expansion_per_root, top_users_correlated_info, branching_dist

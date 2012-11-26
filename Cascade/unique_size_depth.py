@@ -156,6 +156,7 @@ depth_file = open(sys.argv[3]+"depth.csv", "w")
 top_n_size_file = open(sys.argv[3]+"top_size.csv", "w")
 top_n_depth_file = open(sys.argv[3]+"top_depth.csv", "w")
 rooted_top_users_file = open(sys.argv[3]+"rooted_top_users.csv", "w")
+nonroot_top_users_file = open(sys.argv[3]+"nonroot_top_users.csv", "w")
 children_of_parent = {} # To hold children of all parents
 children_of_parent_file = open(sys.argv[3]+"children_of_parent.txt", "w")
 parent_type = int(sys.argv[4])#int(raw_input(
@@ -264,7 +265,7 @@ for i in range(len(timeThrsh)):
     for node_id in graph:
         if graph[node_id].getRoot(i)[0] in root_contains[i]:
             root_id = graph[node_id].getRoot(i)[0]
-            if graph[node_id].getSize(i) >= 0.75*graph[root_id].getSize(i):
+            if graph[node_id].getSize(i) > 0.5*graph[root_id].getSize(i):
                 root_contains[i][root_id].append(node_id)
 print top_n_size_users
 print top_n_depth_users
@@ -278,7 +279,9 @@ for i in range(len(timeThrsh)):
             top_of_depth = graph[a_top_user].getDepth(i)
             top_at_depth = graph[a_top_user].getRoot(i)[1]
             rooted_top_users_file.write('%s,%s,%s,%s,%s,%s,%s\n'%(a_root,root_size,root_depth,a_top_user,top_at_depth,top_of_size,top_of_depth))
+            nonroot_top_users_file.write('%s,%s,%s\n'%(top_of_size,a_top_user,timeThrsh[i]))
 rooted_top_users_file.close()
+nonroot_top_users_file.close()
 
 for i in range(len(timeThrsh)):
     temp = sorted(top_n_size_users[i].iteritems(), key=operator.itemgetter(0), reverse=True)
