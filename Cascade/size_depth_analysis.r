@@ -224,7 +224,7 @@ parent_type_comp <- function(dir_vector){
 	save_ggplot(plot,file='size_pdf_logy.pdf')
 	size_freq <- data.frame(size = rep(cascade_comp$size$size, times = cascade_comp$size$count), parent_type=rep(cascade_comp$size$parent_type, times = cascade_comp$size$count))
 	size_freq$parent_type <- factor(size_freq$parent_type)
-	plot <- ggplot(size_freq, aes(x=log10(size), fill=parent_type)) + geom_histogram(binwidth=0.2, position="dodge")
+	plot <- ggplot(size_freq, aes(x=log10(size), fill=parent_type)) + geom_histogram(binwidth=0.2, position="dodge") + scale_y_log10()
 	plot <- change_plot_attributes(plot, "log of Cascade Size", "Frequency") + scale_fill_discrete(name="Parent type", breaks=c("0", "1", "2", "3"),
 			labels=c("First parent", "Higest outdeg parent", "Last parent", "Random parent"))
 	save_ggplot(plot,file='size_hist.pdf')
@@ -261,7 +261,7 @@ parent_type_comp <- function(dir_vector){
 	save_ggplot(plot,file='depth_pdf_logy.pdf')
 	depth_freq <- data.frame(depth = rep(cascade_comp$depth$depth, times = cascade_comp$depth$count), parent_type=rep(cascade_comp$depth$parent_type, times = cascade_comp$depth$count))
 	depth_freq$parent_type <- factor(depth_freq$parent_type)
-	plot <- ggplot(depth_freq, aes(x=depth, fill=parent_type)) + geom_histogram(binwidth=1, position="dodge")
+	plot <- ggplot(depth_freq, aes(x=depth, fill=parent_type)) + geom_histogram(binwidth=1, position="dodge") + scale_y_log10()
 	plot <- change_plot_attributes(plot, "Cascade Depth", "Frequency") + scale_fill_discrete(name="Parent type", breaks=c("0", "1", "2", "3"),
 			labels=c("First parent", "Higest outdeg parent", "Last parent", "Random parent"))
 	save_ggplot(plot,file='depth_hist.pdf')

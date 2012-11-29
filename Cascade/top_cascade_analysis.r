@@ -88,23 +88,23 @@ build_model <- function (trainer_cascade){
 	print_report('Cor of size vs. 2nd hop shell size', cor(trainer_cascade$size,trainer_cascade$total_2nd_exp))
 	print_report('Cor of size vs. 3rd hop shell size', cor(trainer_cascade$size,trainer_cascade$total_3rd_exp))
 	print_report('Cor of size vs. 4th hop shell size', cor(trainer_cascade$size,trainer_cascade$total_4th_exp))
-	print_report('Cor of size vs. 4 hop amplification hop shell size', cor(trainer_cascade$size,trainer_cascade$ampl_4))
+	print_report('Cor of size vs. 4 hop amplification', cor(trainer_cascade$size,trainer_cascade$ampl_4))
 }
 
-analyze_cascade_growth <- function (fraction, depth_expansion.df, rooted_top_users.df){
+analyze_cascade_growth <- function (fraction, cascade_root){
 	time_of_growth <- c()
 	growth_rate_frac <- c()
 	total_ampl_frac <- c()
 	depth_of_growth <- c()
 	amplifiers_count <- c()
 	amplifiers <- c()
-	for(a_root in unique(depth_expansion.df$root_user_id)){
-		depth_expansion.subdata <- subset(depth_expansion.df, root_user_id==a_root)
-		rooted_top_users.subdata <- subset(rooted_top_users.df, root_user==a_root)
-		time_of_growth <- c(time_of_growth,min(depth_expansion.subdata[depth_expansion.subdata$cum_expansion/max(depth_expansion.subdata$cum_expansion)>=fraction,]$cum_time_interval))
-		growth_rate_frac <- c(growth_rate_frac,sum(depth_expansion.subdata[depth_expansion.subdata$cum_expansion/max(depth_expansion.subdata$cum_expansion)<=fraction,]$expansion)/max(depth_expansion.subdata[depth_expansion.subdata$cum_expansion/max(depth_expansion.subdata$cum_expansion)<=fraction,]$cum_time_interval))
-		total_ampl_frac <- c(total_ampl_frac, sum(depth_expansion.subdata[depth_expansion.subdata$cum_expansion/max(depth_expansion.subdata$cum_expansion)<=fraction,]$ampl))
-		depth_of_growth <- c(depth_of_growth,min(depth_expansion.subdata[depth_expansion.subdata$cum_expansion/max(depth_expansion.subdata$cum_expansion)>=fraction,]$depth)/max(depth_expansion.subdata$depth))
+	for(a_root in cascade_root){
+		depth_expansion.subdata <- subset(g_prep.df$root_depth_expansion, root_user_id==a_root)
+		rooted_top_users.subdata <- subset(g_prep.df$rooted_top_users, root_user==a_root)
+#		time_of_growth <- c(time_of_growth,min(depth_expansion.subdata[depth_expansion.subdata$cum_expansion/max(depth_expansion.subdata$cum_expansion)>=fraction,]$cum_time_interval))
+#		growth_rate_frac <- c(growth_rate_frac,sum(depth_expansion.subdata[depth_expansion.subdata$cum_expansion/max(depth_expansion.subdata$cum_expansion)<=fraction,]$expansion)/max(depth_expansion.subdata[depth_expansion.subdata$cum_expansion/max(depth_expansion.subdata$cum_expansion)<=fraction,]$cum_time_interval))
+#		total_ampl_frac <- c(total_ampl_frac, sum(depth_expansion.subdata[depth_expansion.subdata$cum_expansion/max(depth_expansion.subdata$cum_expansion)<=fraction,]$ampl))
+#		depth_of_growth <- c(depth_of_growth,min(depth_expansion.subdata[depth_expansion.subdata$cum_expansion/max(depth_expansion.subdata$cum_expansion)>=fraction,]$depth)/max(depth_expansion.subdata$depth))
 		amplifiers_count <- c(amplifiers_count, length(depth_expansion.subdata$ampl[depth_expansion.subdata$ampl > 0]))
 		for (each_subroot_depth in unique(rooted_top_users.subdata$at_depth)){
 			if(depth_expansion.subdata[depth_expansion.subdata$depth==each_subroot_depth,]$ampl > 0){
@@ -115,9 +115,9 @@ analyze_cascade_growth <- function (fraction, depth_expansion.df, rooted_top_use
 #	print_report('', growth_rate_frac)
 #	print(total_ampl_frac)
 #	print(length(time_of_growth))
-	print_report('Summary of', fraction)
-	print_report('Growth time', summary(time_of_growth[time_of_growth>0]/86400))
-	print_report('Growth depth', summary(depth_of_growth[depth_of_growth>0]))
+#	print_report('Summary of', fraction)
+#	print_report('Growth time', summary(time_of_growth[time_of_growth>0]/86400))
+#	print_report('Growth depth', summary(depth_of_growth[depth_of_growth>0]))
 	print_report('Amplifiers count per cascade', summary(amplifiers_count))
 #	print_report('Cor of ', cor(total_ampl_frac,growth_rate_frac*86400))
 #	data_ampl_95 <- data.frame(total_ampl_frac, growth_rate_frac)
@@ -129,30 +129,38 @@ analyze_cascade_growth <- function (fraction, depth_expansion.df, rooted_top_use
 }
 
 root_users_analysis <- function(rooted_top_users_file, depth_vs_expansion_file){
-	draw_depth_expansion(depth_vs_expansion_file, g_prep.df$depth_expansion)
-	cascade_info.df <- ddply(g_prep.df$depth_expansion, c('root_user_id'), summarise, size = sum(expansion), total_ampl=sum(ampl), ampl_4=sum(ampl[depth<=4]), 
-			total_1st_exp = expansion[depth==1], total_2nd_exp = expansion[depth==2], total_3rd_exp = expansion[depth==3],total_4th_exp = expansion[depth==4],total_5th_exp = expansion[depth==5])
+	sink(file = "output.txt", type = "output")
+ 	cascade_info.df <- ddply(g_prep.df$root_depth_expansion, c('root_user_id'), summarise, size = sum(expansion), max_depth=max(depth), total_ampl=sum(ampl), ampl_4=sum(ampl[depth<=4]), 
+			total_1st_exp = expansion[depth==1], total_2nd_exp = c(expansion[depth==2],0)[1], total_3rd_exp = c(expansion[depth==3],0)[1],
+			total_4th_exp = c(expansion[depth==4],0)[1],total_5th_exp = c(expansion[depth==5],0)[1])
+	very_big_cascades <- cascade_info.df[cascade_info.df$max_depth >= 45,]$root_user_id
+	draw_depth_expansion(depth_vs_expansion_file, g_prep.df$root_depth_expansion[g_prep.df$root_depth_expansion$root_user_id%in%very_big_cascades,])
 	build_model(cascade_info.df)
 	print_report('Cor of size vs total amplification', cor(cascade_info.df$size,cascade_info.df$total_ampl))
-	plot <- ggplot(cascade_info.df, aes(x = total_ampl, y = size)) + geom_point() + geom_smooth(method=lm) + xlab('Total amplification') + ylab('Cascade size')
-	save_ggplot(plot,file=paste(c(rooted_top_users_file,'_ampl_size_corr.pdf'), collapse = ''))
-	not_really_root <- g_prep.df$rooted_top_users[(g_prep.df$rooted_top_users$depth_matching<=5) & (g_prep.df$rooted_top_users$component_size_prop>0.80),]
-	amplifiers <- analyze_cascade_growth(fraction = .95, g_prep.df$depth_expansion, g_prep.df$rooted_top_users)
-	real_root <- union(setdiff(unique(g_prep$depth_expansion$root_user_id),unique(not_really_root$root_user)), amplifiers)
+#	plot <- ggplot(cascade_info.df, aes(x = total_ampl, y = size)) + geom_point() + geom_smooth(method=lm) + xlab('Total amplification') + ylab('Cascade size')
+#	save_ggplot(plot,file=paste(c(rooted_top_users_file,'_ampl_size_corr.pdf'), collapse = ''))
+	nonroot_components <- g_prep.df$rooted_top_users[(g_prep.df$rooted_top_users$depth_matching<=5) & (g_prep.df$rooted_top_users$component_size_prop>0.80),]
+	not_really_root <- unique(nonroot_components$root_user)
+	print_report('Not really root count', length(not_really_root))
+	amplifiers <- analyze_cascade_growth(fraction = .95, not_really_root)
+	real_root <- union(setdiff(g_prep.df$roots,not_really_root), amplifiers)
 	print_report('Real root count', length(real_root))
 #	real_root <- sample(g_prep.df$rooted_top_users$root_user, 300)
 #	print(real_root)
 #	plot <- ggplot(g_prep.df$rooted_top_users, aes(x = depth_matching_prop, y = component_size_prop)) + geom_point()  + xlab('Depth difference') + ylab('Subrooted cascade size / rooted cascade size') #+ geom_smooth(method=lm)
 #	ggsave(plot,file=paste(rooted_top_users_file,'_at_real_root_depth_size_prop_corr.pdf'))
 #	print(cor(g_prep.df$rooted_top_users$at_depth,g_prep.df$rooted_top_users$component_size_prop))
-	g_prep.df$rooted_top_users <- g_prep.df$rooted_top_users[g_prep.df$rooted_top_users$root_user%in%real_root,]
-	users_correlated_info <- g_prep.df$depth_expansion[g_prep.df$depth_expansion$root_user_id%in%real_root,]
+	real_depth_expansion <- rbind(g_prep.df$root_depth_expansion[g_prep.df$root_depth_expansion$root_user_id%in%real_root,c(1:7,11:13)],
+			g_prep.df$nonroot_depth_expansion[g_prep.df$nonroot_depth_expansion$top_user_id%in%real_root,])
 #	draw_depth_expansion(depth_vs_expansion_file, g_prep.df$depth_expansion[g_prep.df$depth_expansion$root_user_id%in%real_root,])
-	users_correlated_info.df <- ddply(users_correlated_info, c('root_user_id'), summarise, size = sum(expansion), total_ampl=sum(ampl), ampl_4=sum(ampl[depth<=4]), total_1st_exp = expansion[depth==1], total_2nd_exp = expansion[depth==2], total_3rd_exp = expansion[depth==3],total_4th_exp = expansion[depth==4],total_5th_exp = expansion[depth==5])
-	print(nrow(users_correlated_info.df))
-	print(cor(users_correlated_info.df$size,users_correlated_info.df$total_ampl))
-	build_model(users_correlated_info.df)
-	return(users_correlated_info.df)
+	cascade_info.df <- ddply(real_depth_expansion, c('root_user_id'), summarise, size = sum(expansion), depth=max(depth), total_ampl=sum(ampl), ampl_4=sum(ampl[depth<=4]), 
+			total_1st_exp = expansion[depth==1], total_2nd_exp = c(expansion[depth==2],0)[1], total_3rd_exp = c(expansion[depth==3],0)[1],
+			total_4th_exp = c(expansion[depth==4],0)[1],total_5th_exp = c(expansion[depth==5],0)[1])
+#	print(nrow(cascade_info.df))
+	print_report('Cor of size vs total amplification (real roots)', cor(cascade_info.df$size,cascade_info.df$total_ampl))
+	build_model(cascade_info.df)
+	sink()
+#	return(cascade_info.df)
 }
 
 #nrr <- root_users_analysis('~/output_cascade/full_first_parent/top_size.csv_top_10_rooted_top_users.csv','~/output_cascade/full_first_parent/top_size.csv_top_10_100_depth_vs_expansion.csv')
