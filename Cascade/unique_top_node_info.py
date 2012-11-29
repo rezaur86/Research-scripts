@@ -70,6 +70,8 @@ def visulization (infl_file_name, user_list, max_depth):
         print "Unnecessary graph, visualizing only one cascade"
         VIZ_CUT_OFF = 1
     for i in range(1,max_depth+1):
+        if i != max_depth:
+            continue
         cut_off = 0
         activities_per_root_file = open(infl_file_name+'_'+str(VIZ_CUT_OFF)+'_'+str(i)+"graph.dot", "w")
         activities_per_root_file.write('graph G {\n node [shape=circle,label="",width=0.1,height=0.1,style=filled,fillcolor=white];\n')#color=orange,style=filled,
@@ -77,6 +79,8 @@ def visulization (infl_file_name, user_list, max_depth):
         for a_top_user in user_list:
             if cut_off >= VIZ_CUT_OFF:
                 break
+            if a_top_user != 19845:
+                continue
             activities_per_root_file.write('%s [fillcolor = red];\n'%a_top_user)
             cascade_traverse(a_top_user, i)
             cut_off += 1
