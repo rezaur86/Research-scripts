@@ -79,7 +79,7 @@ process_data <- function(rooted_top_users_file, depth_vs_expansion_file, nonroot
 	colnames(odeg_dist) <- c('outdeg', 'count', 'depth')
 	odeg_dist <- odeg_dist[order(odeg_dist$depth,odeg_dist$outdeg),]
 	print_report("loading done",dist_file)
-	print_report("All loading done",date())
+	print_report("All file loading done",date())
 	root_depth_expansion.df <- ddply(root_depth_expansion, c('root_user_id'), function(one_partition){
 				one_partition = one_partition[order(one_partition$depth),]
 				one_partition$diff = (one_partition$expansion-c(0,one_partition$expansion[1:nrow(one_partition)-1]))
@@ -99,6 +99,10 @@ process_data <- function(rooted_top_users_file, depth_vs_expansion_file, nonroot
 	nonroot_depth_expansion.df <- ddply(nonroot_depth_expansion, c('top_user_id'), function(one_partition){
 				one_partition = one_partition[order(one_partition$depth),]
 				one_partition$diff = (one_partition$expansion-c(0,one_partition$expansion[1:nrow(one_partition)-1]))
+				one_partition$diff2 = (one_partition$diff-c(0,one_partition$diff[1:nrow(one_partition)-1]))
+				sgs <- shell_growth_state(one_partition$diff2)
+				one_partition$state = sgs$state
+				one_partition$ampl = sgs$amplifier
 				one_partition$cum_time_interval = one_partition$time - one_partition$time[2]
 				one_partition$relative_max_time = one_partition$max_time - one_partition$time[2]
 				one_partition$cum_expansion = cumsum(one_partition$expansion)
@@ -110,6 +114,7 @@ process_data <- function(rooted_top_users_file, depth_vs_expansion_file, nonroot
 				one_partition$depth_matching = one_partition$depth-one_partition$of_depth
 				one_partition
 			})
+	print_report("Rooted top users preprocessed",date())
 	roots_correlated_info.df <- ddply(roots_correlated_info, c('root_odeg','size','depth'), summarise, avg_neighbour_odeg = mean(neighbour_odeg), total_neighbour_odeg = sum(neighbour_odeg))
 	root_users <- unique(root_depth_expansion$root_user_id)
 	nonroot_users <- unique(nonroot_depth_expansion$top_user_id)

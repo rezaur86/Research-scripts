@@ -98,19 +98,24 @@ analyze_cascade_growth <- function (fraction, cascade_root){
 	depth_of_growth <- c()
 	amplifiers_count <- c()
 	amplifiers <- c()
+	roots <- c()
 	for(a_root in cascade_root){
-		depth_expansion.subdata <- subset(g_prep.df$root_depth_expansion, root_user_id==a_root)
+		root_depth_expansion.subdata <- subset(g_prep.df$root_depth_expansion, root_user_id==a_root)
 		rooted_top_users.subdata <- subset(g_prep.df$rooted_top_users, root_user==a_root)
 #		time_of_growth <- c(time_of_growth,min(depth_expansion.subdata[depth_expansion.subdata$cum_expansion/max(depth_expansion.subdata$cum_expansion)>=fraction,]$cum_time_interval))
 #		growth_rate_frac <- c(growth_rate_frac,sum(depth_expansion.subdata[depth_expansion.subdata$cum_expansion/max(depth_expansion.subdata$cum_expansion)<=fraction,]$expansion)/max(depth_expansion.subdata[depth_expansion.subdata$cum_expansion/max(depth_expansion.subdata$cum_expansion)<=fraction,]$cum_time_interval))
 #		total_ampl_frac <- c(total_ampl_frac, sum(depth_expansion.subdata[depth_expansion.subdata$cum_expansion/max(depth_expansion.subdata$cum_expansion)<=fraction,]$ampl))
 #		depth_of_growth <- c(depth_of_growth,min(depth_expansion.subdata[depth_expansion.subdata$cum_expansion/max(depth_expansion.subdata$cum_expansion)>=fraction,]$depth)/max(depth_expansion.subdata$depth))
-		amplifiers_count <- c(amplifiers_count, length(depth_expansion.subdata$ampl[depth_expansion.subdata$ampl > 0]))
-		for (each_subroot_depth in unique(rooted_top_users.subdata$at_depth)){
-			if(depth_expansion.subdata[depth_expansion.subdata$depth==each_subroot_depth,]$ampl > 0){
-				amplifiers <- c(amplifiers, rooted_top_users.subdata[rooted_top_users.subdata$at_depth==each_subroot_depth,]$top_user)
-			}
-		}
+		amplifiers_count <- c(amplifiers_count, length(root_depth_expansion.subdata$ampl[root_depth_expansion.subdata$ampl > 0]))
+		ampl_depth <- root_depth_expansion.subdata[root_depth_expansion.subdata$ampl > 0, ]$depth
+		ampl <- rooted_top_users.subdata[rooted_top_users.subdata$at_depth%in%ampl_depth,]
+		amplifiers <- c(amplifiers, ampl$top_user)
+		roots <- c(roots, ampl$root_user)
+#		for (each_subroot in rooted_top_users.subdata[rooted_top_users.subdata$at_depth%in%ampl_depth,]$top_user){
+#			if(depth_expansion.subdata[depth_expansion.subdata$depth==each_subroot_depth,]$ampl > 0){
+#				amplifiers <- c(amplifiers, rooted_top_users.subdata[rooted_top_users.subdata$at_depth==each_subroot_depth,]$top_user)
+#			}
+#		}
 	}
 #	print_report('', growth_rate_frac)
 #	print(total_ampl_frac)
@@ -125,7 +130,7 @@ analyze_cascade_growth <- function (fraction, cascade_root){
 #	data_ampl_95$growth_rate_frac <- growth_rate_frac
 #	plot <- ggplot(data_ampl_95, aes(x = total_ampl_frac, y = growth_rate_frac*86400)) + geom_point() + geom_smooth(method=lm) + xlab('Amplification till 95% of size') + ylab('95% size/arrival days')
 #	ggsave(plot,file=paste(rooted_top_users_file,'_ampl_95_size_corr.pdf'))
-	return (amplifiers)
+	return (list(ampl_users = amplifiers, replaced_roots=roots))
 }
 
 root_users_analysis <- function(rooted_top_users_file, depth_vs_expansion_file){
@@ -143,20 +148,25 @@ root_users_analysis <- function(rooted_top_users_file, depth_vs_expansion_file){
 	not_really_root <- unique(nonroot_components$root_user)
 	print_report('Not really root count', length(not_really_root))
 	amplifiers <- analyze_cascade_growth(fraction = .95, not_really_root)
-	real_root <- union(setdiff(g_prep.df$roots,not_really_root), amplifiers)
+	print_report('Amplifier user count', length(amplifiers$ampl_user))
+	print_report('Replaced root count', length(unique(amplifiers$replaced_roots)))
+	no_ampl_roots <- setdiff(not_really_root,amplifiers$replaced_roots)
+	top_user <-  union(nonroot_components[nonroot_components$root_user%in%no_ampl_roots, ]$top_user, amplifiers$ampl_user)
+	real_root <- union(setdiff(g_prep.df$roots,not_really_root),top_user)
 	print_report('Real root count', length(real_root))
 #	real_root <- sample(g_prep.df$rooted_top_users$root_user, 300)
 #	print(real_root)
 #	plot <- ggplot(g_prep.df$rooted_top_users, aes(x = depth_matching_prop, y = component_size_prop)) + geom_point()  + xlab('Depth difference') + ylab('Subrooted cascade size / rooted cascade size') #+ geom_smooth(method=lm)
 #	ggsave(plot,file=paste(rooted_top_users_file,'_at_real_root_depth_size_prop_corr.pdf'))
 #	print(cor(g_prep.df$rooted_top_users$at_depth,g_prep.df$rooted_top_users$component_size_prop))
-	real_depth_expansion <- rbind(g_prep.df$root_depth_expansion[g_prep.df$root_depth_expansion$root_user_id%in%real_root,c(1:7,11:13)],
-			g_prep.df$nonroot_depth_expansion[g_prep.df$nonroot_depth_expansion$top_user_id%in%real_root,])
+	real_infl_info <- g_prep.df$root_depth_expansion[g_prep.df$root_depth_expansion$root_user_id%in%real_root,]#c(1:7,11:13)]
+	colnames(real_infl_info) <- colnames(g_prep.df$nonroot_depth_expansion)
+	real_depth_expansion <- rbind(real_infl_info, g_prep.df$nonroot_depth_expansion[g_prep.df$nonroot_depth_expansion$top_user_id%in%real_root,])
+	print("debug")
 #	draw_depth_expansion(depth_vs_expansion_file, g_prep.df$depth_expansion[g_prep.df$depth_expansion$root_user_id%in%real_root,])
-	cascade_info.df <- ddply(real_depth_expansion, c('root_user_id'), summarise, size = sum(expansion), depth=max(depth), total_ampl=sum(ampl), ampl_4=sum(ampl[depth<=4]), 
+	cascade_info.df <- ddply(real_depth_expansion, c('top_user_id'), summarise, size = sum(expansion), max_depth=max(depth), total_ampl=sum(ampl), ampl_4=sum(ampl[depth<=4]),
 			total_1st_exp = expansion[depth==1], total_2nd_exp = c(expansion[depth==2],0)[1], total_3rd_exp = c(expansion[depth==3],0)[1],
 			total_4th_exp = c(expansion[depth==4],0)[1],total_5th_exp = c(expansion[depth==5],0)[1])
-#	print(nrow(cascade_info.df))
 	print_report('Cor of size vs total amplification (real roots)', cor(cascade_info.df$size,cascade_info.df$total_ampl))
 	build_model(cascade_info.df)
 	sink()
