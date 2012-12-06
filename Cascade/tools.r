@@ -7,7 +7,10 @@ print_report <- function(title, variable){
 
 save_ggplot <- function (plot, file){
 	file_name <- file
-	ggsave(plot,file=file_name)
+#	ggsave(plot,file=file_name)
+	pdf(file_name)
+	print(plot)
+	dev.off()
 	file_name_split <- strsplit(file_name,'\\.')[[1]]
 	file_name_split <- file_name_split[file_name_split!="pdf"]
 	command <- paste("convert -density 300x300", file_name, paste(c(file_name_split,'png'), collapse = '.'))
