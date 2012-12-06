@@ -1,5 +1,6 @@
 source('~/scripts/cascade/tools.r')
-
+library('MASS')
+library('distr')
 library(plyr)
 
 top_size_analysis <- function(file_name){
@@ -133,19 +134,20 @@ analyze_cascade_growth <- function (fraction, cascade_root){
 	return (list(ampl_users = amplifiers, replaced_roots=roots))
 }
 
-root_users_analysis <- function(rooted_top_users_file, depth_vs_expansion_file){
-	sink(file = "output.txt", type = "output")
+root_users_analysis <- function(output_dir){
+	sink(file = paste(c(output_dir,'output.txt'), collapse = ''), type = "output")
  	cascade_info.df <- ddply(g_prep.df$root_depth_expansion, c('root_user_id'), summarise, size = sum(expansion), max_depth=max(depth), total_ampl=sum(ampl), ampl_4=sum(ampl[depth<=4]), 
 			total_1st_exp = expansion[depth==1], total_2nd_exp = c(expansion[depth==2],0)[1], total_3rd_exp = c(expansion[depth==3],0)[1],
 			total_4th_exp = c(expansion[depth==4],0)[1],total_5th_exp = c(expansion[depth==5],0)[1])
 	very_big_cascades <- cascade_info.df[cascade_info.df$max_depth >= 45,]$root_user_id
-	draw_depth_expansion(depth_vs_expansion_file, g_prep.df$root_depth_expansion[g_prep.df$root_depth_expansion$root_user_id%in%very_big_cascades,])
+	draw_depth_expansion(output_dir, g_prep.df$root_depth_expansion[g_prep.df$root_depth_expansion$root_user_id%in%very_big_cascades,])
 	build_model(cascade_info.df)
 	print_report('Cor of size vs total amplification', cor(cascade_info.df$size,cascade_info.df$total_ampl))
 #	plot <- ggplot(cascade_info.df, aes(x = total_ampl, y = size)) + geom_point() + geom_smooth(method=lm) + xlab('Total amplification') + ylab('Cascade size')
 #	save_ggplot(plot,file=paste(c(rooted_top_users_file,'_ampl_size_corr.pdf'), collapse = ''))
 	nonroot_components <- g_prep.df$rooted_top_users[(g_prep.df$rooted_top_users$depth_matching<=5) & (g_prep.df$rooted_top_users$component_size_prop>0.80),]
 	not_really_root <- unique(nonroot_components$root_user)
+	print_report('Cascade root count', length(g_prep.df$roots))
 	print_report('Not really root count', length(not_really_root))
 	amplifiers <- analyze_cascade_growth(fraction = .95, not_really_root)
 	print_report('Amplifier user count', length(amplifiers$ampl_user))
@@ -162,7 +164,6 @@ root_users_analysis <- function(rooted_top_users_file, depth_vs_expansion_file){
 	real_infl_info <- g_prep.df$root_depth_expansion[g_prep.df$root_depth_expansion$root_user_id%in%real_root,]#c(1:7,11:13)]
 	colnames(real_infl_info) <- colnames(g_prep.df$nonroot_depth_expansion)
 	real_depth_expansion <- rbind(real_infl_info, g_prep.df$nonroot_depth_expansion[g_prep.df$nonroot_depth_expansion$top_user_id%in%real_root,])
-	print("debug")
 #	draw_depth_expansion(depth_vs_expansion_file, g_prep.df$depth_expansion[g_prep.df$depth_expansion$root_user_id%in%real_root,])
 	cascade_info.df <- ddply(real_depth_expansion, c('top_user_id'), summarise, size = sum(expansion), max_depth=max(depth), total_ampl=sum(ampl), ampl_4=sum(ampl[depth<=4]),
 			total_1st_exp = expansion[depth==1], total_2nd_exp = c(expansion[depth==2],0)[1], total_3rd_exp = c(expansion[depth==3],0)[1],
@@ -182,6 +183,15 @@ branching_process <- function(outdeg_dist, trial=0, max_generation){
 	random_outdeg_chooser <- function(dist) {
 		return(sample(x=dist$outdeg, size=1, prob=(dist$count/sum(dist$count))))
 	}
+	population_outreached <- function(){
+		population <- sum(generation_population)+1
+		if (population%%100000==0)
+			print(population)
+		if (population > 189989307)
+			return (TRUE)
+		else
+			return (FALSE)
+	}
 	manage_generation_population <- function(generation, population){
 		if (length(generation_population) >= generation)
 			generation_population[generation] <<- generation_population[generation] + population
@@ -198,7 +208,7 @@ branching_process <- function(outdeg_dist, trial=0, max_generation){
 				outdeg <- random_outdeg_chooser(dist[[max_generation+1]])
 			if(generation > 0)
 				manage_generation_population(generation, 1)
-			if (outdeg > 0){
+			if (outdeg>0 & population_outreached()==FALSE){
 				for (each_branch in 1:outdeg){	
 					branching(dist, generation+1, max_generation)
 				}
@@ -207,6 +217,7 @@ branching_process <- function(outdeg_dist, trial=0, max_generation){
 	}
 	cascades <- list(size=c(),depth=c(),growth=vector("list"))
 	for (i in 1:trial){
+		print_report('Trial #',i)
 		generation_population <- c()
 		branching(outdeg_dist, 0, max_generation)
 		cascades$size <- c(cascades$size, sum(generation_population)+1)
@@ -216,69 +227,102 @@ branching_process <- function(outdeg_dist, trial=0, max_generation){
 	return(cascades)
 }
 
-analyze_branching <- function(dist_file, bin_size){
-	outdeg_dist <- as.data.frame(read.csv(dist_file, header=FALSE))
-	colnames(outdeg_dist) <- c('outdeg', 'count', 'depth')
-	outdeg_dist <- outdeg_dist[order(outdeg_dist$depth,outdeg_dist$outdeg),]
-	max_depth <- max(outdeg_dist$depth)
+analyze_branching <- function(output_dir, trial, bin_size){
+	max_depth <- max(g_prep.df$outdeg_dist$depth)
 	dist_bin <- list()
-	root_outdeg <- outdeg_dist[(outdeg_dist$depth==0),]
+	bin_outdeg_dist <- c()
+	root_outdeg <- g_prep.df$outdeg_dist[(g_prep.df$outdeg_dist$depth==0),]
 	dist_bin[[1]] <- ddply(root_outdeg, c('outdeg'), summarise, count=sum(count))
-	for (i in seq(1,max_depth, by=bin_size)){
-		binned_data <- outdeg_dist[(outdeg_dist$depth>=i & outdeg_dist$depth<i+bin_size),]
-		binned_dist <- ddply(binned_data, c('outdeg'), summarise, count=sum(count))
-		for (j in i:min((i+bin_size),max_depth)){
+#	bin_size <- c(1,2,3,4,5,21,36,61) #seq(1,max_depth, by=bin_size)
+#	bin_size <- c(1,11,21,31,41,51,61)
+	for (i in 1:(length(bin_size)-1)){
+		binned_data <- g_prep.df$outdeg_dist[(g_prep.df$outdeg_dist$depth>=bin_size[i] & g_prep.df$outdeg_dist$depth<bin_size[i+1]),]
+		binned_data.df <- ddply (binned_data,  c('depth'), function (one_partition){
+					one_partition$pdf = one_partition$count/sum(one_partition$count)
+					one_partition
+				})
+		binned_data.df$depth <- factor(binned_data.df$depth)
+		plot <- ggplot(binned_data.df, aes(x = log10(outdeg), y = log10(pdf))) + geom_line(aes(group = depth,colour = depth)) + xlab('log of Out degree') + ylab('log of proportion of Count')
+		binned_dist <<- ddply(binned_data.df, c('outdeg'), summarise, count=sum(count))
+		fitting_bin_odeg <- rep(binned_dist$outdeg, times = binned_dist$count)
+		fitted_estimate <- fitdistr(fitting_bin_odeg+1,'log-normal')
+		print(fitted_estimate)
+		fitted_lnorm <- Lnorm(meanlog=fitted_estimate$estimate[1],sdlog=fitted_estimate$estimate[2])
+		fitted_lnorm_values <- count(ceiling(r(fitted_lnorm)(sum(binned_dist$count)))-1)
+		plot <- plot + geom_line(data=binned_dist, aes(log10(outdeg), log10(count/sum(count)), colour='Bin total'))
+		plot <- plot + geom_line(data=fitted_lnorm_values, aes(log10(x), log10(freq/sum(freq)), colour='log-normal'),linetype="dashed")
+		t1<<-data.frame(x=1, y=0, l1=paste("lnN(.,.)=(",round(exp(fitted_estimate$estimate[1]),4),",",round(exp(fitted_estimate$estimate[2]),4),")"))
+		plot <- plot + geom_text(data=t1, aes(x, y, label=l1),color = "grey50", size = 4)
+		
+		plaw <<- lm(log10(binned_dist$count/sum(binned_dist$count))~log10(binned_dist$outdeg+1))
+		plot <- plot + geom_line(data=binned_dist, aes(log10(outdeg), (plaw$coefficients[1]+ plaw$coefficients[2]*log10(binned_dist$outdeg+1)), colour='power-law'),linetype="dashed")
+		t2<<-data.frame(x=1, y=0.5, l2=paste("gamma=",round(plaw$coefficients[2],4)))
+		plot <- plot + geom_text(data=t2, aes(x, y, label=l2),color = "grey50", size = 4)
+		save_ggplot(plot, paste(c(output_dir,bin_size[i],'outdeg_dist.pdf'), collapse = ''))
+		bin_outdeg_dist <- rbind(bin_outdeg_dist,cbind(binned_dist,rep(bin_size[i],nrow(binned_dist))))
+		for (j in bin_size[i]:min(bin_size[i+1],max_depth)){
 			dist_bin[[j+1]] <- binned_dist
 		}
 	}
+	colnames(bin_outdeg_dist) <- c('outdeg', 'count', 'depth')
+	bin_outdeg_dist.df <- ddply (bin_outdeg_dist,  c('depth'), function (one_partition){
+				one_partition$pdf = one_partition$count/sum(one_partition$count)
+				one_partition
+			})
+	bin_outdeg_dist.df$depth <- factor(bin_outdeg_dist.df$depth)
+	plot <- ggplot(bin_outdeg_dist.df, aes(x = log10(outdeg), y = log10(pdf))) + geom_line(aes(group = depth,colour = depth)) + xlab('Out degree') + ylab('log of proportion of Count') 
+	save_ggplot(plot, paste(c(output_dir,'outdeg_dist.pdf'), collapse = ''))
 #	print_report('P(0 out degree)',nonroot_deg_dist$count[1]/sum(nonroot_deg_dist$count))
 #	expected_root_odeg <- sum(root_deg_dist$outdeg*(root_deg_dist$count/sum(root_deg_dist$count)))
 #	expected_nonroot_odeg <- sum(nonroot_deg_dist$outdeg*(nonroot_deg_dist$count/sum(nonroot_deg_dist$count)))
 #	print_report('expected root degree', expected_root_odeg)
 #	print_report('expected nonroot degree', expected_nonroot_odeg)
 	options(expressions = 10000)
-	simulated_cascades <- branching_process(dist_bin,trial=10000,max_depth)
+	simulated_cascades <- branching_process(dist_bin,trial,max_depth)
 	return(simulated_cascades)
 }
-ab_10 <- analyze_branching('~/output_cascade/full_first_parent/top_size.csv_top_1000_branching_dist.csv',10)
-print_report('Summary size', summary(ab_10$size))
-print_report('Summary depth', summary(ab_10$depth))
-ab_5 <- analyze_branching('~/output_cascade/full_first_parent/top_size.csv_top_1000_branching_dist.csv',5)
-print_report('Summary size', summary(ab_5$size))
-print_report('Summary depth', summary(ab_5$depth))
-ab_1 <- analyze_branching('~/output_cascade/full_first_parent/top_size.csv_top_1000_branching_dist.csv',1)
-print_report('Summary size', summary(ab_1$size))
-print_report('Summary depth', summary(ab_1$depth))
-
-idx <- c(1:length(ab_10$size))
-sorted_idx <- idx[order(-ab_10$size)]
-ab_10.df <- data.frame(depth=0:length(ab_10$growth[[sorted_idx[1]]]), shell=c(1,ab_10$growth[[sorted_idx[1]]]), tree=rep(1, times=length(ab_10$growth[[sorted_idx[1]]])+1))
-for (i in 2:30){
-	data_f <- data.frame(depth=0:length(ab_10$growth[[sorted_idx[i]]]), shell=c(1,ab_10$growth[[sorted_idx[i]]]), tree=rep(i, times=length(ab_10$growth[[sorted_idx[i]]])+1))
-	ab_10.df <- rbind(ab_10.df,data_f)
-}
-ab_10.df$tree <- factor(ab_10.df$tree)
-plot <- ggplot(ab_10.df, aes(x = depth, y = (shell))) + geom_line(aes(group = tree,colour = tree)) + xlab('Depth') + ylab('Shell size') 
-save_ggplot(plot, paste('~/output_cascade/full_first_parent/branching_bin_10.pdf', collapse = ''))
-
-idx <- c(1:length(ab_5$size))
-sorted_idx <- idx[order(-ab_5$size)]
-ab_5.df <- data.frame(depth=0:length(ab_5$growth[[sorted_idx[1]]]), shell=c(1,ab_5$growth[[sorted_idx[1]]]), tree=rep(1, times=length(ab_5$growth[[sorted_idx[1]]])+1))
-for (i in 2:30){
-	data_f <- data.frame(depth=0:length(ab_5$growth[[sorted_idx[i]]]), shell=c(1,ab_5$growth[[sorted_idx[i]]]), tree=rep(i, times=length(ab_5$growth[[sorted_idx[i]]])+1))
-	ab_5.df <- rbind(ab_5.df,data_f)
-}
-ab_5.df$tree <- factor(ab_5.df$tree)
-plot <- ggplot(ab_5.df, aes(x = depth, y = (shell))) + geom_line(aes(group = tree,colour = tree)) + xlab('Depth') + ylab('Shell size') 
-save_ggplot(plot, paste('~/output_cascade/full_first_parent/branching_bin_5.pdf', collapse = ''))
-
-idx <- c(1:length(ab_1$size))
-sorted_idx <- idx[order(-ab_1$size)]
-ab_1.df <- data.frame(depth=0:length(ab_1$growth[[sorted_idx[1]]]), shell=c(1,ab_1$growth[[sorted_idx[1]]]), tree=rep(1, times=length(ab_1$growth[[sorted_idx[1]]])+1))
-for (i in 2:30){
-	data_f <- data.frame(depth=0:length(ab_1$growth[[sorted_idx[i]]]), shell=c(1,ab_1$growth[[sorted_idx[i]]]), tree=rep(i, times=length(ab_1$growth[[sorted_idx[i]]])+1))
-	ab_1.df <- rbind(ab_1.df,data_f)
-}
-ab_1.df$tree <- factor(ab_1.df$tree)
-plot <- ggplot(ab_1.df, aes(x = depth, y = (shell))) + geom_line(aes(group = tree,colour = tree)) + xlab('Depth') + ylab('Shell size') 
-save_ggplot(plot, paste('~/output_cascade/full_first_parent/branching_bin_1.pdf', collapse = ''))
+ab_10 <- analyze_branching('~/output_cascade/fp_nt_u/bin_10/',4,bin_size <- c(1,11,21,31,41,51,61))
+ab_v <- analyze_branching('~/output_cascade/fp_nt_u/bin_v/',4,bin_size <- c(1,2,3,4,5,21,36,61))
+ab_e <- analyze_branching('~/output_cascade/fp_nt_u/bin_e/',4,bin_size <- c(1,3,7,15,31,63))
+ab_1 <- analyze_branching('~/output_cascade/fp_nt_u/bin_1/',1,bin_size <- c(1:60))
+#print_report('Summary size', summary(ab_10$size))
+#print_report('Summary depth', summary(ab_10$depth))
+#ab_5 <- analyze_branching('~/output_cascade/full_first_parent/top_size.csv_top_1000_branching_dist.csv',5)
+#print_report('Summary size', summary(ab_5$size))
+#print_report('Summary depth', summary(ab_5$depth))
+#ab_1 <- analyze_branching('~/output_cascade/full_first_parent/top_size.csv_top_1000_branching_dist.csv',1)
+#print_report('Summary size', summary(ab_1$size))
+#print_report('Summary depth', summary(ab_1$depth))
+#
+#idx <- c(1:length(ab_10$size))
+#sorted_idx <- idx[order(-ab_10$size)]
+#ab_10.df <- data.frame(depth=0:length(ab_10$growth[[sorted_idx[1]]]), shell=c(1,ab_10$growth[[sorted_idx[1]]]), tree=rep(1, times=length(ab_10$growth[[sorted_idx[1]]])+1))
+#for (i in 2:30){
+#	data_f <- data.frame(depth=0:length(ab_10$growth[[sorted_idx[i]]]), shell=c(1,ab_10$growth[[sorted_idx[i]]]), tree=rep(i, times=length(ab_10$growth[[sorted_idx[i]]])+1))
+#	ab_10.df <- rbind(ab_10.df,data_f)
+#}
+#ab_10.df$tree <- factor(ab_10.df$tree)
+#plot <- ggplot(ab_10.df, aes(x = depth, y = (shell))) + geom_line(aes(group = tree,colour = tree)) + xlab('Depth') + ylab('Shell size') 
+#save_ggplot(plot, paste('~/output_cascade/full_first_parent/branching_bin_10.pdf', collapse = ''))
+#
+#idx <- c(1:length(ab_5$size))
+#sorted_idx <- idx[order(-ab_5$size)]
+#ab_5.df <- data.frame(depth=0:length(ab_5$growth[[sorted_idx[1]]]), shell=c(1,ab_5$growth[[sorted_idx[1]]]), tree=rep(1, times=length(ab_5$growth[[sorted_idx[1]]])+1))
+#for (i in 2:30){
+#	data_f <- data.frame(depth=0:length(ab_5$growth[[sorted_idx[i]]]), shell=c(1,ab_5$growth[[sorted_idx[i]]]), tree=rep(i, times=length(ab_5$growth[[sorted_idx[i]]])+1))
+#	ab_5.df <- rbind(ab_5.df,data_f)
+#}
+#ab_5.df$tree <- factor(ab_5.df$tree)
+#plot <- ggplot(ab_5.df, aes(x = depth, y = (shell))) + geom_line(aes(group = tree,colour = tree)) + xlab('Depth') + ylab('Shell size') 
+#save_ggplot(plot, paste('~/output_cascade/full_first_parent/branching_bin_5.pdf', collapse = ''))
+#
+#idx <- c(1:length(ab_1$size))
+#sorted_idx <- idx[order(-ab_1$size)]
+#ab_1.df <- data.frame(depth=0:length(ab_1$growth[[sorted_idx[1]]]), shell=c(1,ab_1$growth[[sorted_idx[1]]]), tree=rep(1, times=length(ab_1$growth[[sorted_idx[1]]])+1))
+#for (i in 2:30){
+#	data_f <- data.frame(depth=0:length(ab_1$growth[[sorted_idx[i]]]), shell=c(1,ab_1$growth[[sorted_idx[i]]]), tree=rep(i, times=length(ab_1$growth[[sorted_idx[i]]])+1))
+#	ab_1.df <- rbind(ab_1.df,data_f)
+#}
+#ab_1.df$tree <- factor(ab_1.df$tree)
+#plot <- ggplot(ab_1.df, aes(x = depth, y = (shell))) + geom_line(aes(group = tree,colour = tree)) + xlab('Depth') + ylab('Shell size') 
+#save_ggplot(plot, paste('~/output_cascade/full_first_parent/branching_bin_1.pdf', collapse = ''))

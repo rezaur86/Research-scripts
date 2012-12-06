@@ -74,8 +74,8 @@ process_data <- function(rooted_top_users_file, depth_vs_expansion_file, nonroot
 	print_report("loading done",nonroot_depth_vs_expansion_file)
 	roots_correlated_info <- as.data.frame(read.csv(roots_correlated_info_file, header=FALSE))
 	colnames(roots_correlated_info) <- c('root_user','root_odeg', 'neighbour_odeg', 'size', 'depth')	
-	odeg_dist <- as.data.frame(read.csv(dist_file, header=FALSE))
 	print_report("loading done",roots_correlated_info_file)
+	odeg_dist <- as.data.frame(read.csv(dist_file, header=FALSE))
 	colnames(odeg_dist) <- c('outdeg', 'count', 'depth')
 	odeg_dist <- odeg_dist[order(odeg_dist$depth,odeg_dist$outdeg),]
 	print_report("loading done",dist_file)
@@ -130,5 +130,10 @@ process_data <- function(rooted_top_users_file, depth_vs_expansion_file, nonroot
 prev_dir <- getwd()
 setwd(dir_name)
 g_prep.df <- process_data('rooted_top_users.csv','top_size.csv_all_100_depth_vs_expansion.csv', 'nonroot_top_users.csv_all_100_depth_vs_expansion.csv',
-		'top_size.csv_all_roots_correlated_info.csv', 'top_size.csv_all_branching_dist.csv')		
+		'top_size.csv_all_roots_correlated_info.csv', 'top_size.csv_all_branching_dist.csv')
+save(g_prep.df, file="g_prep.df.Rdata")
 setwd(prev_dir)
+
+#g_prep.df$outdeg_dist <- as.data.frame(read.csv('/home/rezaur/output_cascade/fp_all_user/top_size.csv_all_branching_dist.csv', header=FALSE))
+#colnames(g_prep.df$outdeg_dist) <- c('outdeg', 'count', 'depth')
+#g_prep.df$outdeg_dist <- g_prep.df$outdeg_dist[order(g_prep.df$outdeg_dist$depth,g_prep.df$outdeg_dist$outdeg),]
