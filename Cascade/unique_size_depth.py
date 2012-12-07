@@ -15,9 +15,9 @@ MAX_USERS = 2**29 - 1
 NO_PARENT = MAX_USERS + 1
 
 class Node:
-    def __init__(self, bornTime, actTime, odeg):
+    def __init__(self, bornTime, actTime, odeg, lifespan):
         self.cascade_att = array.array('l',[1,0,-1,0]*len(timeThrsh))
-        self.node_att = (actTime, odeg)
+        self.node_att = (actTime, odeg, lifespan)
     def setSize(self, idx, value):
         self.cascade_att[idx*4+0] = value
     def getSize(self, idx):
@@ -37,6 +37,8 @@ class Node:
         return self.node_att[0]
     def getOutDeg(self):
         return self.node_att[1]
+    def getLifespan(self):
+        return self.node_att[2]
     def setPotentialParent(self, p_list):
         self.parent_list = p_list
 #    def print_node(self):
@@ -51,6 +53,15 @@ def record_a_child(child_id, parent_list):
             children_of_parent[each_parent] = []
             children_of_parent[each_parent].append((child_id,receiving_time))
 
+def is_long_live_parent (parent_id):
+    if parent_id in graph:
+        if graph[parent_id].getLifespan() > 3600:
+            return True
+        else:
+            return False
+    else:
+        return False
+
 def parent_chooser (parent_list, choice_type, activation_time):
     potential_parents = []
     l = len(parent_list)
@@ -64,17 +75,30 @@ def parent_chooser (parent_list, choice_type, activation_time):
             break
     if len(parent_list) < 1:
         return potential_parents
+    new_list_l = len(parent_list)
     if choice_type == PARENT_TYPE_FIRST_PARENT:
-        first_parent = parent_list[0].strip().split(',')
-        potential_parents.append((int(first_parent[0]), int(first_parent[1])))
+        for i in range(new_list_l):
+            first_parent = parent_list[i].strip().split(',')
+            if is_long_live_parent(int(first_parent[0]))== False:
+                continue
+            potential_parents.append((int(first_parent[0]), int(first_parent[1])))
+            return potential_parents
         
     if choice_type == PARENT_TYPE_LAST_PARENT:
-        last_parent = parent_list[len(parent_list)-1].strip().split(',')
-        potential_parents.append((int(last_parent[0]), int(last_parent[1])))
+        for i in range(new_list_l-1,-1,-1):
+            last_parent = parent_list[i].strip().split(',')
+            if is_long_live_parent(int(last_parent[0]))== False:
+                continue
+            potential_parents.append((int(last_parent[0]), int(last_parent[1])))
+            return potential_parents
         
     if choice_type == PARENT_TYPE_RANDOM_PARENT:
-        random_parent = choice(parent_list).strip().split(',')
-        potential_parents.append((int(random_parent[0]), int(random_parent[1])))
+        for i in range(new_list_l):
+            random_parent = choice(parent_list).strip().split(',')
+            if is_long_live_parent(int(random_parent[0]))== False:
+                continue
+            potential_parents.append((int(random_parent[0]), int(random_parent[1])))
+            return potential_parents
 
     if choice_type == PARENT_TYPE_HIGHEST_ODEG:
         chosen_pid_odeg = -1
@@ -83,6 +107,8 @@ def parent_chooser (parent_list, choice_type, activation_time):
         for element in parent_list:
             a_parent = element.strip().split(',')
             pID = int(a_parent[0])
+            if is_long_live_parent(pID)== False:
+                continue
             if pID in graph:
                 if graph[pID].getOutDeg() > chosen_pid_odeg :
                     chosen_pid = pID
@@ -90,8 +116,10 @@ def parent_chooser (parent_list, choice_type, activation_time):
                     chosen_receiving_time = int(a_parent[1])
         if chosen_pid != -1:
             potential_parents.append((chosen_pid, chosen_receiving_time))
-    return potential_parents
-
+            return potential_parents
+    if len(potential_parents) == 0:
+        return -1
+        
 def process(child, end_time, thrsh_index):
     cascade_root = (-1,0)
     for (pID,receiving_time) in child.parent_list:
@@ -177,8 +205,14 @@ for line in f:
     last_seen_time = int(element[3].strip())
     is_leaf = bool(int(element[4].strip()))
     odeg = int((element[5].strip()))
-    newNode = Node(born_time,activation_time,odeg)
-    newNode.setPotentialParent(parent_chooser(element[6:len(element)],parent_type,activation_time))
+    newNode = Node(born_time,activation_time,odeg,last_seen_time-activation_time+1 if is_leaf==False else 1)
+    potential_parent_list = parent_chooser(element[6:len(element)],parent_type,activation_time)
+    count = count+1 # Read status
+    if (count % (CLR_THRESHOLD/10)) == 0:
+        print count
+    if type(potential_parent_list) != list:
+        continue
+    newNode.setPotentialParent(potential_parent_list)
     record_a_child(node_id, newNode.parent_list)
     if is_leaf == False:
         graph[node_id] = newNode
@@ -189,9 +223,6 @@ for line in f:
         newNode.cascade_att = None
         newNode.node_att = None
         newNode = None
-    count = count+1
-    if (count % (CLR_THRESHOLD/10)) == 0:
-        print count
     if (count % CLR_THRESHOLD) == 0:
         print "Clearing"
         clearMem()

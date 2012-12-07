@@ -178,6 +178,13 @@ root_users_analysis <- function(output_dir){
 #colnames(nrr)<-c('','size','total amplification','4 hops amplification','hop 1 shell size','hop 2 shell size','hop 3 shell size','hop 4 shell size','')
 #pairs(nrr[,2:6], panel = panel.smooth)
 
+lifespan_analysis <- function(lifespan_file_name){
+	lifespan <- as.data.frame(read.csv(lifespan_file_name, header=FALSE))
+	colnames(lifespan) <- c('time', 'count')
+	plot <- ggplot(lifespan, aes(x = (time), y = (count))) + geom_line() + xlab('log of time') + ylab('log of Count') + xlim(1,1000) + ylim(0,100000)
+	save_ggplot(plot, 'lifespan.pdf')
+}
+
 branching_process <- function(outdeg_dist, trial=0, max_generation){
 	generation_population <- c()
 	random_outdeg_chooser <- function(dist) {
@@ -281,10 +288,10 @@ analyze_branching <- function(output_dir, trial, bin_size){
 	simulated_cascades <- branching_process(dist_bin,trial,max_depth)
 	return(simulated_cascades)
 }
-ab_10 <- analyze_branching('~/output_cascade/fp_nt_u/bin_10/',4,bin_size <- c(1,11,21,31,41,51,61))
-ab_v <- analyze_branching('~/output_cascade/fp_nt_u/bin_v/',4,bin_size <- c(1,2,3,4,5,21,36,61))
-ab_e <- analyze_branching('~/output_cascade/fp_nt_u/bin_e/',4,bin_size <- c(1,3,7,15,31,63))
-ab_1 <- analyze_branching('~/output_cascade/fp_nt_u/bin_1/',1,bin_size <- c(1:60))
+#ab_10 <- analyze_branching('~/output_cascade/fp_nt_u/bin_10/',4,bin_size <- c(1,11,21,31,41,51,61))
+#ab_v <- analyze_branching('~/output_cascade/fp_nt_u/bin_v/',4,bin_size <- c(1,2,3,4,5,21,36,61))
+#ab_e <- analyze_branching('~/output_cascade/fp_nt_u/bin_e/',4,bin_size <- c(1,3,7,15,31,63))
+#ab_1 <- analyze_branching('~/output_cascade/fp_nt_u/bin_1/',1,bin_size <- c(1:60))
 #print_report('Summary size', summary(ab_10$size))
 #print_report('Summary depth', summary(ab_10$depth))
 #ab_5 <- analyze_branching('~/output_cascade/full_first_parent/top_size.csv_top_1000_branching_dist.csv',5)
