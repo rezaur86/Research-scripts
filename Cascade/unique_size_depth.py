@@ -55,7 +55,7 @@ def record_a_child(child_id, parent_list):
 
 def is_long_live_parent (parent_id):
     if parent_id in graph:
-        if graph[parent_id].getLifespan() > 3600:
+        if graph[parent_id].getLifespan() > lifespan_threshold:
             return True
         else:
             return False
@@ -195,7 +195,7 @@ PARENT_TYPE_RANDOM_PARENT = 3
 Your choice %s''' %parent_type 
 TOP_N = int(sys.argv[5]) #int(raw_input(
 print '''Top nodes' sizes/depths you want to see is %s''' %TOP_N 
-
+lifespan_threshold = int(sys.argv[6])
 count = 0
 for line in f:
     element = line.split(' ')
