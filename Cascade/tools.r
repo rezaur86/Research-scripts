@@ -11,10 +11,10 @@ save_ggplot <- function (plot, file){
 	pdf(file_name)
 	print(plot)
 	dev.off()
-	file_name_split <- strsplit(file_name,'\\.')[[1]]
-	file_name_split <- file_name_split[file_name_split!="pdf"]
-	command <- paste("convert -density 300x300", file_name, paste(c(file_name_split,'png'), collapse = '.'))
-	system(command)
+#	file_name_split <- strsplit(file_name,'\\.')[[1]]
+#	file_name_split <- file_name_split[file_name_split!="pdf"]
+#	command <- paste("convert -density 300x300", file_name, paste(c(file_name_split,'png'), collapse = '.'))
+#	system(command)
 }
 
 draw_two_y_axes_graph <- function (file_name, max_curve_count, x_val, y_l_val, y_r_val, lim_x, lim_l_y, lim_r_y, x_label, y_l_label, y_r_label, graph_name, x_mark=NA, y_l_mark=NA, y_r_mark=NA){

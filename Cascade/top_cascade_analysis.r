@@ -179,13 +179,6 @@ root_users_analysis <- function(output_dir){
 #colnames(nrr)<-c('','size','total amplification','4 hops amplification','hop 1 shell size','hop 2 shell size','hop 3 shell size','hop 4 shell size','')
 #pairs(nrr[,2:6], panel = panel.smooth)
 
-lifespan_analysis <- function(lifespan_file_name){
-	lifespan <- as.data.frame(read.csv(lifespan_file_name, header=FALSE))
-	colnames(lifespan) <- c('time', 'count')
-	plot <- ggplot(lifespan, aes(x = (time), y = (count))) + geom_line() + xlab('log of time') + ylab('log of Count') + xlim(1,1000) + ylim(0,100000)
-	save_ggplot(plot, 'lifespan.pdf')
-}
-
 branching_process <- function(outdeg_dist, trial=0, max_generation){
 	generation_population <- c()
 	random_outdeg_chooser <- function(dist) {
@@ -240,7 +233,7 @@ analyze_branching <- function(output_dir, trial, bin_size){
 	dist_bin <- list()
 	bin_outdeg_dist <- c()
 	root_outdeg <- g_prep.df$outdeg_dist[(g_prep.df$outdeg_dist$depth==0),]
-	dist_bin[[1]] <- ddply(root_outdeg, c('outdeg'), summarise, count=sum(count))
+#	dist_bin[[1]] <- ddply(root_outdeg, c('outdeg'), summarise, count=sum(count))
 #	bin_size <- c(1,2,3,4,5,21,36,61) #seq(1,max_depth, by=bin_size)
 #	bin_size <- c(1,11,21,31,41,51,61)
 	for (i in 1:(length(bin_size)-1)){
@@ -250,25 +243,28 @@ analyze_branching <- function(output_dir, trial, bin_size){
 					one_partition
 				})
 		binned_data.df$depth <- factor(binned_data.df$depth)
-		plot <- ggplot(binned_data.df, aes(x = log10(outdeg), y = log10(pdf))) + geom_line(aes(group = depth,colour = depth)) + xlab('log of Out degree') + ylab('log of proportion of Count')
+#		plot <- ggplot(binned_data.df, aes(x = log10(outdeg), y = log10(pdf))) + geom_line(aes(group = depth,colour = depth)) + xlab('log of Out degree') + ylab('log of proportion of Count')
 		binned_dist <<- ddply(binned_data.df, c('outdeg'), summarise, count=sum(count))
-		fitting_bin_odeg <- rep(binned_dist$outdeg, times = binned_dist$count)
-		fitted_estimate <- fitdistr(fitting_bin_odeg+1,'log-normal')
-		print(fitted_estimate)
-		fitted_lnorm <- Lnorm(meanlog=fitted_estimate$estimate[1],sdlog=fitted_estimate$estimate[2])
-		fitted_lnorm_values <- count(ceiling(r(fitted_lnorm)(sum(binned_dist$count)))-1)
-		plot <- plot + geom_line(data=binned_dist, aes(log10(outdeg), log10(count/sum(count)), colour='Bin total'))
-		plot <- plot + geom_line(data=fitted_lnorm_values, aes(log10(x), log10(freq/sum(freq)), colour='log-normal'),linetype="dashed")
-		t1<<-data.frame(x=1, y=0, l1=paste("lnN(.,.)=(",round(exp(fitted_estimate$estimate[1]),4),",",round(exp(fitted_estimate$estimate[2]),4),")"))
-		plot <- plot + geom_text(data=t1, aes(x, y, label=l1),color = "grey50", size = 4)
-		
-		plfit_param <- plfit(fitting_bin_odeg[fitting_bin_odeg>0])
-#		plaw <<- lm(log10(binned_dist$count/sum(binned_dist$count))~log10(binned_dist$outdeg+1))
-#		plot <- plot + geom_line(data=binned_dist, aes(log10(outdeg), (plaw$coefficients[1]+ plaw$coefficients[2]*log10(binned_dist$outdeg+1)), colour='power-law'),linetype="dashed")
-		plaw.df <<- data.frame(binned_dist=binned_dist[binned_dist$outdeg>=plfit_param$xmin,],plfit_param=plfit_param)
-		plot <- plot + geom_line(data=plaw.df, aes(log10(binned_dist.outdeg), log10(plfit_param.xmin*(binned_dist.outdeg^-plfit_param.alpha)), colour='power-law'),linetype="dashed")
-		t2<<-data.frame(x=1, y=0.5, l2=paste("gamma=",round(plfit_param$alpha,4)))
+		plot <- ggplot(data=binned_dist, aes(x = log10(outdeg), y = log10(count/sum(count)))) + geom_line(aes(group = 'Type', colour = 'Bin out degree')) + xlab('log of Out degree') + ylab('log of proportion of Count')
+
+		unrolled_bin_odeg <- rep(binned_dist$outdeg, times = binned_dist$count)
+		plfit_param <- plfit(unrolled_bin_odeg[unrolled_bin_odeg>0])
+		plaw.df <<- data.frame(outdeg=binned_dist[binned_dist$outdeg>=plfit_param$xmin,]$outdeg, alpha=plfit_param$alpha, const=plfit_param$xmin)#/sum(binned_dist[binned_dist$outdeg>0,]$count))*sum(binned_dist$count))
+		plot <- plot + geom_line(data=plaw.df, aes(log10(outdeg), log10(const*(outdeg^-alpha)), colour='power-law'),linetype="dashed")
+		t2<<-data.frame(x=2, y=-0.5, l2=paste("gamma=",round(plfit_param$alpha,4)))
 		plot <- plot + geom_text(data=t2, aes(x, y, label=l2),color = "grey50", size = 4)
+		plot <- plot + geom_line(data=raw_outdeg, aes(log10(outdeg), log10(count/sum(count)), colour='Raw out degree'))
+		unrolled_raw_odeg <- rep(raw_outdeg$outdeg, times=raw_outdeg$count)
+		fitted_estimate <- fitdistr(unrolled_raw_odeg[unrolled_raw_odeg>0],'log-normal')
+		print(fitted_estimate)
+		fitted_lnorm_values <- c()
+		fitted_lnorm_values$outdeg <- raw_outdeg[raw_outdeg$outdeg>0 & raw_outdeg$outdeg<10000,]$outdeg
+		fitted_lnorm_values$count <- raw_outdeg[raw_outdeg$outdeg>0 & raw_outdeg$outdeg<10000,]$count
+		fitted_lnorm_values$density <- (sum(fitted_lnorm_values$count)/sum(raw_outdeg$count))*(dlnorm(fitted_lnorm_values$outdeg, meanlog=fitted_estimate$estimate[1],sdlog=fitted_estimate$estimate[2]))
+		fitted_lnorm_values <- as.data.frame(fitted_lnorm_values)
+		plot <- plot + geom_line(data=fitted_lnorm_values, aes(log10(outdeg), log10(density), colour='log-normal'),linetype="dashed")
+		t1<<-data.frame(x=2, y=0, l1=paste("lnN(.,.)=(",round(exp(fitted_estimate$estimate[1]),4),",",round(exp(fitted_estimate$estimate[2]),4),")"))
+		plot <- plot + geom_text(data=t1, aes(x, y, label=l1),color = "grey50", size = 4)
 		save_ggplot(plot, paste(c(output_dir,bin_size[i],'outdeg_dist.pdf'), collapse = ''))
 		bin_outdeg_dist <- rbind(bin_outdeg_dist,cbind(binned_dist,rep(bin_size[i],nrow(binned_dist))))
 		for (j in bin_size[i]:min(bin_size[i+1],max_depth)){
@@ -292,10 +288,10 @@ analyze_branching <- function(output_dir, trial, bin_size){
 	simulated_cascades <- branching_process(dist_bin,trial,max_depth)
 	return(simulated_cascades)
 }
-#ab_10 <- analyze_branching('~/output_cascade/fp_nt_u/bin_10/',4,bin_size <- c(1,11,21,31,41,51,61))
-#ab_v <- analyze_branching('~/output_cascade/fp_nt_u/bin_v/',4,bin_size <- c(1,2,3,4,5,21,36,61))
-#ab_e <- analyze_branching('~/output_cascade/fp_nt_u/bin_e/',4,bin_size <- c(1,3,7,15,31,63))
-#ab_1 <- analyze_branching('~/output_cascade/fp_nt_u/bin_1/',1,bin_size <- c(1:60))
+ab_10 <- analyze_branching('~/output_cascade/fp_nt_u/bin_10/',4,bin_size <- c(0,10,20,30,40,50,60))
+ab_v <- analyze_branching('~/output_cascade/fp_nt_u/bin_v/',4,bin_size <- c(0,1,2,3,4,5,21,36,61))
+ab_e <- analyze_branching('~/output_cascade/fp_nt_u/bin_e/',4,bin_size <- c(0,2,4,8,16,32,64))
+ab_1 <- analyze_branching('~/output_cascade/fp_nt_u/bin_1/',1,bin_size <- c(0:60))
 #print_report('Summary size', summary(ab_10$size))
 #print_report('Summary depth', summary(ab_10$depth))
 #ab_5 <- analyze_branching('~/output_cascade/full_first_parent/top_size.csv_top_1000_branching_dist.csv',5)
