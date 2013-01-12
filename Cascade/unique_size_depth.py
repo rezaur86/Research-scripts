@@ -55,7 +55,7 @@ def record_a_child(child_id, parent_list):
 
 def is_long_live_parent (parent_id):
     if parent_id in graph:
-        if graph[parent_id].getLifespan() > lifespan_threshold:
+        if graph[parent_id].getLifespan() >= lifespan_threshold:
             return True
         else:
             return False
@@ -202,11 +202,12 @@ for line in f:
     node_id = int(element[0].strip())
     born_time = int(element[1].strip())
     activation_time = int(element[2].strip())
-    last_seen_time = int(element[3].strip())
-    is_leaf = bool(int(element[4].strip()))
-    odeg = int((element[5].strip()))
-    newNode = Node(born_time,activation_time,odeg,last_seen_time-activation_time+1 if is_leaf==False else 1)
-    potential_parent_list = parent_chooser(element[6:len(element)],parent_type,activation_time)
+    last_act_time = int(element[3].strip())
+    last_seen_time = int(element[4].strip())
+    is_leaf = bool(int(element[5].strip()))
+    odeg = int((element[6].strip()))
+    newNode = Node(born_time,activation_time,odeg,last_act_time-activation_time+1 if is_leaf==False else 0)
+    potential_parent_list = parent_chooser(element[7:len(element)],parent_type,activation_time)
     count = count+1 # Read status
     if (count % (CLR_THRESHOLD/10)) == 0:
         print count

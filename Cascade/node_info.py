@@ -67,7 +67,9 @@ if __name__ == '__main__':
                 out_degree[sender] += 1 # Raising out degree even if multiple sending to same node ??
                 if(out_degree[sender]) == 1:
                     activation_time[sender] = timestamp # Activation time is the earliest sending time
-                user_last_act_time[sender] = max(user_last_act_time[sender], timestamp)
+                    user_last_act_time[sender] = timestamp
+                else:
+                    user_last_act_time[sender] = max(user_last_act_time[sender], timestamp)
             
             is_leaf[sender] = False
             

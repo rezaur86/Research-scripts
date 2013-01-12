@@ -20,10 +20,11 @@ for line in f:
     node_id = int(element[0].strip())
     born_time = int(element[1].strip())
     activation_time = int(element[2].strip())
-    last_seen_time = int(element[3].strip())
-    is_leaf = bool(int(element[4].strip()))
-    odeg = int((element[5].strip()))
-    parent_list = element[6:len(element)]
+    last_act_time = int(element[3].strip())
+    last_seen_time = int(element[4].strip())
+    is_leaf = bool(int(element[5].strip()))
+    odeg = int((element[6].strip()))
+    parent_list = element[7:len(element)]
     if parent_list[0].strip() == '-1':
         raw_indeg[0] += 1
     else:
@@ -40,7 +41,7 @@ for line in f:
     else:
         raw_outdeg[odeg] = 1
     if is_leaf == False:
-        lifespan = last_seen_time - activation_time
+        lifespan = last_act_time - activation_time + 1
     else:
         lifespan = 0
         continue

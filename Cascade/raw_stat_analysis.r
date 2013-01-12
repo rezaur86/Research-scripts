@@ -33,6 +33,6 @@ raw_indeg_analysis <- function (raw_indeg_file_name){
 	save_ggplot(plot, 'raw_stat/raw_indeg.pdf')
 }
 
-lifespan_analysis('raw_stat/lifespan_stat.csv')
-raw_outdeg_analysis('raw_stat/raw_outdeg_stat.csv')
-raw_indeg_analysis('raw_stat/raw_indeg_stat.csv')
+lifespan_analysis('raw_stat_1/lifespan_stat.csv')
+raw_outdeg_analysis('raw_stat_1/raw_outdeg_stat.csv')
+raw_indeg_analysis('raw_stat_1/raw_indeg_stat.csv')
