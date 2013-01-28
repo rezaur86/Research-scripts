@@ -124,34 +124,37 @@ parent_type_size_depth <- function(directoryname){
 	cascade_size <- as.data.frame(read.csv('size.csv', header=FALSE))
 	colnames(cascade_size) <- c('size', 'count', 'threshold')
 	print(directoryname)
-	print(sum(cascade_size$size*cascade_size$count))
+#	print(sum(cascade_size$size*cascade_size$count))
+#	print(max(cascade_size$size))
 	sub_cascade$size <- cascade_size#[cascade_size$threshold == max(cascade_size$threshold),]
 	cascade_depth <- as.data.frame(read.csv('depth.csv', header=FALSE))
 	colnames(cascade_depth) <- c('depth', 'count', 'threshold')
 	sub_cascade$depth <- cascade_depth#[cascade_depth$threshold == max(cascade_depth$threshold),]
+	print(max(cascade_depth$depth))
 	setwd(prev_dir)
 	return(sub_cascade)
 }
 
-parent_type_comp <- function(dir_vector){
+parent_type_comp <- function(dir_vector, parent_type_vector){
 	plot_x_lim <- 100
 	cascade_comp <- c()
 	cascade_comp$size <- c()
 	cascade_comp$depth <- c()
-	parent_type <- 0
+	parent_type_idx <- 0
 	for (dir in dir_vector){
 		each_sub_cascade <- parent_type_size_depth(dir)
-		each_sub_cascade$size[,4] <- parent_type
+		each_sub_cascade$size[,4] <- parent_type_idx
 		cascade_comp$size <- rbind(cascade_comp$size,each_sub_cascade$size)
-		each_sub_cascade$depth[,4] <- parent_type
+		each_sub_cascade$depth[,4] <- parent_type_idx
 		cascade_comp$depth <- rbind(cascade_comp$depth,each_sub_cascade$depth)
-		parent_type <- parent_type + 1
+		parent_type_idx <- parent_type_idx + 1
 	}
 	colnames(cascade_comp$size) <- c('size', 'count', 'threshold', 'parent_type')
 	colnames(cascade_comp$depth) <- c('depth', 'count', 'threshold', 'parent_type')
 	cascade_comp$size <- ddply(cascade_comp$size, c('threshold','parent_type'), function(one_partition){
 				one_partition = one_partition[order(one_partition$size),]
 				one_partition$cum_count = cumsum(one_partition$count)
+				one_partition$cum_size = cumsum(one_partition$size)
 				one_partition$cdf_val = one_partition$cum_count / max(one_partition$cum_count)
 				one_partition$pdf_val = one_partition$count / max(one_partition$cum_count)
 				one_partition
@@ -159,29 +162,28 @@ parent_type_comp <- function(dir_vector){
 	cascade_comp$size$parent_type <- factor(cascade_comp$size$parent_type)
 	plot_x_lim <- min(plot_x_lim,max(cascade_comp$size$size))
 	plot <- ggplot(cascade_comp$size,aes(x = size, y = cdf_val)) + xlim(0,plot_x_lim) + geom_line(aes(group = parent_type,colour = parent_type))
-	plot <- change_plot_attributes(plot, "Cascade Size", "Cumulative Proportion")
+#	plot <- change_plot_attributes(plot, "Cascade Size", "Cumulative Proportion")
 	save_ggplot(plot,file='size_cdf.pdf')
 	plot <- ggplot(cascade_comp$size,aes(x = log10(size), y = cdf_val)) + xlim(0,log10(plot_x_lim*100)) + geom_line(aes(group = parent_type,colour = parent_type))
-	plot <- change_plot_attributes(plot, "log of Cascade Size", "Cumulative Proportion")
+#	plot <- change_plot_attributes(plot, "log of Cascade Size", "Cumulative Proportion")
 	save_ggplot(plot,file='size_cdf_logx.pdf')
 	plot <- ggplot(cascade_comp$size,aes(x = log10(size), y = log10(cdf_val))) + xlim(0,log10(plot_x_lim*100)) + geom_line(aes(group = parent_type,colour = parent_type))
-	plot <- change_plot_attributes(plot, "log of Cascade Size", "log of Cumulative Proportion")
+#	plot <- change_plot_attributes(plot, "log of Cascade Size", "log of Cumulative Proportion")
 	save_ggplot(plot,file='size_cdf_logx_logy.pdf')
 	plot <- ggplot(cascade_comp$size,aes(x = log10(size), y = pdf_val)) + xlim(0,log10(plot_x_lim*100)) + geom_point(aes(group = parent_type,colour = parent_type))
-	plot <- change_plot_attributes(plot, "log of Cascade Size", "Proportion")
+#	plot <- change_plot_attributes(plot, "log of Cascade Size", "Proportion")
 	save_ggplot(plot,file='size_pdf_logx.pdf')
-	plot <- ggplot(cascade_comp$size,aes(x = log10(size), y = log10(pdf_val))) + xlim(0,log10(plot_x_lim*100)) + geom_point(aes(group = parent_type,colour = parent_type))
-	plot <- change_plot_attributes(plot, "log of Cascade Size", "log of Proportion")
+	plot <- ggplot(cascade_comp$size,aes(x = (size), y = (pdf_val))) + geom_line(aes(group = parent_type,colour = parent_type))+ scale_x_log10()+ scale_y_log10() #+ xlim(0,log10(plot_x_lim*100))
+	plot <- change_plot_attributes(plot, "Parent type", 0:(parent_type_idx-1), parent_type_vector, "Cascade Size", "Proportion")
 	save_ggplot(plot,file='size_pdf_logx_logy.pdf')
 	plot <- ggplot(cascade_comp$size,aes(x = size, y = log10(pdf_val))) + xlim(0,plot_x_lim*10) + geom_line(aes(group = parent_type,colour = parent_type))
-	plot <- change_plot_attributes(plot, "Cascade Size", "log of Proportion")
+#	plot <- change_plot_attributes(plot, "Cascade Size", "log of Proportion")
 	save_ggplot(plot,file='size_pdf_logy.pdf')
 	size_freq <- data.frame(size = rep(cascade_comp$size$size, times = cascade_comp$size$count), parent_type=rep(cascade_comp$size$parent_type, times = cascade_comp$size$count))
 	size_freq$parent_type <- factor(size_freq$parent_type)
-	plot <- ggplot(size_freq, aes(x=log10(size), fill=parent_type)) + geom_histogram(binwidth=0.2, position="dodge") + scale_y_log10()
-	plot <- change_plot_attributes(plot, "log of Cascade Size", "Frequency") + scale_fill_discrete(name="Parent type", breaks=c("0", "1", "2", "3"),
-			labels=c("First parent", "Higest outdeg parent", "Last parent", "Random parent"))
-	save_ggplot(plot,file='size_hist.pdf')
+	plot <- ggplot(size_freq, aes(y=(size), x=parent_type))+ geom_boxplot() + scale_x_discrete(breaks=0:(parent_type_idx-1), labels=parent_type_vector)+ scale_y_log10() # + geom_histogram(binwidth=0.2, position="dodge")
+	plot <- change_plot_attributes(plot, "Parent type", 0:(parent_type_idx-1), parent_type_vector, "Parent type", "Cascade Size")
+	save_ggplot(plot,file='size_box.pdf')
 	cascade_comp$size.df <- ddply(cascade_comp$size, c('threshold','parent_type'), summarise, mean = sum(size*count)/sum(count), quart_1=size[cum_count>=sum(count)/4][1],
 			median = size[cum_count>=sum(count)/2][1], quart_3=size[cum_count>=3*sum(count)/4][1], max=max(size), var=sum(count*(size-sum(size*count)/sum(count))^2)/sum(count))
 	
@@ -196,28 +198,30 @@ parent_type_comp <- function(dir_vector){
 	cascade_comp$depth$parent_type <- factor(cascade_comp$depth$parent_type)
 	plot_x_lim <- min(plot_x_lim,max(cascade_comp$depth$depth))
 	plot <- ggplot(cascade_comp$depth,aes(x = depth, y = cdf_val)) + xlim(0,plot_x_lim) + geom_line(aes(group = parent_type,colour = parent_type))
-	plot <- change_plot_attributes(plot, "Cascade Depth", "Cumulative Proportion")
+#	plot <- change_plot_attributes(plot, "Cascade Depth", "Cumulative Proportion")
 	save_ggplot(plot,file='depth_cdf.pdf')
 	plot <- ggplot(cascade_comp$depth,aes(x = log10(depth), y = cdf_val)) + xlim(0,log10(plot_x_lim*10)) + geom_line(aes(group = parent_type,colour = parent_type))
-	plot <- change_plot_attributes(plot, "log of Cascade Depth", "Cumulative Proportion")
+#	plot <- change_plot_attributes(plot, "log of Cascade Depth", "Cumulative Proportion")
 	save_ggplot(plot,file='depth_cdf_logx.pdf')
 	plot <- ggplot(cascade_comp$depth,aes(x = log10(depth), y = log10(cdf_val))) + xlim(0,log10(plot_x_lim*10)) + geom_line(aes(group = parent_type,colour = parent_type))
-	plot <- change_plot_attributes(plot, "log of Cascade Depth", "log of Cumulative Proportion")
+#	plot <- change_plot_attributes(plot, "log of Cascade Depth", "log of Cumulative Proportion")
 	save_ggplot(plot,file='depth_cdf_log_log.pdf')
 	plot <- ggplot(cascade_comp$depth,aes(x = log10(depth), y = pdf_val)) + geom_line(aes(group = parent_type,colour = parent_type))
-	plot <- change_plot_attributes(plot, "log Cascade Depth", "Proportion")
+#	plot <- change_plot_attributes(plot, "log Cascade Depth", "Proportion")
 	save_ggplot(plot,file='depth_pdf_logx.pdf')
 	plot <- ggplot(cascade_comp$depth,aes(x = depth, y = (pdf_val))) + xlim(0,2*plot_x_lim) + geom_line(aes(group = parent_type,colour = parent_type))
-	plot <- change_plot_attributes(plot, "Cascade Depth", "Proportion")
+#	plot <- change_plot_attributes(plot, "Cascade Depth", "Proportion")
 	save_ggplot(plot,file='depth_pdf.pdf')
-	plot <- ggplot(cascade_comp$depth,aes(x = depth, y = log10(pdf_val))) + xlim(0,5*plot_x_lim) + geom_line(aes(group = parent_type,colour = parent_type))
-	plot <- change_plot_attributes(plot, "Cascade Depth", "log of Proportion")
+	plot <- ggplot(cascade_comp$depth,aes(x = depth, y = (pdf_val))) + geom_line(aes(group = parent_type,colour = parent_type)) + scale_y_log10()
+	plot <- change_plot_attributes(plot, "Parent type", 0:(parent_type_idx-1), parent_type_vector,  "Cascade Depth", "Proportion")
 	save_ggplot(plot,file='depth_pdf_logy.pdf')
+	plot <- ggplot(cascade_comp$depth,aes(x = depth, y = (pdf_val))) + geom_line(aes(group = parent_type,colour = parent_type)) + scale_x_log10() + scale_y_log10()
+	plot <- change_plot_attributes(plot, "Parent type", 0:(parent_type_idx-1), parent_type_vector,  "Cascade Depth", "Proportion")
+	save_ggplot(plot,file='depth_pdf_log_log.pdf')
 	depth_freq <- data.frame(depth = rep(cascade_comp$depth$depth, times = cascade_comp$depth$count), parent_type=rep(cascade_comp$depth$parent_type, times = cascade_comp$depth$count))
 	depth_freq$parent_type <- factor(depth_freq$parent_type)
-	plot <- ggplot(depth_freq, aes(x=depth, fill=parent_type)) + geom_histogram(binwidth=1, position="dodge") + scale_y_log10()
-	plot <- change_plot_attributes(plot, "Cascade Depth", "Frequency") + scale_fill_discrete(name="Parent type", breaks=c("0", "1", "2", "3"),
-			labels=c("First parent", "Higest outdeg parent", "Last parent", "Random parent"))
+	plot <- ggplot(depth_freq, aes(y=depth, x=parent_type))+ scale_y_log10()+ geom_boxplot() #+ geom_histogram(binwidth=1, position="dodge") 
+	plot <- change_plot_attributes(plot, "Parent type", 0:(parent_type_idx-1), parent_type_vector, "Parent type", "Cascade Depth")
 	save_ggplot(plot,file='depth_hist.pdf')
 	cascade_comp$depth.df <- ddply(cascade_comp$depth, c('threshold','parent_type'), summarise, mean = sum(depth*count)/sum(count), quart_1=depth[cum_count>=sum(count)/4][1],
 			median = depth[cum_count>=sum(count)/2][1], quart_3=depth[cum_count>=3*sum(count)/4][1], max=max(depth), var=sum(count*(depth-sum(depth*count)/sum(count))^2)/sum(count))
@@ -225,7 +229,7 @@ parent_type_comp <- function(dir_vector){
 	latex(d, file="comp_size.tex", digits = 6, rowname = latexTranslate(rownames(d)))            # If you want all the data
 	d <- cascade_comp$depth.df
 	latex(d, file="comp_depth.tex", digits = 6, rowname = latexTranslate(rownames(d)))            # If you want all the data
-	print('hello')
+	print('Exiting, Done')
 #	latex(describe(d), file="comp_summary.lex")  # If you just want a summary
 #	cascade_comp$size$parent_type <- factor(cascade_comp$size$parent_type)
 #	plot <- ggplot(cascade_comp$size, aes(y=log10(size), x = parent_type)) + geom_boxplot()
@@ -261,7 +265,7 @@ parent_lifespan_comp <- function(dir_vector, lifespan_threshold_vector){
 				one_partition
 			})
 	cascade_comp$size$lifespan_threshold <- factor(cascade_comp$size$lifespan_threshold)
-	plot <- ggplot(cascade_comp$size,aes(x = log10(size), y = pdf_val)) + geom_line(aes(group = lifespan_threshold,colour = lifespan_threshold)) + scale_y_log10()
+	plot <- ggplot(cascade_comp$size,aes(x = log10(size), y = log10(pdf_val))) + geom_line(aes(group = lifespan_threshold,colour = lifespan_threshold))#+ xlim(2,3)+ ylim(-6,-3.5)# + scale_y_log10()
 #			scale_x_reverse(limits = c(log10(max(cascade_comp$size$size)), 4)) + scale_y_log10()
 	plot <- change_plot_attributes(plot, "Parent's lifespan\n threshold", 1:(lifespan_idx-1),lifespan_threshold_vector, "log of Cascade Size", "Proportion of count")
 	save_ggplot(plot,file='lifespan_comp/size_pdf.pdf')
@@ -280,4 +284,17 @@ parent_lifespan_comp <- function(dir_vector, lifespan_threshold_vector){
 	plot <- ggplot(cascade_comp$depth,aes(x = depth, y = pdf_val)) + geom_line(aes(group = lifespan_threshold,colour = lifespan_threshold)) + scale_x_log10() + scale_y_log10()
 	plot <- change_plot_attributes(plot, "Parent's lifespan\n threshold", 1:(lifespan_idx-1), lifespan_threshold_vector, "Cascade Depth", "Proportion of count")
 	save_ggplot(plot,file='lifespan_comp/depth_pdf.pdf')
+}
+
+analyze_coverage <- function(dir){
+	cascade <- parent_type_size_depth(dir)
+	cascade$size.df <- ddply(cascade$size, c('threshold'), function(one_partition){
+				one_partition = one_partition[order(-one_partition$size),]
+				one_partition$cum_count = cumsum(one_partition$count)
+				one_partition$cum_size = cumsum(one_partition$size*one_partition$count)/sum(one_partition$size*one_partition$count)
+				one_partition
+			})
+	plot <- ggplot(cascade$size.df,aes(x = (cum_count), y = (cum_size))) + geom_line()+ scale_x_log10(breaks=c(1,10,10^2,10^3,10^4,115000), labels=c('1','1e+1','1e+2','1e+3','1e+4','115000'))+ scale_y_continuous(breaks=c(0,.1,.2,.3,.4,.5,.6,.7,.8,.9,1.0), labels=c('0','0.1','0.2','0.3','0.4','0.5','0.6','0.7','0.8','0.9','1'))
+	plot <- change_plot_attributes(plot, "Parent type", 0:(4-1), 0:(4-1), "Numbe of top cascades", "Coverage")
+	save_ggplot(plot,file='size_coverage.pdf')
 }
