@@ -99,6 +99,8 @@ analyze_branching <- function(output_dir, trial, bin_size){
 				one_partition$pdf = one_partition$count/sum(one_partition$count)
 				one_partition
 			})
+	p.dist <<- bin_outdeg_dist.df[bin_outdeg_dist.df$depth==0,]$pdf
+	q.dist <<- bin_outdeg_dist.df[bin_outdeg_dist.df$depth==1,]$pdf
 	bin_outdeg_dist.df$depth <- factor(bin_outdeg_dist.df$depth)
 	plot <- ggplot(bin_outdeg_dist.df, aes(x = log10(outdeg), y = log10(pdf))) + geom_line(aes(group = depth,colour = depth)) + xlab('Out degree') + ylab('log of proportion of Count')
 	save_ggplot(plot, paste(c(output_dir,'outdeg_dist.pdf'), collapse = ''))
@@ -111,6 +113,44 @@ analyze_branching <- function(output_dir, trial, bin_size){
 	simulated_cascades <- branching_process(dist_bin,trial,max_depth)
 	return(simulated_cascades)
 }
+
+Comparing_simulation <- function(directoryname){
+	prev_dir = getwd()
+	setwd(directoryname)
+	cascade_size <- as.data.frame(read.csv('size.csv', header=FALSE))
+	cascade_size[,4] <- 0 #Actual
+	colnames(cascade_size) <- c('size', 'count', 'threshold', 'simulation')
+	cascade_depth <- as.data.frame(read.csv('depth.csv', header=FALSE))
+	cascade_depth[,4] <- 0 #Actual
+	colnames(cascade_depth) <- c('depth', 'count', 'threshold', 'simulation')
+	setwd(prev_dir)
+	simulated_cascade_size <- as.data.frame(ab$size)
+	simulated_cascade_size[,2] <- 1
+	colnames(simulated_cascade_size) <- c('size','simulation_type')
+	simulated_cascade_size_binned <- as.data.frame(ab_e$size)
+	simulated_cascade_size_binned[,2] <- 2
+	colnames(simulated_cascade_size_binned) <- c('size','simulation_type')
+	simulated_cascade_size <- rbind(simulated_cascade_size, simulated_cascade_size_binned)
+	size_freq <- data.frame(size = rep(cascade_size$size, times = cascade_size$count), simulation_type=rep(cascade_size$simulation, times = cascade_size$count))
+	size_freq <- rbind(size_freq,simulated_cascade_size)
+	size_freq$simulation_type <- factor(size_freq$simulation_type)
+	
+	max_size <- max(size_freq$size)
+	size_bin <- unique(ceiling(2^(seq(0,ceiling(log(max_size)/log(2)),by=0.25))))
+	print(size_bin)
+	size_dist <- transform(size_freq, bin = cut(size_freq$size, breaks=size_bin, right=FALSE))
+	print(head(size_dist))
+	size_dist <- ddply(size_dist, c('bin','simulation_type'), summarise, min_size=min(size), pdf=length(bin)/3734781)
+	colnames(size_dist) <- c('bin', 'simulation_type', 'size', 'pdf_val')
+	plot <- ggplot(size_dist,aes(x = log10(size), y = log10(pdf_val))) + geom_line(aes(group = simulation_type,colour = simulation_type))#+ xlim(2,3)+ ylim(-6,-3.5)# + scale_y_log10()
+#	plot <- change_plot_attributes(plot, "Parent's lifespan\n threshold", 1:(lifespan_idx-1),lifespan_threshold_vector, "log of Cascade Size", "Proportion of count")
+	save_ggplot(plot,file='branching_size_pdf.pdf')
+	
+	
+	plot <- ggplot(size_freq, aes(y=size, x=simulation_type))+ geom_boxplot() + scale_x_discrete(breaks=0:2, labels=c('Actual','Simulation(without binning)', 'Simulation(exp binning)'))+ scale_y_log10() # + geom_histogram(binwidth=0.2, position="dodge")
+	save_ggplot(plot,file='branching_boxplot.pdf')	
+}
+Comparing_simulation('fp_nt_u/')
 #ab_10 <- analyze_branching('~/output_cascade/fp_nt_u/bin_10/',4,bin_size <- c(0,10,20,30,40,50,60))
 #ab_v <- analyze_branching('~/output_cascade/fp_nt_u/bin_v/',4,bin_size <- c(0,1,2,3,4,5,21,36,61))
 #ab_e <- analyze_branching('~/output_cascade/fp_nt_u/bin_e/',4,bin_size <- c(0,2,4,8,16,32,64))

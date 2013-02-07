@@ -124,8 +124,8 @@ parent_type_size_depth <- function(directoryname){
 	cascade_size <- as.data.frame(read.csv('size.csv', header=FALSE))
 	colnames(cascade_size) <- c('size', 'count', 'threshold')
 	print(directoryname)
-#	print(sum(cascade_size$size*cascade_size$count))
-#	print(max(cascade_size$size))
+	print(sum(cascade_size$size*cascade_size$count))
+	print(max(cascade_size$size))
 	sub_cascade$size <- cascade_size#[cascade_size$threshold == max(cascade_size$threshold),]
 	cascade_depth <- as.data.frame(read.csv('depth.csv', header=FALSE))
 	colnames(cascade_depth) <- c('depth', 'count', 'threshold')
@@ -265,14 +265,18 @@ parent_lifespan_comp <- function(dir_vector, lifespan_threshold_vector){
 				one_partition
 			})
 	cascade_comp$size$lifespan_threshold <- factor(cascade_comp$size$lifespan_threshold)
+	max_size <- max(cascade_comp$size$size)
+	size_bin <- unique(ceiling(2^(seq(0,ceiling(log(max_size)/log(2)),by=0.25))))
+	print(size_bin)
+	cascade_comp$size <- transform(cascade_comp$size, bin = cut(cascade_comp$size$size, breaks=size_bin, right=FALSE))
+	cascade_comp$size <- ddply(cascade_comp$size, c('bin','lifespan_threshold'), summarise, min_size=min(size), pdf=sum(pdf_val))
+	colnames(cascade_comp$size) <- c('bin', 'lifespan_threshold', 'size', 'pdf_val')
+	cascade_comp$size$lifespan_threshold <- factor(cascade_comp$size$lifespan_threshold)
 	plot <- ggplot(cascade_comp$size,aes(x = log10(size), y = log10(pdf_val))) + geom_line(aes(group = lifespan_threshold,colour = lifespan_threshold))#+ xlim(2,3)+ ylim(-6,-3.5)# + scale_y_log10()
 #			scale_x_reverse(limits = c(log10(max(cascade_comp$size$size)), 4)) + scale_y_log10()
 	plot <- change_plot_attributes(plot, "Parent's lifespan\n threshold", 1:(lifespan_idx-1),lifespan_threshold_vector, "log of Cascade Size", "Proportion of count")
 	save_ggplot(plot,file='lifespan_comp/size_pdf.pdf')
-	plot <- ggplot(cascade_comp$size,aes(x = log10(size), y = count)) + geom_line(aes(group = lifespan_threshold,colour = lifespan_threshold)) + #scale_y_log10(limits=c(1,10)) +
-			scale_x_reverse(limits = c(log10(max(cascade_comp$size$size)), 3.5)) + ylim(0,10)
-	plot <- change_plot_attributes(plot, "Parent's lifespan\n threshold", 1:(lifespan_idx-1),lifespan_threshold_vector, "Log of Cascade Size", "Count")
-	save_ggplot(plot,file='lifespan_comp/size_count.pdf')
+
 	cascade_comp$depth <- ddply(cascade_comp$depth, c('threshold','lifespan_threshold'), function(one_partition){
 				one_partition = one_partition[order(one_partition$depth),]
 				one_partition$cum_count = cumsum(one_partition$count)
@@ -284,7 +288,20 @@ parent_lifespan_comp <- function(dir_vector, lifespan_threshold_vector){
 	plot <- ggplot(cascade_comp$depth,aes(x = depth, y = pdf_val)) + geom_line(aes(group = lifespan_threshold,colour = lifespan_threshold)) + scale_x_log10() + scale_y_log10()
 	plot <- change_plot_attributes(plot, "Parent's lifespan\n threshold", 1:(lifespan_idx-1), lifespan_threshold_vector, "Cascade Depth", "Proportion of count")
 	save_ggplot(plot,file='lifespan_comp/depth_pdf.pdf')
-}
+	
+	loss_comp <- as.data.frame(read.csv('lifespan_comp/loss_ratio.csv', header=FALSE))
+	colnames(loss_comp) <- c('Threshold_name', 'Threshold', 'Total_coverage', 'Short_lived_Parents', 'Non_leaves', 'Leaves', 'Percent_removed_parent', 'Percent_loss','Percent_removed')
+	plot <- ggplot(loss_comp, aes(x=Threshold, y=(1-Total_coverage/189989307))) + geom_line() + xlab('Removed Parents(%)') + ylab('Total Size Loss(%)') + 
+			scale_x_log10(breaks=loss_comp$Threshold, labels=loss_comp$Percent_removed_parent) + 
+			scale_y_continuous(breaks=(1-loss_comp$Total_coverage/189989307), labels=loss_comp$Percent_loss) +
+			opts(axis.text.x=theme_text(angle=45,hjust=1,vjust=1))
+	save_ggplot(plot,file='lifespan_comp/loss_vs_removed_parents.pdf')
+	plot <- ggplot(loss_comp, aes(x=(Non_leaves+Leaves)/189989307, y=(1-Total_coverage/189989307))) + geom_line() + xlab('Directly Removed Nodes(%)') + ylab('Total Size Loss(%)') + 
+			scale_x_continuous(breaks=(loss_comp$Non_leaves+loss_comp$Leaves)/189989307, labels=loss_comp$Percent_removed) + 
+			scale_y_continuous(breaks=(1-loss_comp$Total_coverage/189989307), labels=loss_comp$Percent_loss) +
+			opts(axis.text.x=theme_text(angle=45,hjust=1,vjust=1))
+	save_ggplot(plot,file='lifespan_comp/loss_vs_removed.pdf')
+	}
 
 analyze_coverage <- function(dir){
 	cascade <- parent_type_size_depth(dir)
