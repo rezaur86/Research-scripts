@@ -1,4 +1,5 @@
 source('~/scripts/cascade/tools.r')
+source('~/scripts/cascade/plfit.r')
 library(ggplot2)
 library(plyr)
 library(Hmisc)
@@ -35,8 +36,14 @@ parent_type_comp <- function(dir_vector, parent_type_vector){
 	colnames(cascade_comp$depth) <- c('depth', 'count', 'threshold', 'parent_type')
 #	Cascade size summary
 	size_freq <- data.frame(size = rep(cascade_comp$size$size, times = cascade_comp$size$count), parent_type=rep(cascade_comp$size$parent_type, times = cascade_comp$size$count))
+	print(head(size_freq))
+	print_report('First Parent: Power law alpha', plfit(size_freq[size_freq$parent_type==0 & size_freq$size<1000,]$size))
+	print_report('Last Parent: Power law alpha', plfit(size_freq[size_freq$parent_type==1 & size_freq$size<1000,]$size))
+	print_report('HOP Parent: Power law alpha', plfit(size_freq[size_freq$parent_type==2 & size_freq$size<1000,]$size))
+	print_report('Random Parent: Power law alpha', plfit(size_freq[size_freq$parent_type==3 & size_freq$size<1000,]$size))
+	print(kruskal.test(size~parent_type, data=size_freq))
 	cascade_comp$size_summary <- ddply(size_freq, c('parent_type'), summarise, min=summary(size)[1], quart_1=summary(size)[2], median=summary(size)[3], mean=summary(size)[4],
-			quart_3=summary(size)[5], max=summary(size)[6], var=var(size),total_coverage=sum(size))
+			quart_3=summary(size)[5], max=summary(size)[6], var=var(size), total_coverage=sum(size))
 #	Cascade size box plot
 	size_freq$parent_type <- factor(size_freq$parent_type)
 	plot <- ggplot(size_freq, aes(y=(size), x=parent_type))+ geom_boxplot() + scale_x_discrete(breaks=0:(parent_type_idx-1), labels=parent_type_vector)+ scale_y_log10() # + geom_histogram(binwidth=0.2, position="dodge")

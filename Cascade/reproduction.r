@@ -127,6 +127,12 @@ Comparing_simulation <- function(directoryname){
 	simulated_cascade_size <- as.data.frame(ab$size)
 	simulated_cascade_size[,2] <- 1 #Simulation
 	colnames(simulated_cascade_size) <- c('size','simulation_type')
+#	Analytic distribution loading and data frame managing
+	analytic_dist <- as.data.frame(scan('branching/dist.txt'))
+	analytic_dist <- as.data.frame(analytic_dist[-1,])
+	analytic_dist[,2] <- 1:nrow(analytic_dist)
+	analytic_dist[,3] <- 2
+	colnames(analytic_dist) <- c('pdf','size','simulation_type')
 #	simulated_cascade_size_binned <- as.data.frame(ab_e$size)
 #	simulated_cascade_size_binned[,2] <- 2
 #	colnames(simulated_cascade_size_binned) <- c('size','simulation_type')
@@ -141,16 +147,24 @@ Comparing_simulation <- function(directoryname){
 	size_bin <- unique(ceiling(1.7^(seq(0,ceiling(log(max_size)/log(1.7)),by=0.25))))
 	print(size_bin)
 	size_dist <- transform(size_freq, bin = cut(size_freq$size, breaks=size_bin, right=FALSE))
-	size_dist <- ddply(size_dist, c('bin','simulation_type'), summarise, avg_size=mean(size), pdf=length(bin)/3734781)
+	size_dist <- ddply(size_dist, c('bin','simulation_type'), summarise, avg_size=ceiling(mean(size)), pdf=length(bin)/3734781)
+#	Analytic distribution binning
+	analytic_dist$simulation_type <- factor(analytic_dist$simulation_type)
+	analytic_dist <- transform(analytic_dist, bin = cut(analytic_dist$size, breaks=size_bin, right=FALSE))
+	analytic_dist <- ddply(analytic_dist, c('bin','simulation_type'), summarise, avg_size=ceiling(mean(size)), pdf=sum(pdf))
+	size_dist <- rbind(size_dist, analytic_dist)
+#	Marged all from actual and branching with analytic distribution
 	colnames(size_dist) <- c('bin', 'simulation_type', 'size', 'pdf_val')
-	plot <- ggplot(size_dist,aes(x = (size), y = (pdf_val))) + geom_line(aes(group = simulation_type,colour = simulation_type)) + scale_x_log10() + scale_y_log10()
-	plot <- change_plot_attributes(plot, "", 0:1, c('Actual','Simulation'), "Cascade Size(binned)", "Proportion of count")
+	size_dist$simulation_type <- factor(size_dist$simulation_type)
+	plot <- ggplot(size_dist[size_dist$pdf_val>1e-7,],aes(x = (size), y = (pdf_val))) + geom_line(aes(group = simulation_type,colour = simulation_type)) + scale_x_log10() + scale_y_log10()
+	plot <- change_plot_attributes(plot, "", 0:2, c('Actual','Simulation','Analysis'), "Cascade Size(binned)", "Proportion of count")
 	save_ggplot(plot,file='branching_size_pdf.pdf')
 #	Box plot
-	plot <- ggplot(size_freq, aes(y=size, x=simulation_type))+ geom_boxplot() + scale_x_discrete(breaks=0:1, labels=c('Actual','Simulation'))+ scale_y_log10() # + geom_histogram(binwidth=0.2, position="dodge")
+	plot <- ggplot(size_freq, aes(y=size, x=simulation_type))+ geom_boxplot() + scale_x_discrete(breaks=0:2, labels=c('Actual','Simulation','Analysis'))+ scale_y_log10() # + geom_histogram(binwidth=0.2, position="dodge")
 	save_ggplot(plot,file='branching_boxplot.pdf')	
+	return(size_freq)
 }
-Comparing_simulation('fp_nt_u/')
+size_freq<-Comparing_simulation('fp_nt_u/')
 #ab_10 <- analyze_branching('~/output_cascade/fp_nt_u/bin_10/',4,bin_size <- c(0,10,20,30,40,50,60))
 #ab_v <- analyze_branching('~/output_cascade/fp_nt_u/bin_v/',4,bin_size <- c(0,1,2,3,4,5,21,36,61))
 #ab_e <- analyze_branching('~/output_cascade/fp_nt_u/bin_e/',4,bin_size <- c(0,2,4,8,16,32,64))
