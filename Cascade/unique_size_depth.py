@@ -54,13 +54,28 @@ def record_a_child(child_id, parent_list):
             children_of_parent[each_parent] = []
             children_of_parent[each_parent].append((child_id,receiving_time))
 
-def is_long_live_parent (parent_id):
+def is_fertile_parent (parent_id):
     if parent_id in graph:
-        if graph[parent_id].getLifespan() >= lifespan_threshold:
-            return True
-        else:
-            short_lived_parents[parent_id] = True
-            return False
+        if influence_type == 5 or influence_type == 6: # Discarding long-lived parents
+            if graph[parent_id].getLifespan() <= lifespan_threshold:
+                return True
+            else:
+                infertile_parents[parent_id] = True
+                return False
+        if influence_type == 3 or influence_type == 4: # Discarding short-lived parents
+            if graph[parent_id].getLifespan() >= lifespan_threshold:
+                return True
+            else:
+                infertile_parents[parent_id] = True
+                return False
+        if influence_type == 1 or influence_type == 2: # Discarding heavy parents
+            if parent_id in heavy_users:
+                infertile_parents[parent_id] = True
+                return False            
+            else:
+                return True
+        if influence_type == 0:
+            return true
     else:
         return False
 
@@ -81,18 +96,21 @@ def parent_chooser (node_id, parent_list, choice_type, activation_time):
     if choice_type == PARENT_TYPE_FIRST_PARENT:
         for i in range(new_list_l):
             first_parent = parent_list[i].strip().split(',')
-            if is_long_live_parent(int(first_parent[0]))== False:
-                if short_lived_parents[int(first_parent[0])] == True:
-                    nonleaves_with_short_lived_parents[node_id] = True  
-                continue
+            if is_fertile_parent(int(first_parent[0]))== False:
+                if infertile_parents[int(first_parent[0])] == True:
+                    nonleaves_with_infertile_parents[node_id] = True
+                if second_chance_allowed:  
+                    continue
+                else:
+                    return potential_parents
             potential_parents.append((int(first_parent[0]), int(first_parent[1])))
-            nonleaves_with_short_lived_parents[node_id] = False
+            nonleaves_with_infertile_parents[node_id] = False
             return potential_parents
         
     if choice_type == PARENT_TYPE_LAST_PARENT:
         for i in range(new_list_l-1,-1,-1):
             last_parent = parent_list[i].strip().split(',')
-            if is_long_live_parent(int(last_parent[0]))== False:
+            if is_fertile_parent(int(last_parent[0]))== False:
                 continue
             potential_parents.append((int(last_parent[0]), int(last_parent[1])))
             return potential_parents
@@ -100,7 +118,7 @@ def parent_chooser (node_id, parent_list, choice_type, activation_time):
     if choice_type == PARENT_TYPE_RANDOM_PARENT:
         for i in range(new_list_l):
             random_parent = choice(parent_list).strip().split(',')
-            if is_long_live_parent(int(random_parent[0]))== False:
+            if is_fertile_parent(int(random_parent[0]))== False:
                 continue
             potential_parents.append((int(random_parent[0]), int(random_parent[1])))
             return potential_parents
@@ -112,7 +130,7 @@ def parent_chooser (node_id, parent_list, choice_type, activation_time):
         for element in parent_list:
             a_parent = element.strip().split(',')
             pID = int(a_parent[0])
-            if is_long_live_parent(pID)== False:
+            if is_fertile_parent(pID)== False:
                 continue
             if pID in graph:
                 if graph[pID].getOutDeg() > chosen_pid_odeg :
@@ -192,22 +210,47 @@ rooted_top_users_file = open(sys.argv[3]+"rooted_top_users.csv", "w")
 nonroot_top_users_file = open(sys.argv[3]+"nonroot_top_users.csv", "w")
 children_of_parent = {} # To hold children of all parents
 children_of_parent_file = open(sys.argv[3]+"children_of_parent.txt", "w")
-short_lived_parents = bitarray(MAX_USERS)
-short_lived_parents.setall(False)
-nonleaves_with_short_lived_parents = bitarray(MAX_USERS)
-nonleaves_with_short_lived_parents.setall(False)
-leaves_with_short_lived_parents = bitarray(MAX_USERS)
-leaves_with_short_lived_parents.setall(False)
-nonleaves_leaves_with_short_lived_parents_file = open(sys.argv[3]+"nonleaves_leaves_with_short_lived_parents.txt", "w")
+infertile_parents = bitarray(MAX_USERS)
+infertile_parents.setall(False)
+nonleaves_with_infertile_parents = bitarray(MAX_USERS)
+nonleaves_with_infertile_parents.setall(False)
+leaves_with_infertile_parents = bitarray(MAX_USERS)
+leaves_with_infertile_parents.setall(False)
+nonleaves_leaves_with_infertile_parents_file = open(sys.argv[3]+"nonleaves_leaves_with_infertile_parents.txt", "w")
 parent_type = int(sys.argv[4])#int(raw_input(
 print '''PARENT_TYPE_FIRST_PARENT = 0
 PARENT_TYPE_HIGHEST_ODEG = 1
 PARENT_TYPE_LAST_PARENT = 2
 PARENT_TYPE_RANDOM_PARENT = 3
 Your choice %s''' %parent_type 
-TOP_N = int(sys.argv[5]) #int(raw_input(
+TOP_N = int(sys.argv[5]) # Required number of top users
 print '''Top nodes' sizes/depths you want to see is %s''' %TOP_N 
-lifespan_threshold = int(sys.argv[6])
+influence_type = int(sys.argv[6])
+# Normal parent analysis: influence_type = 0
+# Discard heavy parents w/o second chance: influence_type = 1
+# Discard heavy parents with second chance to the children: influence_type = 2
+# Discard children of short-lived parents analysis w/o second chance: influence_type = 3
+# Discard children of short-lived parents analysis with second chance: influence_type = 4
+# Discard children of long-lived parents analysis w/o second chance: influence_type = 5
+# Discard children of long-lived parents analysis with second chance: influence_type = 6
+
+heavy_users = {}
+if influence_type>=1 and influence_type<=2:
+    heavy_users_file = open(sys.argv[7], "r")
+    for line in heavy_users_file:
+        a_heavy_user = int(line.strip())
+        heavy_users[a_heavy_user] = None
+    print "Heavy users' file loaded"
+if influence_type>=3 and influence_type<=6:
+    lifespan_threshold = int(sys.argv[7])
+    print "Lifespan of parents will be considered"
+else:
+    lifespan_threshold = 0
+if influence_type == 1 or influence_type == 3 or influence_type == 5:
+    second_chance_allowed = False
+else:
+    second_chance_allowed = True
+    print "Second chance allowed"
 count = 0
 for line in f:
     element = line.split(' ')
@@ -224,9 +267,9 @@ for line in f:
     if (count % (CLR_THRESHOLD/10)) == 0:
         print count
     if type(potential_parent_list) != list:
-        if is_leaf == True and nonleaves_with_short_lived_parents[node_id] == True:
-            nonleaves_with_short_lived_parents[node_id] = False
-            leaves_with_short_lived_parents[node_id] = True
+        if is_leaf == True and nonleaves_with_infertile_parents[node_id] == True:
+            nonleaves_with_infertile_parents[node_id] = False
+            leaves_with_infertile_parents[node_id] = True
         continue
     newNode.setPotentialParent(potential_parent_list)
     record_a_child(node_id, newNode.parent_list)
@@ -249,8 +292,8 @@ f.close()
 clearMem()
 children_of_parent_file.close()
 
-nonleaves_leaves_with_short_lived_parents_file.write('%s,%s,%s'%(nonleaves_with_short_lived_parents.count(),leaves_with_short_lived_parents.count(),short_lived_parents.count()))
-nonleaves_leaves_with_short_lived_parents_file.close()
+nonleaves_leaves_with_infertile_parents_file.write('%s,%s,%s'%(nonleaves_with_infertile_parents.count(),leaves_with_infertile_parents.count(),infertile_parents.count()))
+nonleaves_leaves_with_infertile_parents_file.close()
 
 for node_id in graph:
 #    print node_id
@@ -351,7 +394,7 @@ for i in range(len(timeThrsh)):
 top_n_depth_file.close()
 
 #size evolution of top users
-if len(sys.argv) > 6:
+if len(sys.argv) > 10:
     top_file = open(sys.argv[3]+"top_size.csv", "r")
     top_user_growth_file = open(sys.argv[3]+"top_user_growth.txt", "w")
     top_user_set = Set()
