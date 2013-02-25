@@ -182,7 +182,13 @@ analyze_coverage <- function(dir){
 				one_partition$cum_size = cumsum(one_partition$size*one_partition$count)/sum(one_partition$size*one_partition$count)
 				one_partition
 			})
-	plot <- ggplot(cascade$size.df,aes(x = (cum_count), y = (cum_size))) + geom_line()+ scale_x_log10(breaks=c(1,10,10^2,10^3,10^4,115000), labels=c('1','1e+1','1e+2','1e+3','1e+4','115000'))+ scale_y_continuous(breaks=c(0,.1,.2,.3,.4,.5,.6,.7,.8,.9,1.0), labels=c('0','0.1','0.2','0.3','0.4','0.5','0.6','0.7','0.8','0.9','1'))
-	plot <- change_plot_attributes(plot, "Parent type", 0:(4-1), 0:(4-1), "Numbe of top cascades", "Coverage")
+	x_label <- c(10^(0:4),115000,10^6)/3734781
+	plot <- ggplot(cascade$size.df,aes(x = (cum_count), y = (cum_size))) + geom_line()+ scale_x_log10(breaks=c(1,10,10^2,10^3,10^4,115000,10^6,3734781),
+			labels=c('1\n0%','1e+1\n2.7e-4%	','1e+2\n.0027%','1e+3\n.027%','1e+4\n.27%','115000\n3.08%','1e+6\n26.78%','3734781\n100%'))+
+			scale_y_continuous(breaks=c(0,.1,.2,.3,.4,.5,.6,.7,.8,.9,1.0), labels=c('0','10%','20%','30%','40%','50%','60%','70%','80%','90%','100%'))
+	plot <- change_plot_attributes(plot, "Parent type", 0:(4-1), 0:(4-1), "Number of Top Cascades(Count and Percentage)", "Coverage(Percent of Total Population)")
+	prev_dir = getwd()
+	setwd(dir)
 	save_ggplot(plot,file='size_coverage.pdf')
+	setwd(prev_dir)
 }

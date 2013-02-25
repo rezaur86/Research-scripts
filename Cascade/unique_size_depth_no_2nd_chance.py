@@ -84,7 +84,7 @@ def parent_chooser (node_id, parent_list, choice_type, activation_time):
             if is_long_live_parent(int(first_parent[0]))== False:
                 if short_lived_parents[int(first_parent[0])] == True:
                     nonleaves_with_short_lived_parents[node_id] = True  
-                return potential_parents
+                break
             potential_parents.append((int(first_parent[0]), int(first_parent[1])))
             nonleaves_with_short_lived_parents[node_id] = False
             return potential_parents
