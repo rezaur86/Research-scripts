@@ -125,7 +125,7 @@ parent_lifespan_comp <- function(dir_vector, lifespan_threshold_vector){
 	cascade_comp$size$lifespan_threshold <- factor(cascade_comp$size$lifespan_threshold)
 	plot <- ggplot(cascade_comp$size,aes(x = log10(size), y = log10(pdf_val))) + geom_line(aes(group = lifespan_threshold,colour = lifespan_threshold))#+ xlim(2,3)+ ylim(-6,-3.5)# + scale_y_log10()
 #			scale_x_reverse(limits = c(log10(max(cascade_comp$size$size)), 4)) + scale_y_log10()
-	plot <- change_plot_attributes(plot, "Parent's lifespan\n threshold", 1:(lifespan_idx-1),lifespan_threshold_vector, "log of Cascade Size", "Proportion of count")
+	plot <- change_plot_attributes(plot, "Parent's lifespan effect", 1:(lifespan_idx-1),lifespan_threshold_vector, "log of Cascade Size", "Proportion of count")
 	save_ggplot(plot,file='lifespan_comp/size_pdf.pdf')	
 #	Log binned ploting of distribution
 	cascade_comp$size$lifespan_threshold <- factor(cascade_comp$size$lifespan_threshold)
@@ -133,12 +133,12 @@ parent_lifespan_comp <- function(dir_vector, lifespan_threshold_vector){
 	size_bin <- unique(ceiling(2^(seq(0,ceiling(log(max_size)/log(2)),by=0.25)))) # Suitable bin finding
 	print(size_bin)
 	cascade_comp$size <- transform(cascade_comp$size, bin = cut(cascade_comp$size$size, breaks=size_bin, right=FALSE))
-	cascade_comp$size <- ddply(cascade_comp$size, c('bin','lifespan_threshold'), summarise, avg_size=mean(size), pdf=sum(pdf_val))
+	cascade_comp$size <- ddply(cascade_comp$size, c('bin','lifespan_threshold'), summarise, avg_size=mean(size), pdf=mean(pdf_val))
 	colnames(cascade_comp$size) <- c('bin', 'lifespan_threshold', 'size', 'pdf_val')
 	cascade_comp$size$lifespan_threshold <- factor(cascade_comp$size$lifespan_threshold)
-	plot <- ggplot(cascade_comp$size,aes(x = log10(size), y = log10(pdf_val))) + geom_line(aes(group = lifespan_threshold,colour = lifespan_threshold))#+ xlim(2,3)+ ylim(-6,-3.5)# + scale_y_log10()
+	plot <- ggplot(cascade_comp$size,aes(x = log10(size), y = log10(pdf_val))) + geom_point(aes(group = lifespan_threshold,colour = lifespan_threshold))#+ xlim(2,3)+ ylim(-6,-3.5)# + scale_y_log10()
 	#		scale_x_reverse(limits = c(log10(max(cascade_comp$size$size)), 4)) + scale_y_log10()
-	plot <- change_plot_attributes(plot, "Parent's lifespan\n threshold", 1:(lifespan_idx-1),lifespan_threshold_vector, "log of Cascade Size", "Proportion of count")
+	plot <- change_plot_attributes(plot, "Parent's lifespan effect", 1:(lifespan_idx-1),lifespan_threshold_vector, "log of Cascade Size", "Proportion of count")
 	save_ggplot(plot,file='lifespan_comp/size_pdf_binned.pdf')
 
 #	Cascade depth summary
