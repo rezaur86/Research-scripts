@@ -75,7 +75,7 @@ def is_fertile_parent (parent_id):
             else:
                 return True
         if influence_type == 0:
-            return true
+            return True
     else:
         return False
 

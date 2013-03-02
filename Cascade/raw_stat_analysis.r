@@ -33,8 +33,9 @@ raw_indeg_analysis <- function (raw_indeg_file_name){
 	raw_indeg <- as.data.frame(read.csv(raw_indeg_file_name, header=FALSE))
 	colnames(raw_indeg) <- c('indeg', 'count')
 	raw_indeg <- raw_indeg[order(raw_indeg$indeg),]
-	plot <- ggplot(raw_indeg, aes(x = indeg, y = (cumsum(count/sum(count))))) + geom_line() + xlab('log of Raw number of parents') + ylab('Cumulative proportion of Count') + 
-			scale_x_log10(breaks=c(1,2,3,4,5,6,7,8,9,10,20,40,80,100,1000)) + ylim(0.4,1.0) # + scale_y_log10()
+	plot <- ggplot(raw_indeg, aes(x = indeg, y = (cumsum(count/sum(count))))) + geom_point() + xlab("Distinct Parent Count in Received Gifts") + ylab('Cumulative Proportion of Users') + 
+			scale_x_log10(breaks=c(1,2,4,8,16,32,64,128,256,1000)) +
+			scale_y_continuous(breaks=c(.4,.5,.6,.7,.8,.9,1.0), labels=c('40%','50%','60%','70%','80%','90%','100%'), limits=c(.4,1.0))
 	save_ggplot(plot, 'raw_stat/raw_indeg.pdf')
 }
 

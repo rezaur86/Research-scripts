@@ -3,6 +3,7 @@ source('~/scripts/cascade/plfit.r')
 library(ggplot2)
 library(plyr)
 library(Hmisc)
+library(gridExtra) 
 
 load_size_depth <- function(directoryname){
 	prev_dir = getwd()
@@ -191,4 +192,25 @@ analyze_coverage <- function(dir){
 	setwd(dir)
 	save_ggplot(plot,file='size_coverage.pdf')
 	setwd(prev_dir)
+}
+
+size_vs_root_characteristics <- function (dir){
+	prev_dir = getwd()
+	setwd(dir)
+	size_lifespan <- as.data.frame(read.csv('size_vs_root_lifespan.csv', header=FALSE))
+	colnames(size_lifespan) <- c('size', 'lifespan')
+	root_info <- ddply(g_prep.df$root_depth_expansion, c('root_user_id'), summarise, size = sum(expansion), root_outdeg = expansion[depth==1], neighbor_outdeg = c(expansion[depth==2],0)[1])
+	plot1 <- ggplot(size_lifespan, aes(x=lifespan, y=size))+ geom_point(size=.5)+ scale_y_log10() + #+ geom_smooth(method=lm)
+			scale_x_log10(breaks=c(86400,86400*7,2*86400*7,4*86400*7,8*86400*7,16*86400*7,32*86400*7,64*86400*7),labels=c('1day','1week','2week','4week','8week','16week','32week','64week'))+
+			opts(axis.text.x=theme_text(angle=45,hjust=1,vjust=1))+
+			xlab("Active Lifetime of a Seed")+ylab("Size of the Adoption\nRooted at the Seed")
+	plot2 <- ggplot(root_info, aes(x=root_outdeg, y=size))+ geom_point(size=.5)+ scale_y_log10() + #+ geom_smooth(method=lm)
+			xlab("Outdegree of a Seed")+ylab("Size of the Adoption\nRooted at the Seed")
+	plot3 <- ggplot(root_info, aes(x=neighbor_outdeg, y=size))+ geom_point(size=.5)+ scale_y_log10() + #+ geom_smooth(method=lm)
+			xlab("Total Outdegree of the neighbors of a Seed")+ylab("Size of the Adoption\nRooted at the Seed")
+	pdf("size_vs_root.pdf")
+	grid.arrange(plot1, plot2, plot3)
+	dev.off()
+	setwd(prev_dir)
+	return (size_lifespan)
 }
