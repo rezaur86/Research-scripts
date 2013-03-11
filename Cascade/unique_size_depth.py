@@ -206,7 +206,7 @@ size_file = open(sys.argv[3]+"size.csv", "w")
 depth_file = open(sys.argv[3]+"depth.csv", "w")
 top_n_size_file = open(sys.argv[3]+"top_size.csv", "w")
 top_n_depth_file = open(sys.argv[3]+"top_depth.csv", "w")
-size_vs_root_lifespan_file = open(sys.argv[3]+"size_vs_root_lifespan.csv", "w")
+size_vs_root_file = open(sys.argv[3]+"size_vs_root.csv", "w")
 rooted_top_users_file = open(sys.argv[3]+"rooted_top_users.csv", "w")
 nonroot_top_users_file = open(sys.argv[3]+"nonroot_top_users.csv", "w")
 children_of_parent = {} # To hold children of all parents
@@ -384,9 +384,9 @@ for i in range(len(timeThrsh)):
         users = tuple[1]
         for each_user in users:
             top_n_size_file.write('%s,%s,%s\n'%(size,each_user,timeThrsh[i]))
-            size_vs_root_lifespan_file.write('%s,%s\n'%(size,graph[each_user].getLifespan()))
+            size_vs_root_file.write('%s,%s,%s,%s\n'%(size,graph[each_user].getDepth(i),graph[each_user].getLifespan(),graph[each_user].getOutDeg()))
 top_n_size_file.close()
-size_vs_root_lifespan_file.close()
+size_vs_root_file.close()
 for i in range(len(timeThrsh)):
     temp = sorted(top_n_depth_users[i].iteritems(), key=operator.itemgetter(0), reverse=True)
     for tuple in temp:

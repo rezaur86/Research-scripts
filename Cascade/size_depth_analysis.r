@@ -126,7 +126,7 @@ parent_lifespan_comp <- function(dir_vector, lifespan_threshold_vector){
 	cascade_comp$size$lifespan_threshold <- factor(cascade_comp$size$lifespan_threshold)
 	plot <- ggplot(cascade_comp$size,aes(x = log10(size), y = log10(pdf_val))) + geom_line(aes(group = lifespan_threshold,colour = lifespan_threshold))#+ xlim(2,3)+ ylim(-6,-3.5)# + scale_y_log10()
 #			scale_x_reverse(limits = c(log10(max(cascade_comp$size$size)), 4)) + scale_y_log10()
-	plot <- change_plot_attributes(plot, "Parent's lifespan effect", 1:(lifespan_idx-1),lifespan_threshold_vector, "log of Cascade Size", "Proportion of count")
+	plot <- change_plot_attributes(plot, "Hub Seclusion Effect", 1:(lifespan_idx-1),lifespan_threshold_vector, "log of Cascade Size", "Proportion of count")
 	save_ggplot(plot,file='lifespan_comp/size_pdf.pdf')	
 #	Log binned ploting of distribution
 	cascade_comp$size$lifespan_threshold <- factor(cascade_comp$size$lifespan_threshold)
@@ -139,7 +139,7 @@ parent_lifespan_comp <- function(dir_vector, lifespan_threshold_vector){
 	cascade_comp$size$lifespan_threshold <- factor(cascade_comp$size$lifespan_threshold)
 	plot <- ggplot(cascade_comp$size,aes(x = log10(size), y = log10(pdf_val))) + geom_point(aes(group = lifespan_threshold,colour = lifespan_threshold))#+ xlim(2,3)+ ylim(-6,-3.5)# + scale_y_log10()
 	#		scale_x_reverse(limits = c(log10(max(cascade_comp$size$size)), 4)) + scale_y_log10()
-	plot <- change_plot_attributes(plot, "Parent's lifespan effect", 1:(lifespan_idx-1),lifespan_threshold_vector, "log of Cascade Size", "Proportion of count")
+	plot <- change_plot_attributes(plot, "Hub Seclusion effect", 1:(lifespan_idx-1),lifespan_threshold_vector, "log of Cascade Size", "Proportion of count")
 	save_ggplot(plot,file='lifespan_comp/size_pdf_binned.pdf')
 
 #	Cascade depth summary
@@ -156,7 +156,7 @@ parent_lifespan_comp <- function(dir_vector, lifespan_threshold_vector){
 			})
 	cascade_comp$depth$lifespan_threshold <- factor(cascade_comp$depth$lifespan_threshold)
 	plot <- ggplot(cascade_comp$depth,aes(x = depth, y = pdf_val)) + geom_line(aes(group = lifespan_threshold,colour = lifespan_threshold)) + scale_x_log10() + scale_y_log10()
-	plot <- change_plot_attributes(plot, "Parent's lifespan\n threshold", 1:(lifespan_idx-1), lifespan_threshold_vector, "Cascade Depth", "Proportion of count")
+	plot <- change_plot_attributes(plot, "Hub Seclusion effect", 1:(lifespan_idx-1), lifespan_threshold_vector, "Cascade Depth", "Proportion of count")
 	save_ggplot(plot,file='lifespan_comp/depth_pdf.pdf')
 #	Loss comparison
 	loss_comp <- as.data.frame(read.csv('lifespan_comp/loss_ratio.csv', header=FALSE))
@@ -197,20 +197,26 @@ analyze_coverage <- function(dir){
 size_vs_root_characteristics <- function (dir){
 	prev_dir = getwd()
 	setwd(dir)
-	size_lifespan <- as.data.frame(read.csv('size_vs_root_lifespan.csv', header=FALSE))
-	colnames(size_lifespan) <- c('size', 'lifespan')
-	root_info <- ddply(g_prep.df$root_depth_expansion, c('root_user_id'), summarise, size = sum(expansion), root_outdeg = expansion[depth==1], neighbor_outdeg = c(expansion[depth==2],0)[1])
-	plot1 <- ggplot(size_lifespan, aes(x=lifespan, y=size))+ geom_point(size=.5)+ scale_y_log10() + #+ geom_smooth(method=lm)
+	size_vs_root <- unique(as.data.frame(read.csv('size_vs_root.csv', header=FALSE)))
+	colnames(size_vs_root) <- c('size','depth','lifespan','raw_root_outdeg')
+	print('read 1')
+	size_vs_root_odeg <- unique(as.data.frame(read.csv('size_vs_root_odeg.csv', header=FALSE)))
+	colnames(size_vs_root_odeg) <- c('size', 'root_outdeg')
+	print('read 2')
+	plot1 <- ggplot(size_vs_root[size_vs_root$size>=156,], aes(x=depth, y=size))+ geom_point(size=.5)+ scale_y_log10() + #+ geom_smooth(method=lm)
+			xlab("Depth of a seed (Tree height)")+ylab("Size of the Adoption\nRooted at the Seed")
+	plot2 <- ggplot(size_vs_root[size_vs_root$size>=156,], aes(x=lifespan, y=size))+ geom_point(size=.5)+ scale_y_log10() + #+ geom_smooth(method=lm)
 			scale_x_log10(breaks=c(86400,86400*7,2*86400*7,4*86400*7,8*86400*7,16*86400*7,32*86400*7,64*86400*7),labels=c('1day','1week','2week','4week','8week','16week','32week','64week'))+
 			opts(axis.text.x=theme_text(angle=45,hjust=1,vjust=1))+
 			xlab("Active Lifetime of a Seed")+ylab("Size of the Adoption\nRooted at the Seed")
-	plot2 <- ggplot(root_info, aes(x=root_outdeg, y=size))+ geom_point(size=.5)+ scale_y_log10() + #+ geom_smooth(method=lm)
+	plot3 <- ggplot(size_vs_root_odeg[size_vs_root_odeg$size>=156,], aes(x=root_outdeg, y=size))+ geom_point(size=.5)+ scale_y_log10() + #+ geom_smooth(method=lm)
 			xlab("Outdegree of a Seed")+ylab("Size of the Adoption\nRooted at the Seed")
-	plot3 <- ggplot(root_info, aes(x=neighbor_outdeg, y=size))+ geom_point(size=.5)+ scale_y_log10() + #+ geom_smooth(method=lm)
-			xlab("Total Outdegree of the neighbors of a Seed")+ylab("Size of the Adoption\nRooted at the Seed")
 	pdf("size_vs_root.pdf")
 	grid.arrange(plot1, plot2, plot3)
 	dev.off()
 	setwd(prev_dir)
-	return (size_lifespan)
+	return (list(info=size_vs_root,odeg=size_vs_root_odeg))
 }
+
+#bla<-parent_lifespan_comp(c('fp_nt_u/','fp_less_356days_act_life/','fp_less_356days_nsc/','fp_less_290days_act_life/','fp_less_290days_nsc/'),c('N/A','Secluding Top 1%\nPersistent users\nwith second chance','\nSecluding Top 1%\nPersistent users\nw/o second chance','\nSecluding Top 5%\nPersistent users\nwith second chance','\nSecluding Top 5%\nPersistent users\nw/o second chance'))
+#bla <- parent_lifespan_comp(c('fp_nt_u/','disc_heavy_users_with_sc/','disc_heavy_users_no_sc'),c('N/A','Secluding heavy seeds\nwith second chance','\nSecluding heavy seeds\nw/o second chance'))

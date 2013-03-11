@@ -104,6 +104,10 @@ def resolve_cascades (user_list):
         cascade_traverse(a_root, MAX_DEPTH)
         cascade_size = len(graph)
         cascade_depth = max(depth_expansion_per_root)
+        if cascade_depth == 0:
+            size_vs_root_odeg.append((cascade_size,0))
+        else:
+            size_vs_root_odeg.append((cascade_size,depth_expansion_per_root[1]))
         for d in depth_expansion_per_root:
             depth_expansion.append((d,depth_expansion_per_root[d],a_root,1,depth_min_time_per_root[d] if d in depth_min_time_per_root else None,depth_max_time_per_root[d] if d in depth_max_time_per_root else None)) # 1 for distinct root
         for (degree,depth) in branching_dist_per_root: #Collecting out degree distribution for branching process.
@@ -122,13 +126,15 @@ activities_per_root = []
 depth_expansion_per_root = {}
 depth_expansion = []
 top_users_correlated_info = []
+size_vs_root_odeg = []
 branching_dist_per_root = {}
 branching_dist = {}
 children_of_parent = {}
 #rezaur@rahman:~/Documents/Code/Cascade$ python top_node_info.py test_case/children_of_parent.txt test_case/top_size.csv,test_case/top_depth.csv 20
 #rezaur@rahman:~/Documents/Code/Cascade$ python top_node_info.py First_parent/children_of_parent.txt First_parent/top_size.csv,First_parent/top_depth.csv 1814400
 TOP_N = int(sys.argv[4])#raw_input('''Do you want to see subset of top users?then input your value: '''))
-MAX_DEPTH = int(sys.argv[5])#raw_input('Graph traversal depth? (1~100)?'))
+MAX_DEPTH = int(sys.argv[5])
+#raw_input('Graph traversal depth? (1~100)?'))
 print 'New analysis of top %s cascades and traverse until %s depth' %(TOP_N,MAX_DEPTH)
 
 if len(sys.argv) > 3:
@@ -173,12 +179,16 @@ if __name__ == '__main__':
         else:
             o_file_prefix = each_infl_file+'_all_'
         top_users_correlated_info_file  = open(o_file_prefix+'roots_correlated_info.csv', "w")
+        size_vs_root_odeg_file  = open(o_file_prefix+'size_vs_root_odeg.csv', "w")
         depth_vs_expansion_file  = open(o_file_prefix+str(MAX_DEPTH)+'_depth_vs_expansion.csv', "w")
         branching_dist_file  = open(o_file_prefix+'branching_dist.csv', "w")
         rooted_top_users = resolve_cascades(top_users)
         writer = csv.writer(depth_vs_expansion_file, quoting=csv.QUOTE_MINIMAL)
         writer.writerows(depth_expansion)
         depth_vs_expansion_file.close()
+        writer = csv.writer(size_vs_root_odeg_file, quoting=csv.QUOTE_MINIMAL)
+        writer.writerows(size_vs_root_odeg)        
+        size_vs_root_odeg_file.close()
         writer = csv.writer(top_users_correlated_info_file, quoting=csv.QUOTE_MINIMAL)
         writer.writerows(top_users_correlated_info)        
         top_users_correlated_info_file.close()
