@@ -102,7 +102,8 @@ analyze_branching <- function(output_dir, trial, bin_size){
 	p.dist <<- bin_outdeg_dist.df[bin_outdeg_dist.df$depth==0,]$pdf
 	q.dist <<- bin_outdeg_dist.df[bin_outdeg_dist.df$depth==1,]$pdf
 	bin_outdeg_dist.df$depth <- factor(bin_outdeg_dist.df$depth)
-	plot <- ggplot(bin_outdeg_dist.df, aes(x = log10(outdeg), y = log10(pdf))) + geom_line(aes(group = depth,colour = depth)) + xlab('Out degree') + ylab('log of proportion of Count')
+	plot <- ggplot(bin_outdeg_dist.df, aes(x = (outdeg), y = (pdf))) + geom_point(aes(group = depth,colour = depth)) + scale_x_log10() + scale_y_log10() #+ xlab('Out Degree') + ylab('Proportion of Total Users')
+	plot <- change_plot_attributes(plot, "Class", 0:1, c('Seeds','Descendants\nof Seeds'), "Out Degree", "Distribution in Same Class")
 	save_ggplot(plot, paste(c(output_dir,'outdeg_dist.pdf'), collapse = ''))
 #	print_report('P(0 out degree)',nonroot_deg_dist$count[1]/sum(nonroot_deg_dist$count))
 #	expected_root_odeg <- sum(root_deg_dist$outdeg*(root_deg_dist$count/sum(root_deg_dist$count)))
@@ -142,9 +143,9 @@ Comparing_simulation <- function(directoryname){
 	size_freq$simulation_type <- factor(size_freq$simulation_type)
 # 	Binned distribution plot
 	max_size <- max(size_freq$size)
-#	size_bin <- cascade_size$size
+	size_bin <- cascade_size$size
 #	size_bin <- unique(ceiling(1.1^(seq(0,ceiling(log(max_size)/log(1.1)),by=0.1))))
-	size_bin <- unique(ceiling(1.7^(seq(0,ceiling(log(max_size)/log(1.7)),by=0.25))))
+#	size_bin <- unique(ceiling(1.7^(seq(0,ceiling(log(max_size)/log(1.7)),by=0.25))))
 	print(size_bin)
 	size_dist <- transform(size_freq, bin = cut(size_freq$size, breaks=size_bin, right=FALSE))
 	size_dist <- ddply(size_dist, c('bin','simulation_type'), summarise, avg_size=ceiling(mean(size)), pdf=length(bin)/3734781)
@@ -152,16 +153,16 @@ Comparing_simulation <- function(directoryname){
 	analytic_dist$simulation_type <- factor(analytic_dist$simulation_type)
 	analytic_dist <- transform(analytic_dist, bin = cut(analytic_dist$size, breaks=size_bin, right=FALSE))
 	analytic_dist <- ddply(analytic_dist, c('bin','simulation_type'), summarise, avg_size=ceiling(mean(size)), pdf=sum(pdf))
-	size_dist <- rbind(size_dist, analytic_dist)
+#	size_dist <- rbind(size_dist, analytic_dist)
 #	Marged all from actual and branching with analytic distribution
 	colnames(size_dist) <- c('bin', 'simulation_type', 'size', 'pdf_val')
 	size_dist$simulation_type <- factor(size_dist$simulation_type)
-	plot <- ggplot(size_dist[size_dist$pdf_val>1e-7,],aes(x = (size), y = (pdf_val))) + geom_line(aes(group = simulation_type,colour = simulation_type)) + scale_x_log10() + scale_y_log10()
-	plot <- change_plot_attributes(plot, "", 0:2, c('Actual','Simulation','Analysis'), "Cascade Size(binned)", "Proportion of count")
+	plot <- ggplot(size_dist[size_dist$pdf_val>1e-7,],aes(x = (size), y = (pdf_val))) + geom_point(aes(group = simulation_type,colour = simulation_type)) + scale_x_log10() + scale_y_log10()
+	plot <- change_plot_attributes(plot, "", 0:2, c('Actual','Simulation','Analysis'), "Cascade Size", "Proportion of Count")
 	save_ggplot(plot,file='branching_size_pdf.pdf')
 #	Box plot
 	plot <- ggplot(size_freq, aes(y=size, x=simulation_type))+ geom_boxplot() + scale_x_discrete(breaks=0:2, labels=c('Actual','Simulation','Analysis'))+ scale_y_log10() # + geom_histogram(binwidth=0.2, position="dodge")
-	save_ggplot(plot,file='branching_boxplot.pdf')	
+	save_ggplot(plot,file='branching_boxplot.pdf')
 	return(size_freq)
 }
 size_freq<-Comparing_simulation('fp_nt_u/')
