@@ -48,7 +48,7 @@ parent_type_comp <- function(dir_vector, parent_type_vector){
 #	Cascade size box plot
 	size_freq$parent_type <- factor(size_freq$parent_type)
 	plot <- ggplot(size_freq, aes(y=(size), x=parent_type))+ geom_boxplot() + scale_x_discrete(breaks=0:(parent_type_idx-1), labels=parent_type_vector)+ scale_y_log10() # + geom_histogram(binwidth=0.2, position="dodge")
-	plot <- change_plot_attributes(plot, "Parent type", 0:(parent_type_idx-1), parent_type_vector, "Parent type", "Cascade Size")
+	plot <- change_plot_attributes(plot, "Parent Type", 0:(parent_type_idx-1), parent_type_vector, "Parent Type", "Cascade Size")
 	save_ggplot(plot,file='parent_comp/size_box.pdf')
 #	Cascade size detail
 	cascade_comp$size <- ddply(cascade_comp$size, c('threshold','parent_type'), function(one_partition){
@@ -60,8 +60,8 @@ parent_type_comp <- function(dir_vector, parent_type_vector){
 				one_partition
 			})	
 	cascade_comp$size$parent_type <- factor(cascade_comp$size$parent_type)
-	plot <- ggplot(cascade_comp$size,aes(x = (size), y = (pdf_val))) + geom_line(aes(group = parent_type,colour = parent_type))+ scale_x_log10()+ scale_y_log10() #+ xlim(0,log10(plot_x_lim*100))
-	plot <- change_plot_attributes(plot, "Parent type", 0:(parent_type_idx-1), parent_type_vector, "Cascade Size", "Proportion")
+	plot <- ggplot(cascade_comp$size,aes(x = (size), y = (pdf_val))) + geom_point(aes(group = parent_type,colour = parent_type), size=1)+ scale_x_log10()+ scale_y_log10() + theme(legend.position=c(.8, .7)) #+ xlim(0,log10(plot_x_lim*100))
+	plot <- change_plot_attributes(plot, "Parent Type", 0:(parent_type_idx-1), parent_type_vector, "Cascade Size", "Proportion of Total Number of Cascades")
 	save_ggplot(plot,file='parent_comp/size_pdf_logx_logy.pdf')
 #	Cascade depth summary
 	depth_freq <- data.frame(depth = rep(cascade_comp$depth$depth, times = cascade_comp$depth$count), parent_type=rep(cascade_comp$depth$parent_type, times = cascade_comp$depth$count))
@@ -70,7 +70,7 @@ parent_type_comp <- function(dir_vector, parent_type_vector){
 #	Cascade depth box plot
 	depth_freq$parent_type <- factor(depth_freq$parent_type)
 	plot <- ggplot(depth_freq, aes(y=depth, x=parent_type))+ scale_y_log10()+ geom_boxplot() #+ geom_histogram(binwidth=1, position="dodge") 
-	plot <- change_plot_attributes(plot, "Parent type", 0:(parent_type_idx-1), parent_type_vector, "Parent type", "Cascade Depth")
+	plot <- change_plot_attributes(plot, "Parent Type", 0:(parent_type_idx-1), parent_type_vector, "Parent type", "Cascade Depth")
 	save_ggplot(plot,file='parent_comp/depth_box.pdf')
 #	Cascade depth detail
 	cascade_comp$depth <- ddply(cascade_comp$depth, c('threshold','parent_type'), function(one_partition){
@@ -81,11 +81,11 @@ parent_type_comp <- function(dir_vector, parent_type_vector){
 				one_partition
 			})
 	cascade_comp$depth$parent_type <- factor(cascade_comp$depth$parent_type)
-	plot <- ggplot(cascade_comp$depth,aes(x = depth, y = (pdf_val))) + geom_line(aes(group = parent_type,colour = parent_type)) + scale_y_log10()
-	plot <- change_plot_attributes(plot, "Parent type", 0:(parent_type_idx-1), parent_type_vector,  "Cascade Depth", "Proportion")
+	plot <- ggplot(cascade_comp$depth,aes(x = depth, y = (pdf_val))) + geom_point(aes(group = parent_type,colour = parent_type)) + scale_y_log10() + theme(legend.position=c(.8, .7))
+	plot <- change_plot_attributes(plot, "Parent Type", 0:(parent_type_idx-1), parent_type_vector,  "Cascade Depth", "Proportion of Total Number of Cascades")
 	save_ggplot(plot,file='parent_comp/depth_pdf_logy.pdf')
-	plot <- ggplot(cascade_comp$depth,aes(x = depth, y = (pdf_val))) + geom_line(aes(group = parent_type,colour = parent_type)) + scale_x_log10() + scale_y_log10()
-	plot <- change_plot_attributes(plot, "Parent type", 0:(parent_type_idx-1), parent_type_vector,  "Cascade Depth", "Proportion")
+	plot <- ggplot(cascade_comp$depth,aes(x = depth, y = (pdf_val))) + geom_point(aes(group = parent_type,colour = parent_type)) + scale_x_log10() + scale_y_log10()
+	plot <- change_plot_attributes(plot, "Parent Type", 0:(parent_type_idx-1), parent_type_vector,  "Cascade Depth", "Proportion")
 	save_ggplot(plot,file='parent_comp/depth_pdf_log_log.pdf')
 	d <- cascade_comp$size
 	latex(d, file="parent_comp/comp_size.tex", digits = 6, rowname = latexTranslate(rownames(d)))            # If you want all the data
@@ -96,7 +96,7 @@ parent_type_comp <- function(dir_vector, parent_type_vector){
 	return(cascade_comp)
 }
 
-parent_lifespan_comp <- function(dir_vector, lifespan_threshold_vector){
+parent_lifespan_comp <- function(dir_vector, lifespan_threshold_vector, hub_sec='Hub Characteristics'){
 	cascade_comp <- c()
 	cascade_comp$size <- c()
 	cascade_comp$depth <- c()
@@ -124,10 +124,10 @@ parent_lifespan_comp <- function(dir_vector, lifespan_threshold_vector){
 				one_partition
 			})
 	cascade_comp$size$lifespan_threshold <- factor(cascade_comp$size$lifespan_threshold)
-	plot <- ggplot(cascade_comp$size,aes(x = log10(size), y = log10(pdf_val))) + geom_line(aes(group = lifespan_threshold,colour = lifespan_threshold))#+ xlim(2,3)+ ylim(-6,-3.5)# + scale_y_log10()
+	plot <- ggplot(cascade_comp$size,aes(x = (size), y = (pdf_val))) + geom_point(aes(group = lifespan_threshold,colour = lifespan_threshold), size=1) + scale_x_log10() + scale_y_log10() + theme(legend.position=c(.8, .7)) #+ xlim(2,3)+ ylim(-6,-3.5)
 #			scale_x_reverse(limits = c(log10(max(cascade_comp$size$size)), 4)) + scale_y_log10()
-	plot <- change_plot_attributes(plot, "Hub Seclusion Effect", 1:(lifespan_idx-1),lifespan_threshold_vector, "log of Cascade Size", "Proportion of count")
-	save_ggplot(plot,file='lifespan_comp/size_pdf.pdf')	
+	plot <- change_plot_attributes(plot, hub_sec, 1:(lifespan_idx-1),lifespan_threshold_vector, "Cascade Size", "Proportion of Total Number of Cascades")
+	save_ggplot(plot,file='lifespan_comp/size_pdf.pdf')
 #	Log binned ploting of distribution
 	cascade_comp$size$lifespan_threshold <- factor(cascade_comp$size$lifespan_threshold)
 	max_size <- max(cascade_comp$size$size)
@@ -137,9 +137,9 @@ parent_lifespan_comp <- function(dir_vector, lifespan_threshold_vector){
 	cascade_comp$size <- ddply(cascade_comp$size, c('bin','lifespan_threshold'), summarise, avg_size=mean(size), pdf=mean(pdf_val))
 	colnames(cascade_comp$size) <- c('bin', 'lifespan_threshold', 'size', 'pdf_val')
 	cascade_comp$size$lifespan_threshold <- factor(cascade_comp$size$lifespan_threshold)
-	plot <- ggplot(cascade_comp$size,aes(x = log10(size), y = log10(pdf_val))) + geom_point(aes(group = lifespan_threshold,colour = lifespan_threshold))#+ xlim(2,3)+ ylim(-6,-3.5)# + scale_y_log10()
+	plot <- ggplot(cascade_comp$size,aes(x = (size), y = (pdf_val))) + geom_point(aes(group = lifespan_threshold,colour = lifespan_threshold)) + scale_x_log10() + scale_y_log10() #+ xlim(2,3)+ ylim(-6,-3.5)#
 	#		scale_x_reverse(limits = c(log10(max(cascade_comp$size$size)), 4)) + scale_y_log10()
-	plot <- change_plot_attributes(plot, "Hub Seclusion effect", 1:(lifespan_idx-1),lifespan_threshold_vector, "log of Cascade Size", "Proportion of count")
+	plot <- change_plot_attributes(plot, hub_sec, 1:(lifespan_idx-1),lifespan_threshold_vector, "Cascade Size", "Proportion of Total Number of Cascades")
 	save_ggplot(plot,file='lifespan_comp/size_pdf_binned.pdf')
 
 #	Cascade depth summary
@@ -204,7 +204,7 @@ size_vs_root_characteristics <- function (dir){
 	colnames(size_vs_root_odeg) <- c('size', 'root_outdeg')
 	print('read 2')
 	plot1 <- ggplot(size_vs_root[size_vs_root$size>=156,], aes(x=depth, y=size))+ geom_point(size=.5)+ scale_y_log10() + #+ geom_smooth(method=lm)
-			xlab("Depth of a seed (Tree height)")+ylab("Size of the Adoption\nRooted at the Seed")
+			xlab("Depth of a Seed (Tree Height)")+ylab("Size of the Adoption\nRooted at the Seed")
 	plot2 <- ggplot(size_vs_root[size_vs_root$size>=156,], aes(x=lifespan, y=size))+ geom_point(size=.5)+ scale_y_log10() + #+ geom_smooth(method=lm)
 			scale_x_log10(breaks=c(86400,86400*7,2*86400*7,4*86400*7,8*86400*7,16*86400*7,32*86400*7,64*86400*7),labels=c('1day','1week','2week','4week','8week','16week','32week','64week'))+
 			opts(axis.text.x=theme_text(angle=45,hjust=1,vjust=1))+
@@ -219,4 +219,4 @@ size_vs_root_characteristics <- function (dir){
 }
 
 #bla<-parent_lifespan_comp(c('fp_nt_u/','fp_less_356days_act_life/','fp_less_356days_nsc/','fp_less_290days_act_life/','fp_less_290days_nsc/'),c('N/A','Secluding Top 1%\nPersistent users\nwith second chance','\nSecluding Top 1%\nPersistent users\nw/o second chance','\nSecluding Top 5%\nPersistent users\nwith second chance','\nSecluding Top 5%\nPersistent users\nw/o second chance'))
-#bla <- parent_lifespan_comp(c('fp_nt_u/','disc_heavy_users_with_sc/','disc_heavy_users_no_sc'),c('N/A','Secluding heavy seeds\nwith second chance','\nSecluding heavy seeds\nw/o second chance'))
+#bla <- parent_lifespan_comp(c('fp_nt_u/','disc_heavy_users_with_sc/','disc_heavy_users_no_sc'),c('N/A','Secluding with\nsecond chance','\nSecluding w/o\nsecond chance'))

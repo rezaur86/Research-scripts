@@ -102,8 +102,8 @@ analyze_branching <- function(output_dir, trial, bin_size){
 	p.dist <<- bin_outdeg_dist.df[bin_outdeg_dist.df$depth==0,]$pdf
 	q.dist <<- bin_outdeg_dist.df[bin_outdeg_dist.df$depth==1,]$pdf
 	bin_outdeg_dist.df$depth <- factor(bin_outdeg_dist.df$depth)
-	plot <- ggplot(bin_outdeg_dist.df, aes(x = (outdeg), y = (pdf))) + geom_point(aes(group = depth,colour = depth)) + scale_x_log10() + scale_y_log10() #+ xlab('Out Degree') + ylab('Proportion of Total Users')
-	plot <- change_plot_attributes(plot, "Class", 0:1, c('Seeds','Descendants\nof Seeds'), "Out Degree", "Distribution in Same Class")
+	plot <- ggplot(bin_outdeg_dist.df, aes(x = (outdeg), y = (pdf))) + geom_point(aes(group = depth,colour = depth)) + scale_x_log10() + scale_y_log10()  + theme(legend.position=c(.8, .7)) #+ xlab('Out Degree') + ylab('Proportion of Total Users')
+	plot <- change_plot_attributes(plot, "Class", 0:1, c('Seeds','Descendants\nof Seeds'), "Out Degree", "Proportion of Total Same Class Users")
 	save_ggplot(plot, paste(c(output_dir,'outdeg_dist.pdf'), collapse = ''))
 #	print_report('P(0 out degree)',nonroot_deg_dist$count[1]/sum(nonroot_deg_dist$count))
 #	expected_root_odeg <- sum(root_deg_dist$outdeg*(root_deg_dist$count/sum(root_deg_dist$count)))
@@ -157,15 +157,18 @@ Comparing_simulation <- function(directoryname){
 #	Marged all from actual and branching with analytic distribution
 	colnames(size_dist) <- c('bin', 'simulation_type', 'size', 'pdf_val')
 	size_dist$simulation_type <- factor(size_dist$simulation_type)
-	plot <- ggplot(size_dist[size_dist$pdf_val>1e-7,],aes(x = (size), y = (pdf_val))) + geom_point(aes(group = simulation_type,colour = simulation_type)) + scale_x_log10() + scale_y_log10()
-	plot <- change_plot_attributes(plot, "", 0:2, c('Actual','Simulation','Analysis'), "Cascade Size", "Proportion of Count")
+	plot <- ggplot(size_dist[size_dist$pdf_val>1e-7,],aes(x = (size), y = (pdf_val))) + geom_point(aes(group = simulation_type,colour = simulation_type)) + scale_x_log10() + scale_y_log10() + theme(legend.position=c(.8, .7))
+	plot <- change_plot_attributes(plot, "", 0:2, c('Empirical','Simulation','Analysis'), "Cascade Size", "Proportion of Total Number of Cascades")
 	save_ggplot(plot,file='branching_size_pdf.pdf')
 #	Box plot
-	plot <- ggplot(size_freq, aes(y=size, x=simulation_type))+ geom_boxplot() + scale_x_discrete(breaks=0:2, labels=c('Actual','Simulation','Analysis'))+ scale_y_log10() # + geom_histogram(binwidth=0.2, position="dodge")
+	plot <- ggplot(size_freq, aes(y=size, x=simulation_type))+ geom_boxplot() + scale_x_discrete(breaks=0:2, labels=c('Empirical Analysis','Simulation','Analysis'))+ scale_y_log10() # + geom_histogram(binwidth=0.2, position="dodge")
+	plot <- change_plot_attributes(plot, "", 0:2, c('Empirical Analysis','Simulation','Analysis'), "", "Cascade Size")
 	save_ggplot(plot,file='branching_boxplot.pdf')
 	return(size_freq)
 }
-size_freq<-Comparing_simulation('fp_nt_u/')
+
+#size_freq<-Comparing_simulation('fp_nt_u/')
+
 #ab_10 <- analyze_branching('~/output_cascade/fp_nt_u/bin_10/',4,bin_size <- c(0,10,20,30,40,50,60))
 #ab_v <- analyze_branching('~/output_cascade/fp_nt_u/bin_v/',4,bin_size <- c(0,1,2,3,4,5,21,36,61))
 #ab_e <- analyze_branching('~/output_cascade/fp_nt_u/bin_e/',4,bin_size <- c(0,2,4,8,16,32,64))
