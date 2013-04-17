@@ -191,6 +191,14 @@ root_users_analysis <- function(output_dir){
 #	return(cascade_info.df)
 }
 
+analyze_amplifiers <- function(dir){
+	ampl<-as.data.frame(g_prep.df$root_depth_expansion[g_prep.df$root_depth_expansion$ampl>0,c(10,3)])
+	colnames(ampl) <- c('strength', 'root_user_id')
+	ampl$strength <- factor(ampl$strength)
+	plot <- ggplot(ampl, aes(x=strength))+geom_histogram(colour="black",fill="white")+scale_y_log10()+ xlab("Amplification Strength") + ylab("Number of Occurrence")
+	save_ggplot(plot,file=paste(dir,'hist_ampl.pdf',collapse = '/'))
+}
+
 #nrr <- root_users_analysis('~/output_cascade/full_first_parent/top_size.csv_top_10_rooted_top_users.csv','~/output_cascade/full_first_parent/top_size.csv_top_10_100_depth_vs_expansion.csv')
 #colnames(nrr)<-c('','size','total amplification','4 hops amplification','hop 1 shell size','hop 2 shell size','hop 3 shell size','hop 4 shell size','')
 #pairs(nrr[,2:6], panel = panel.smooth)
