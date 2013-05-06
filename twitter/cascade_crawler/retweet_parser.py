@@ -53,10 +53,10 @@ user_id_index = 1
 user_ids = {}
 retweet_info = {}
 url_map = {}
-for key, val in csv.reader(open('url_map_2702.csv', "r")):
+for key, val in csv.reader(open(sys.argv[1], "r")):
     url_map[key] = val
 
-keywords_file = open(sys.argv[1],"r")
+keywords_file = open(sys.argv[2],"r")
 line_index = 1
 for a_keyword in keywords_file: #Extract retweets from the search data
     data_file = open(a_keyword.strip()+'.txt',"r")
@@ -73,7 +73,7 @@ for a_keyword in keywords_file: #Extract retweets from the search data
             for each_status in onedata["statuses"]:
                 extract_retweets(each_status)
     data_file.close()   
-retweet_status_file_names = sys.argv[2].split(',')
+retweet_status_file_names = sys.argv[3].split(',')
 for a_retweet_status_file in retweet_status_file_names: #Extract retweets from the retweet crawled data
     data_file = open(a_retweet_status_file.strip(),"r")
     for each_json_line in data_file:
