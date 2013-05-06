@@ -164,6 +164,28 @@ Comparing_simulation <- function(directoryname){
 	plot <- ggplot(size_freq, aes(y=size, x=simulation_type))+ geom_boxplot() + scale_x_discrete(breaks=0:2, labels=c('Empirical Analysis','Simulation','Analysis'))+ scale_y_log10() # + geom_histogram(binwidth=0.2, position="dodge")
 	plot <- change_plot_attributes(plot, "", 0:2, c('Empirical Analysis','Simulation','Analysis'), "", "Cascade Size")
 	save_ggplot(plot,file='branching_boxplot.pdf')
+	
+	big_reproduced_order <- order(ab$size,decreasing=T)[1:10]
+	big_reproduced_size <- ab$size[big_reproduced_order]
+	big_reproduced_growth <- c()
+	for (i in big_reproduced_order){
+		growth_temp <- as.data.frame(c(1,ab$growth[i][[1]]))
+		growth_temp[,2] <- 0:(nrow(growth_temp)-1)
+		growth_temp[,3] <- i
+		big_reproduced_growth <- rbind(big_reproduced_growth, growth_temp)
+	}
+	colnames(big_reproduced_growth) <- c('expansion','depth','cascade_id')
+	big_reproduced_growth.df <- ddply(big_reproduced_growth, c('cascade_id'), function(one_partition){
+				one_partition = one_partition[order(one_partition$depth),]
+				one_partition$diff = (one_partition$expansion-c(0,one_partition$expansion[1:nrow(one_partition)-1]))
+				one_partition
+			})
+	big_reproduced_growth.df$cascade_id <- factor(big_reproduced_growth.df$cascade_id)
+	plot <- ggplot(big_reproduced_growth.df, aes(x = depth, y = (expansion))) + geom_line(aes(group = cascade_id,colour = cascade_id)) + xlab('Depth') + ylab('Shell size') 
+	save_ggplot(plot, 'branching_depth_expansion.pdf')
+	plot <- ggplot(big_reproduced_growth.df, aes(x = depth, y = (diff))) + geom_line(aes(group = cascade_id,colour = cascade_id)) + xlab('Depth') + ylab('Shell size growth') + scale_colour_hue(name  ="Cascade root")
+	save_ggplot(plot, 'branching_depth_expansion_diff.pdf')
+	
 	return(size_freq)
 }
 
