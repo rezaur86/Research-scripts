@@ -27,6 +27,14 @@ def manage_depth_time_per_root(depth,time):
     else:
         depth_max_time_per_root[depth] = max(depth_max_time_per_root[depth], time)
 
+def evolution_size_per_root(time):
+    global evolution_per_root
+    day = time/86400
+    if day not in evolution_per_root:
+        evolution_per_root[day] = 1
+    else:
+        evolution_per_root[day] += 1
+                        
 def manage_outdegree_per_root(outdegree, depth):
     global branching_dist_per_root
     if (outdegree, depth) in branching_dist_per_root:
@@ -35,9 +43,10 @@ def manage_outdegree_per_root(outdegree, depth):
         branching_dist_per_root[(outdegree, depth)] = 1        
 
 def initialize_traverse ():
-    global graph, graph_node_count, activities_per_root, depth_expansion_per_root, depth_min_time_per_root, depth_max_time_per_root, branching_dist_per_root
+    global graph, graph_node_count, activities_per_root, depth_expansion_per_root, depth_min_time_per_root, depth_max_time_per_root, branching_dist_per_root, evolution_per_root
     graph = {}
     graph_node_count = 0
+    evolution_per_root = {}
     activities_per_root = []
     depth_expansion_per_root = {}
     depth_min_time_per_root = {}
@@ -61,6 +70,7 @@ def cascade_traverse (parent,depth):
                 if cascade_traverse(each_child, depth-1) == True:
                     activities_per_root.append((parent,each_child,MAX_DEPTH-depth))
                     manage_depth_time_per_root(MAX_DEPTH-depth+1, receiving_time)
+                    evolution_size_per_root(receiving_time)
         return True
 
 def visulization (infl_file_name, user_list, max_depth):
@@ -92,7 +102,7 @@ def visulization (infl_file_name, user_list, max_depth):
         os.popen("rm "+infl_file_name+'_'+str(VIZ_CUT_OFF)+'_'+str(i)+"graph.dot")
 
 def resolve_cascades (user_list):
-    global depth_expansion, depth_expansion_per_root, top_users_correlated_info, branching_dist
+    global depth_expansion, depth_expansion_per_root, top_users_correlated_info, branching_dist, cascade_evolution
     not_root_users = Set()
     root_contains_users = {}
     depth_expansion = []
@@ -108,6 +118,7 @@ def resolve_cascades (user_list):
             size_vs_root_odeg.append((cascade_size,0))
         else:
             size_vs_root_odeg.append((cascade_size,depth_expansion_per_root[1]))
+        cascade_evolution.append((a_root,evolution_per_root))
         for d in depth_expansion_per_root:
             depth_expansion.append((d,depth_expansion_per_root[d],a_root,1,depth_min_time_per_root[d] if d in depth_min_time_per_root else None,depth_max_time_per_root[d] if d in depth_max_time_per_root else None)) # 1 for distinct root
         for (degree,depth) in branching_dist_per_root: #Collecting out degree distribution for branching process.
@@ -123,6 +134,8 @@ def resolve_cascades (user_list):
 graph = {}
 graph_node_count = 0
 activities_per_root = []
+evolution_per_root = {}
+cascade_evolution = []
 depth_expansion_per_root = {}
 depth_expansion = []
 top_users_correlated_info = []
@@ -182,6 +195,7 @@ if __name__ == '__main__':
         size_vs_root_odeg_file  = open(o_file_prefix+'size_vs_root_odeg.csv', "w")
         depth_vs_expansion_file  = open(o_file_prefix+str(MAX_DEPTH)+'_depth_vs_expansion.csv', "w")
         branching_dist_file  = open(o_file_prefix+'branching_dist.csv', "w")
+        evolution_file  = open(o_file_prefix+'evolution.csv', "w")
         rooted_top_users = resolve_cascades(top_users)
         writer = csv.writer(depth_vs_expansion_file, quoting=csv.QUOTE_MINIMAL)
         writer.writerows(depth_expansion)
@@ -195,7 +209,11 @@ if __name__ == '__main__':
         for (outdeg,depth) in branching_dist:
             branching_dist_file.write('%s,%s,%s\n' %(outdeg,branching_dist[(outdeg,depth)],depth))
         branching_dist_file.close()
-        
+        for (each_root, each_evolution) in cascade_evolution:
+            for i in range(14413, 14822): #starting time 14413*86400
+                if i in each_evolution:
+                    evolution_file.write('%s,%s,%s\n' %(each_root, i,each_evolution[i]))
+        evolution_file.close()        
         if len(sys.argv) > 6:
             print 'Visualizing until %s depth' %sys.argv[6]
             visulization(each_infl_file, top_users, int(sys.argv[6]))

@@ -199,6 +199,14 @@ analyze_amplifiers <- function(dir){
 	save_ggplot(plot,file=paste(dir,'hist_ampl.pdf',collapse = '/'))
 }
 
+analyze_evolution <- function(dir){
+	cascade_evolution <- as.data.frame(read.csv('fp_nt_u_temp/top_size.csv_top_10evolution.csv', header=FALSE))
+	colnames(cascade_evolution) <- c('root_id', 'day_number', 'growth')
+	cascade_evolution$root_id <- factor(cascade_evolution$root_id)
+	plot <- ggplot(cascade_evolution, aes(x = (day_number-14413), y = growth)) + 
+			geom_line(aes(group = root_id,colour = root_id)) + xlab("Day") + ylab("Growth") + scale_y_log10()
+	save_ggplot(plot,file=paste(dir,'cascade_evolution.pdf',collapse = '/'))
+}
 #nrr <- root_users_analysis('~/output_cascade/full_first_parent/top_size.csv_top_10_rooted_top_users.csv','~/output_cascade/full_first_parent/top_size.csv_top_10_100_depth_vs_expansion.csv')
 #colnames(nrr)<-c('','size','total amplification','4 hops amplification','hop 1 shell size','hop 2 shell size','hop 3 shell size','hop 4 shell size','')
 #pairs(nrr[,2:6], panel = panel.smooth)
