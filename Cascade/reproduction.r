@@ -115,6 +115,11 @@ analyze_branching <- function(output_dir, trial, bin_size){
 	return(simulated_cascades)
 }
 
+analyze_time_to_next_generation_degree_dist<-function(dist_file){
+	odeg_dist <- as.data.frame(read.csv(dist_file, header=FALSE))
+	colnames(odeg_dist) <- c('outdeg', 'count', 'week')
+}
+
 Comparing_simulation <- function(directoryname){
 	prev_dir = getwd()
 	setwd(directoryname)

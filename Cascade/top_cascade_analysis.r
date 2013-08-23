@@ -70,13 +70,24 @@ draw_depth_expansion <- function(file_name,depth_expansion.df){
 			y_r_label='Depth', 
 			graph_name='Cumulative shell size and depth vs. arrival time', 
 			x_mark=list(at=c(86400*7,2*86400*7,3*86400*7,4*86400*7,8*86400*7,12*86400*7,16*86400*7,24*86400*7,32*86400*7,52*86400*7), label=c('1 week','2 week','3 week','1 month','2 month','3 month','4 month','6 month', '8 month', '1 year'))
-			)
-	depth_expansion.df$root_user_id <- factor(depth_expansion.df$root_user_id)
-	plot <- ggplot(depth_expansion.df, aes(x = depth, y = (expansion))) + geom_line(aes(group = root_user_id,colour = root_user_id)) + xlab('Depth') + ylab('Shell size') 
+	)
+	depth_expansion.df$size_rank <- factor(depth_expansion.df$size_rank)
+	plot <- ggplot(depth_expansion.df, aes(x = depth, y = (expansion))) + geom_line(aes(group = size_rank, colour = size_rank, linetype = size_rank)) +
+			xlab('Depth') + ylab('Shell Size') + myPlotTheme() + opts(legend.position=c(.7, .7)) +
+			scale_linetype_manual(values=c(1,2,3,4,5,6,1,2,3,4), name='Cascades Size', breaks=1:10, labels=c('(1) 1820995', '(2) 1757747', '(3) 1053378', '(4) 874514', '(5) 780809',
+							'(6) 681745', '(7) 622582', '(8) 554010', '(9) 497617', '(10) 480526')) +
+			scale_colour_manual(values=c(rep("black",6), rep("gray55",4)), name='Cascades Size', breaks=1:10, labels=c('(1) 1820995', '(2) 1757747', '(3) 1053378', '(4) 874514', '(5) 780809',
+							'(6) 681745', '(7) 622582', '(8) 554010', '(9) 497617', '(10) 480526'))
 	save_ggplot(plot, paste(c(file_name,'_depth_expansion.pdf'), collapse = ''))
-	plot <- ggplot(depth_expansion.df, aes(x = depth, y = log10(expansion))) + geom_line(aes(group = root_user_id,colour = root_user_id)) + xlab('Depth') + ylab('log of Shell size') 
+	plot <- ggplot(depth_expansion.df, aes(x = depth, y = log10(expansion))) + geom_line(aes(group = size_rank, colour = size_rank)) +
+			xlab('Depth') + ylab('log of Shell size') 
 	save_ggplot(plot, paste(c(file_name,'_depth_log_expansion.pdf'), collapse = ''))
-	plot <- ggplot(depth_expansion.df, aes(x = depth, y = (diff))) + geom_line(aes(group = root_user_id,colour = root_user_id)) + xlab('Depth') + ylab('Shell size growth') + scale_colour_hue(name  ="Cascade root")
+	plot <- ggplot(depth_expansion.df, aes(x = depth, y = (diff))) + geom_line(aes(group = size_rank, colour = size_rank, linetype = size_rank)) +
+			xlab('Depth') + ylab('Shell Size Growth Rate') + myPlotTheme() + opts(legend.position=c(.7, .7)) +
+			scale_linetype_manual(values=c(1,2,3,4,5,6,1,2,3,4), name="Cascades Size", breaks=1:10, labels=c('(1) 1820995', '(2) 1757747', '(3) 1053378', '(4) 874514', '(5) 780809',
+							'(6) 681745', '(7) 622582', '(8) 554010', '(9) 497617', '(10) 480526'))+
+			scale_colour_manual(values=c(rep("black",6), rep("gray55",4)), name='Cascades Size', breaks=1:10, labels=c('(1) 1820995', '(2) 1757747', '(3) 1053378', '(4) 874514', '(5) 780809',
+							'(6) 681745', '(7) 622582', '(8) 554010', '(9) 497617', '(10) 480526'))
 	save_ggplot(plot, paste(c(file_name,'_depth_expansion_diff.pdf'), collapse = ''))
 }
 
@@ -138,11 +149,22 @@ analyze_cascade_growth <- function (fraction, cascade_root){
 
 root_users_analysis <- function(output_dir){
 	sink(file = paste(c(output_dir,'output.txt'), collapse = ''), type = "output")
- 	cascade_info.df <- ddply(g_prep.df$root_depth_expansion, c('root_user_id'), summarise, size = sum(expansion), max_depth=max(depth), total_ampl=sum(ampl), ampl_4=sum(ampl[depth<=4]), 
-			total_1st_exp = expansion[depth==1], total_2nd_exp = c(expansion[depth==2],0)[1], total_3rd_exp = c(expansion[depth==3],0)[1],
-			total_4th_exp = c(expansion[depth==4],0)[1],total_5th_exp = c(expansion[depth==5],0)[1])
-	very_big_cascades <- cascade_info.df[cascade_info.df$max_depth >= 45,]$root_user_id
-	draw_depth_expansion(output_dir, g_prep.df$root_depth_expansion[g_prep.df$root_depth_expansion$root_user_id%in%very_big_cascades,])
+# 	cascade_info.df <<- ddply(g_prep.df$root_depth_expansion, c('root_user_id'), summarise, size = sum(expansion), max_depth=max(depth), total_ampl=sum(ampl), ampl_4=sum(ampl[depth<=4]), 
+#			total_1st_exp = expansion[depth==1], total_2nd_exp = c(expansion[depth==2],0)[1], total_3rd_exp = c(expansion[depth==3],0)[1],
+#			total_4th_exp = c(expansion[depth==4],0)[1],total_5th_exp = c(expansion[depth==5],0)[1])
+	cascade_info.sorted <<- cascade_info.df[order(-cascade_info.df$size),]
+	very_big_cascades <<- cascade_info.sorted[cascade_info.sorted$size >= 480526,]
+	very_big_cascades <<- within(very_big_cascades,size_rank<-rank(-very_big_cascades$size))
+	very_big_root_depth_expansion <<- g_prep.df$root_depth_expansion[g_prep.df$root_depth_expansion$root_user_id%in%very_big_cascades$root_user_id,]
+	very_big_root_depth_expansion.ranked <<- ddply(very_big_root_depth_expansion, c('root_user_id'), function(one_partition){
+				one_partition$size = rep(very_big_cascades[very_big_cascades$root_user_id%in%one_partition$root_user_id,]$size, nrow(one_partition))
+				one_partition$size_rank = rep(very_big_cascades[very_big_cascades$root_user_id%in%one_partition$root_user_id,]$size_rank, nrow(one_partition))
+				one_partition$size_rank_label = rep(paste('(',very_big_cascades[very_big_cascades$root_user_id%in%one_partition$root_user_id,]$size_rank, ')', 
+								very_big_cascades[very_big_cascades$root_user_id%in%one_partition$root_user_id,]$size), nrow(one_partition))
+				one_partition
+			})
+	
+	draw_depth_expansion(output_dir, very_big_root_depth_expansion.ranked)
 	splitted_cascades <- split(cascade_info.df, sample(1:2, length(cascade_info.df), replace=TRUE, prob=c(1,2)))#cascade_info.df[sample.split(cascade_info.df, 2/3),]
 	training_cascades <- splitted_cascades[[2]]
 	test_cascades <- splitted_cascades[[1]]
@@ -203,9 +225,21 @@ analyze_evolution <- function(dir){
 	cascade_evolution <- as.data.frame(read.csv('fp_nt_u_temp/top_size.csv_top_10evolution.csv', header=FALSE))
 	colnames(cascade_evolution) <- c('root_id', 'day_number', 'growth')
 	cascade_evolution$root_id <- factor(cascade_evolution$root_id)
-	plot <- ggplot(cascade_evolution, aes(x = (day_number-14413), y = growth)) + 
-			geom_line(aes(group = root_id,colour = root_id)) + xlab("Day") + ylab("Growth") + scale_y_log10()
+	plot <- ggplot(cascade_evolution, aes(x = (day_number-2059), y = growth)) + 
+			geom_line(aes(group = root_id,colour = root_id)) + xlab("Week") + ylab("Growth") + scale_y_log10()
 	save_ggplot(plot,file=paste(dir,'cascade_evolution.pdf',collapse = '/'))
+}
+analyze_time_to_next_generation <- function(dir){
+	time_to_next_generation <- as.data.frame(read.csv('fp_nt_u_temp/top_size.csv_top_3734781time_to_next_generation.csv', header=FALSE))
+	colnames(time_to_next_generation) <- c('parent_week', 'day_taken', 'count')
+	time_to_next_generation$parent_week <- factor(time_to_next_generation$parent_week)
+	time_to_next_generation.df <- ddply(time_to_next_generation, c('parent_week'), function(one_partition){
+				one_partition$proportion = one_partition$count/(sum(one_partition$count))
+				one_partition
+			})
+	
+	plot <- ggplot(time_to_next_generation, aes(y=(week_taken), x=week))+ geom_point()# + scale_y_discrete(breaks=seq(0,60,2), labels=seq(0,60,2))
+	save_ggplot(plot,file=paste(dir,'time_to_next_generation.pdf',collapse = '/'))
 }
 #nrr <- root_users_analysis('~/output_cascade/full_first_parent/top_size.csv_top_10_rooted_top_users.csv','~/output_cascade/full_first_parent/top_size.csv_top_10_100_depth_vs_expansion.csv')
 #colnames(nrr)<-c('','size','total amplification','4 hops amplification','hop 1 shell size','hop 2 shell size','hop 3 shell size','hop 4 shell size','')

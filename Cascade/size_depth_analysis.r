@@ -1,6 +1,8 @@
 source('~/scripts/cascade/tools.r')
 source('~/scripts/cascade/plfit.r')
 library(ggplot2)
+library(gtable)
+library(grid)
 library(plyr)
 library(Hmisc)
 library(gridExtra) 
@@ -35,33 +37,58 @@ parent_type_comp <- function(dir_vector, parent_type_vector){
 	}
 	colnames(cascade_comp$size) <- c('size', 'count', 'threshold', 'parent_type')
 	colnames(cascade_comp$depth) <- c('depth', 'count', 'threshold', 'parent_type')
-#	Cascade size summary
+	##	Cascade size summary
 	size_freq <- data.frame(size = rep(cascade_comp$size$size, times = cascade_comp$size$count), parent_type=rep(cascade_comp$size$parent_type, times = cascade_comp$size$count))
-	print(head(size_freq))
-	print_report('First Parent: Power law alpha', plfit(size_freq[size_freq$parent_type==0 & size_freq$size<1000,]$size))
-	print_report('Last Parent: Power law alpha', plfit(size_freq[size_freq$parent_type==1 & size_freq$size<1000,]$size))
-	print_report('HOP Parent: Power law alpha', plfit(size_freq[size_freq$parent_type==2 & size_freq$size<1000,]$size))
-	print_report('Random Parent: Power law alpha', plfit(size_freq[size_freq$parent_type==3 & size_freq$size<1000,]$size))
-	print(kruskal.test(size~parent_type, data=size_freq))
-	cascade_comp$size_summary <- ddply(size_freq, c('parent_type'), summarise, min=summary(size)[1], quart_1=summary(size)[2], median=summary(size)[3], mean=summary(size)[4],
-			quart_3=summary(size)[5], max=summary(size)[6], var=var(size), total_coverage=sum(size))
+#	print_report('First Parent: Power law alpha', plfit(size_freq[size_freq$parent_type==0 & size_freq$size<1000,]$size))
+#	print_report('Last Parent: Power law alpha', plfit(size_freq[size_freq$parent_type==1 & size_freq$size<1000,]$size))
+#	print_report('HOP Parent: Power law alpha', plfit(size_freq[size_freq$parent_type==2 & size_freq$size<1000,]$size))
+#	print_report('Random Parent: Power law alpha', plfit(size_freq[size_freq$parent_type==3 & size_freq$size<1000,]$size))
+#	print(kruskal.test(size~parent_type, data=size_freq))
+#	cascade_comp$size_summary <- ddply(size_freq, c('parent_type'), summarise, min=summary(size)[1], quart_1=summary(size)[2], median=summary(size)[3], mean=summary(size)[4],
+#			quart_3=summary(size)[5], max=summary(size)[6], var=var(size), total_coverage=sum(size))
 #	Cascade size box plot
 	size_freq$parent_type <- factor(size_freq$parent_type)
 	plot <- ggplot(size_freq, aes(y=(size), x=parent_type))+ geom_boxplot() + scale_x_discrete(breaks=0:(parent_type_idx-1), labels=parent_type_vector)+ scale_y_log10() # + geom_histogram(binwidth=0.2, position="dodge")
 	plot <- change_plot_attributes(plot, "Parent Type", 0:(parent_type_idx-1), parent_type_vector, "Parent Type", "Cascade Size")
 	save_ggplot(plot,file='parent_comp/size_box.pdf')
 #	Cascade size detail
+	sample_plot <- function(colum_to_chose, x_above_limit, every=100){
+		chosen <- rep(0,length(colum_to_chose))
+		i <- 1
+		while (i <= length(colum_to_chose)){
+			if (colum_to_chose[i] <= x_above_limit){
+				chosen[i] <- 1
+				i <- i + 1
+			}
+			if (colum_to_chose[i] > x_above_limit & colum_to_chose[i] <= 80){
+				chosen[i + sample(c(0:min(1, length(colum_to_chose)-i)), 1, replace=TRUE)] <- 1
+				i <- i + 2
+			}
+			if (colum_to_chose[i] > 80 & colum_to_chose[i] <= 350){
+				chosen[i + sample(c(0:min(19, length(colum_to_chose)-i)), 1, replace=TRUE)] <- 1
+				i <- i + 10
+			}
+			if (colum_to_chose[i] > 350){
+				chosen[i + sample(c(0:min(99, length(colum_to_chose)-i)), 1, replace=TRUE)] <- 1
+				i <- i + 100
+			}
+		}
+		return(chosen)
+	}
 	cascade_comp$size <- ddply(cascade_comp$size, c('threshold','parent_type'), function(one_partition){
 				one_partition = one_partition[order(one_partition$size),]
 				one_partition$cum_count = cumsum(one_partition$count)
 				one_partition$cum_size = cumsum(one_partition$size)
 				one_partition$cdf_val = one_partition$cum_count / max(one_partition$cum_count)
 				one_partition$pdf_val = one_partition$count / max(one_partition$cum_count)
+				one_partition$chosen = sample_plot(one_partition$size, 10)
 				one_partition
-			})	
+			})
 	cascade_comp$size$parent_type <- factor(cascade_comp$size$parent_type)
-	plot <- ggplot(cascade_comp$size,aes(x = (size), y = (pdf_val))) + geom_point(aes(group = parent_type,colour = parent_type), size=1)+ scale_x_log10()+ scale_y_log10() + theme(legend.position=c(.8, .7)) #+ xlim(0,log10(plot_x_lim*100))
-	plot <- change_plot_attributes(plot, "Parent Type", 0:(parent_type_idx-1), parent_type_vector, "Cascade Size", "Proportion of Total Number of Cascades")
+	plot <- ggplot(cascade_comp$size[cascade_comp$size$chosen==1,],aes(x = (size), y = (pdf_val))) + 
+			geom_point(aes(group = parent_type, colour = parent_type, shape = parent_type), size=1)+
+			scale_x_log10()+ scale_y_log10() #+ theme(legend.position=c(.8, .7)) + xlim(0,log10(plot_x_lim*100))
+	plot <- change_plot_attributes(plot, "Parent Type", 0:(parent_type_idx-1), parent_type_vector, "Cascade Size", "Empirical PDF")
 	save_ggplot(plot,file='parent_comp/size_pdf_logx_logy.pdf')
 #	Cascade depth summary
 	depth_freq <- data.frame(depth = rep(cascade_comp$depth$depth, times = cascade_comp$depth$count), parent_type=rep(cascade_comp$depth$parent_type, times = cascade_comp$depth$count))
@@ -81,8 +108,9 @@ parent_type_comp <- function(dir_vector, parent_type_vector){
 				one_partition
 			})
 	cascade_comp$depth$parent_type <- factor(cascade_comp$depth$parent_type)
-	plot <- ggplot(cascade_comp$depth,aes(x = depth, y = (pdf_val))) + geom_point(aes(group = parent_type,colour = parent_type)) + scale_y_log10() + theme(legend.position=c(.8, .7))
-	plot <- change_plot_attributes(plot, "Parent Type", 0:(parent_type_idx-1), parent_type_vector,  "Cascade Depth", "Proportion of Total Number of Cascades")
+	plot <- ggplot(cascade_comp$depth,aes(x = depth, y = (pdf_val))) + geom_point(aes(group = parent_type,colour = parent_type, shape = parent_type)) + 
+			scale_y_log10() #+ theme(legend.position=c(.8, .7))
+	plot <- change_plot_attributes(plot, "Parent Type", 0:(parent_type_idx-1), parent_type_vector,  "Cascade Depth", "Empirical PDF")
 	save_ggplot(plot,file='parent_comp/depth_pdf_logy.pdf')
 	plot <- ggplot(cascade_comp$depth,aes(x = depth, y = (pdf_val))) + geom_point(aes(group = parent_type,colour = parent_type)) + scale_x_log10() + scale_y_log10()
 	plot <- change_plot_attributes(plot, "Parent Type", 0:(parent_type_idx-1), parent_type_vector,  "Cascade Depth", "Proportion")
@@ -96,7 +124,9 @@ parent_type_comp <- function(dir_vector, parent_type_vector){
 	return(cascade_comp)
 }
 
-parent_lifespan_comp <- function(dir_vector, lifespan_threshold_vector, hub_sec='Hub Characteristics'){
+#parent_type_comp(c('fp_nt_u/','lp_nt_u/','hop_nt_u/','rp_nt_u/'),c('First','Last','Highest\nout degree', 'Random'))
+
+parent_lifespan_comp <- function(dir_vector, lifespan_threshold_vector, hub_sec='Hub Seclusion Effect'){
 	cascade_comp <- c()
 	cascade_comp$size <- c()
 	cascade_comp$depth <- c()
@@ -116,17 +146,46 @@ parent_lifespan_comp <- function(dir_vector, lifespan_threshold_vector, hub_sec=
 	cascade_comp$size_summary <- ddply(size_freq, c('lifespan_threshold'), summarise, min=summary(size)[1], quart_1=summary(size)[2], median=summary(size)[3], mean=summary(size)[4],
 			quart_3=summary(size)[5], max=summary(size)[6], var=var(size),total_coverage=sum(size))
 #	Cascade size detail
+	sample_plot <- function(colum_to_chose, x_above_limit, every=100){
+		chosen <- rep(0,length(colum_to_chose))
+		i <- 1
+		while (i <= length(colum_to_chose)){
+			if (colum_to_chose[i] <= x_above_limit){
+				chosen[i] <- 1
+				i <- i + 1
+			}
+			else if (colum_to_chose[i] > x_above_limit & colum_to_chose[i] <= 80){
+				chosen[i + sample(c(0:min(1, length(colum_to_chose)-i)), 1, replace=TRUE)] <- 1
+				i <- i + 2
+			}
+			else if (colum_to_chose[i] > 80 & colum_to_chose[i] <= 350){
+				chosen[i + sample(c(0:min(19, length(colum_to_chose)-i)), 1, replace=TRUE)] <- 1
+				i <- i + 10
+			}
+			else if (colum_to_chose[i] > 350){
+				chosen[i + sample(c(0:min(99, length(colum_to_chose)-i)), 1, replace=TRUE)] <- 1
+				i <- i + 100
+			}
+			else {
+				break
+			}
+		}
+		return(chosen)
+	}
 	cascade_comp$size <- ddply(cascade_comp$size, c('threshold','lifespan_threshold'), function(one_partition){
 				one_partition = one_partition[order(one_partition$size),]
 				one_partition$cum_count = cumsum(one_partition$count)
 				one_partition$cdf_val = one_partition$cum_count / max(one_partition$cum_count)
 				one_partition$pdf_val = one_partition$count / max(one_partition$cum_count)
+				one_partition$chosen = sample_plot(one_partition$size, 10)
 				one_partition
 			})
 	cascade_comp$size$lifespan_threshold <- factor(cascade_comp$size$lifespan_threshold)
-	plot <- ggplot(cascade_comp$size,aes(x = (size), y = (pdf_val))) + geom_point(aes(group = lifespan_threshold,colour = lifespan_threshold), size=1) + scale_x_log10() + scale_y_log10() + theme(legend.position=c(.8, .7)) #+ xlim(2,3)+ ylim(-6,-3.5)
+	plot <- ggplot(cascade_comp$size[cascade_comp$size$chosen==1,],aes(x = (size), y = (pdf_val))) +
+			geom_point(aes(group = lifespan_threshold,colour = lifespan_threshold, shape = lifespan_threshold), size=1) +
+			scale_x_log10() + scale_y_log10() #+ theme(legend.position=c(.8, .7)) #+ xlim(2,3)+ ylim(-6,-3.5)
 #			scale_x_reverse(limits = c(log10(max(cascade_comp$size$size)), 4)) + scale_y_log10()
-	plot <- change_plot_attributes(plot, hub_sec, 1:(lifespan_idx-1),lifespan_threshold_vector, "Cascade Size", "Proportion of Total Number of Cascades")
+	plot <- change_plot_attributes(plot, hub_sec, 1:(lifespan_idx-1),lifespan_threshold_vector, "Cascade Size", "Empirical PDF")
 	save_ggplot(plot,file='lifespan_comp/size_pdf.pdf')
 #	Log binned ploting of distribution
 	cascade_comp$size$lifespan_threshold <- factor(cascade_comp$size$lifespan_threshold)
@@ -139,9 +198,9 @@ parent_lifespan_comp <- function(dir_vector, lifespan_threshold_vector, hub_sec=
 	cascade_comp$size$lifespan_threshold <- factor(cascade_comp$size$lifespan_threshold)
 	plot <- ggplot(cascade_comp$size,aes(x = (size), y = (pdf_val))) + geom_point(aes(group = lifespan_threshold,colour = lifespan_threshold)) + scale_x_log10() + scale_y_log10() #+ xlim(2,3)+ ylim(-6,-3.5)#
 	#		scale_x_reverse(limits = c(log10(max(cascade_comp$size$size)), 4)) + scale_y_log10()
-	plot <- change_plot_attributes(plot, hub_sec, 1:(lifespan_idx-1),lifespan_threshold_vector, "Cascade Size", "Proportion of Total Number of Cascades")
-	save_ggplot(plot,file='lifespan_comp/size_pdf_binned.pdf')
-
+	plot <- change_plot_attributes(plot, hub_sec, 1:(lifespan_idx-1),lifespan_threshold_vector, "Cascade Size", "Empirical PDF")
+	returned_plot <- save_ggplot(plot,file='lifespan_comp/size_pdf_binned.pdf')
+	
 #	Cascade depth summary
 	depth_freq <- data.frame(depth = rep(cascade_comp$depth$depth, times = cascade_comp$depth$count), lifespan_threshold=rep(cascade_comp$depth$lifespan_threshold, times = cascade_comp$depth$count))
 	cascade_comp$depth_summary <- ddply(depth_freq, c('lifespan_threshold'), summarise, min=summary(depth)[1], quart_1=summary(depth)[2], median=summary(depth)[3], mean=summary(depth)[4],
@@ -172,12 +231,12 @@ parent_lifespan_comp <- function(dir_vector, lifespan_threshold_vector, hub_sec=
 			opts(axis.text.x=theme_text(angle=45,hjust=1,vjust=1))
 	save_ggplot(plot,file='lifespan_comp/loss_vs_removed.pdf')
 	
-	return (cascade_comp)
+	return (returned_plot)
 }
 
 analyze_coverage <- function(dir){
-	cascade <- load_size_depth(dir)
-	cascade$size.df <- ddply(cascade$size, c('threshold'), function(one_partition){
+	cascade <<- load_size_depth(dir)
+	cascade$size.df <<- ddply(cascade$size, c('threshold'), function(one_partition){
 				one_partition = one_partition[order(-one_partition$size),]
 				one_partition$cum_count = cumsum(one_partition$count)
 				one_partition$cum_size = cumsum(one_partition$size*one_partition$count)/sum(one_partition$size*one_partition$count)
@@ -185,7 +244,7 @@ analyze_coverage <- function(dir){
 			})
 	x_label <- c(10^(0:4),115000,10^6)/3734781
 	plot <- ggplot(cascade$size.df,aes(x = (cum_count), y = (cum_size))) + geom_line()+ scale_x_log10(breaks=c(1,10,10^2,10^3,10^4,115000,10^6,3734781),
-			labels=c('1\n0%','1e+1\n2.7e-4%	','1e+2\n.0027%','1e+3\n.027%','1e+4\n.27%','115000\n3.08%','1e+6\n26.78%','3734781\n100%'))+
+					labels=c('1\n0%','1e+1\n2.7e-4%	','1e+2\n.0027%','1e+3\n.027%','1e+4\n.27%','115000\n3.08%','1e+6\n26.78%','3734781\n100%'))+
 			scale_y_continuous(breaks=c(0,.1,.2,.3,.4,.5,.6,.7,.8,.9,1.0), labels=c('0','10%','20%','30%','40%','50%','60%','70%','80%','90%','100%'))
 	plot <- change_plot_attributes(plot, "Parent type", 0:(4-1), 0:(4-1), "Number of Top Cascades(Count and Percentage)", "Coverage(Percent of Total Population)")
 	prev_dir = getwd()
@@ -204,13 +263,14 @@ size_vs_root_characteristics <- function (dir){
 	colnames(size_vs_root_odeg) <- c('size', 'root_outdeg')
 	print('read 2')
 	plot1 <- ggplot(size_vs_root[size_vs_root$size>=156,], aes(x=depth, y=size))+ geom_point(size=.5)+ scale_y_log10() + #+ geom_smooth(method=lm)
-			xlab("Depth of a Seed (Tree Height)")+ylab("Size of the Adoption\nRooted at the Seed")
+			xlab("Level of Influece of a Seed (Tree Height)")+ylab("Size of the Adoption\nRooted at the Seed") + myPlotTheme()
 	plot2 <- ggplot(size_vs_root[size_vs_root$size>=156,], aes(x=lifespan, y=size))+ geom_point(size=.5)+ scale_y_log10() + #+ geom_smooth(method=lm)
 			scale_x_log10(breaks=c(86400,86400*7,2*86400*7,4*86400*7,8*86400*7,16*86400*7,32*86400*7,64*86400*7),labels=c('1day','1week','2week','4week','8week','16week','32week','64week'))+
-			opts(axis.text.x=theme_text(angle=45,hjust=1,vjust=1))+
+			myPlotTheme() + opts(axis.text.x=theme_text(angle=45,hjust=1,vjust=1))+
 			xlab("Active Lifetime of a Seed")+ylab("Size of the Adoption\nRooted at the Seed")
 	plot3 <- ggplot(size_vs_root_odeg[size_vs_root_odeg$size>=156,], aes(x=root_outdeg, y=size))+ geom_point(size=.5)+ scale_y_log10() + #+ geom_smooth(method=lm)
-			xlab("Outdegree of a Seed")+ylab("Size of the Adoption\nRooted at the Seed")
+			xlab("Out-degree of a Seed")+ylab("Size of the Adoption\nRooted at the Seed") + myPlotTheme()
+	print('ploted')
 	pdf("size_vs_root.pdf")
 	grid.arrange(plot1, plot2, plot3)
 	dev.off()
@@ -218,5 +278,14 @@ size_vs_root_characteristics <- function (dir){
 	return (list(info=size_vs_root,odeg=size_vs_root_odeg))
 }
 
-#bla<-parent_lifespan_comp(c('fp_nt_u/','fp_less_356days_act_life/','fp_less_356days_nsc/','fp_less_290days_act_life/','fp_less_290days_nsc/'),c('N/A','Secluding Top 1%\nPersistent users\nwith second chance','\nSecluding Top 1%\nPersistent users\nw/o second chance','\nSecluding Top 5%\nPersistent users\nwith second chance','\nSecluding Top 5%\nPersistent users\nw/o second chance'))
-#bla <- parent_lifespan_comp(c('fp_nt_u/','disc_heavy_users_with_sc/','disc_heavy_users_no_sc'),c('N/A','Secluding with\nsecond chance','\nSecluding w/o\nsecond chance'))
+#bla <- parent_lifespan_comp(c('fp_nt_u/','disc_heavy_users_with_sc/','disc_heavy_users_no_sc'),c('N/A','With Second Chance','Without Second Chance'),'Secluding Heavy Seeds')
+#bla<-parent_lifespan_comp(c('fp_nt_u/','fp_less_356days_act_life/','fp_less_356days_nsc/','fp_less_290days_act_life/','fp_less_290days_nsc/'),c('N/A','Top 1% with Second Chance','Top 1% without Second Chance','Top 5% with Second Chance','Top 5% without Second Chance'), 'Secluding Persistent Users')
+#plot1<-parent_lifespan_comp(c('fp_nt_u/','fp_1hr_act_life/','fp_1day_act_life/','fp_2day_act_life/','fp_4day_act_life/',
+#				'fp_1week_act_life/','fp_2week_act_life/', 'fp_4week_act_life/','fp_8week_act_life/','fp_16week_act_life/'),
+#		c('N/A','1 Hour','1 Day','2 Day','4 Day', '1 Week', '2 Week', '4 Week', '8 Week', '16 Week'),
+#		'Secluding (with Second Chance) Short-term Users\nwith Lifetime under')
+#
+#plot2<-parent_lifespan_comp(c('fp_nt_u/','fp_1hr_act_life_nsc/','fp_1day_act_life_nsc/','fp_2day_act_life_nsc/','fp_4day_act_life_nsc/',
+#				'fp_1week_act_life_nsc/','fp_2week_act_life_nsc/', 'fp_4week_act_life_nsc/','fp_8week_act_life_nsc/','fp_16week_act_life_nsc/'),
+#		c('N/A','1 Hour','1 Day','2 Day','4 Day', '1 Week', '2 Week', '4 Week', '8 Week', '16 Week'),
+#		'Secluding (w/o Second Chance) Short-term Users\nwith Lifetime under')

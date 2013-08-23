@@ -9,6 +9,8 @@ from logging import root
 MAX_USERS = 2**29 - 1
 NO_PARENT = MAX_USERS + 1
 NEVER = 2**31 - 1
+BEGINNING_TIME = 1245304105
+END_TIME = 1280645999
 
 def manage_depth_expansion_per_root(depth,expansion):
     global depth_expansion_per_root
@@ -27,13 +29,17 @@ def manage_depth_time_per_root(depth,time):
     else:
         depth_max_time_per_root[depth] = max(depth_max_time_per_root[depth], time)
 
-def evolution_size_per_root(time):
-    global evolution_per_root
-    day = time/86400
-    if day not in evolution_per_root:
-        evolution_per_root[day] = 1
+def evolution_size_per_root(out_degree, time):
+    global evolution_per_root, out_degree_per_week_per_root
+    week = time/604800
+    if week not in evolution_per_root:
+        evolution_per_root[week] = 1
     else:
-        evolution_per_root[day] += 1
+        evolution_per_root[week] += 1
+    if (out_degree, week) not in out_degree_per_week_per_root:
+        out_degree_per_week_per_root[(out_degree, week)] = 1
+    else:
+        out_degree_per_week_per_root[(out_degree, week)] += 1
                         
 def manage_outdegree_per_root(outdegree, depth):
     global branching_dist_per_root
@@ -42,18 +48,28 @@ def manage_outdegree_per_root(outdegree, depth):
     else:
         branching_dist_per_root[(outdegree, depth)] = 1        
 
+def manage_time_to_next_generation(parent_time, time_diff):
+    global time_to_next_generation
+    parent_time_week = parent_time / 604800
+    time_diff_day = time_diff / 86400
+    if (parent_time_week, time_diff_day) not in time_to_next_generation:
+        time_to_next_generation[(parent_time_week, time_diff_day)] = 1
+    else:
+        time_to_next_generation[(parent_time_week, time_diff_day)] += 1
+
 def initialize_traverse ():
-    global graph, graph_node_count, activities_per_root, depth_expansion_per_root, depth_min_time_per_root, depth_max_time_per_root, branching_dist_per_root, evolution_per_root
+    global graph, graph_node_count, activities_per_root, depth_expansion_per_root, depth_min_time_per_root, depth_max_time_per_root, branching_dist_per_root, evolution_per_root, out_degree_per_week_per_root
     graph = {}
     graph_node_count = 0
     evolution_per_root = {}
+    out_degree_per_week_per_root = {}
     activities_per_root = []
     depth_expansion_per_root = {}
     depth_min_time_per_root = {}
     depth_max_time_per_root = {}
     branching_dist_per_root = {}
     
-def cascade_traverse (parent,depth):
+def cascade_traverse (parent,depth,time):
     global graph_node_count
     if parent not in graph:
         graph[parent] = 0
@@ -62,15 +78,18 @@ def cascade_traverse (parent,depth):
         if parent in children_of_parent:
             graph[parent] = len(children_of_parent[parent])
             manage_outdegree_per_root(graph[parent],MAX_DEPTH-depth)
+            evolution_size_per_root(graph[parent], time)
         else:
             manage_outdegree_per_root(0,MAX_DEPTH-depth)
+            evolution_size_per_root(0, time)
             return True
         if depth > 0:
             for (each_child,receiving_time) in children_of_parent[parent]:
-                if cascade_traverse(each_child, depth-1) == True:
+                if cascade_traverse(each_child, depth-1, receiving_time) == True:
                     activities_per_root.append((parent,each_child,MAX_DEPTH-depth))
                     manage_depth_time_per_root(MAX_DEPTH-depth+1, receiving_time)
-                    evolution_size_per_root(receiving_time)
+                    time_diff = receiving_time-time
+                    manage_time_to_next_generation(time, time_diff)
         return True
 
 def visulization (infl_file_name, user_list, max_depth):
@@ -92,7 +111,7 @@ def visulization (infl_file_name, user_list, max_depth):
             if a_top_user != 19845:
                 continue
             activities_per_root_file.write('%s [fillcolor = red];\n'%a_top_user)
-            cascade_traverse(a_top_user, i)
+#             cascade_traverse(a_top_user, i, BEGINNING_TIME)
             cut_off += 1
         for j in range(len(activities_per_root)):
             activities_per_root_file.write('%s -- %s;\n'%(activities_per_root[j][0],activities_per_root[j][1])) # [color=black] 
@@ -111,7 +130,16 @@ def resolve_cascades (user_list):
     for a_root in user_list:
         print 'Init cascade %s' %a_root
         initialize_traverse()
-        cascade_traverse(a_root, MAX_DEPTH)
+        root_fake_born_time = END_TIME
+        if a_root in children_of_parent:
+            for (each_child,receiving_time) in children_of_parent[a_root]:
+                root_fake_born_time = min(root_fake_born_time, receiving_time)
+            cascade_traverse(a_root, MAX_DEPTH, root_fake_born_time)
+            ############################## A major change here ##############################
+            # 0 depth 0 degree (i.e. root has to have out degree > 0) is no longer acceptable
+            #################################################################################
+        else:
+            continue
         cascade_size = len(graph)
         cascade_depth = max(depth_expansion_per_root)
         if cascade_depth == 0:
@@ -120,12 +148,19 @@ def resolve_cascades (user_list):
             size_vs_root_odeg.append((cascade_size,depth_expansion_per_root[1]))
         cascade_evolution.append((a_root,evolution_per_root))
         for d in depth_expansion_per_root:
-            depth_expansion.append((d,depth_expansion_per_root[d],a_root,1,depth_min_time_per_root[d] if d in depth_min_time_per_root else None,depth_max_time_per_root[d] if d in depth_max_time_per_root else None)) # 1 for distinct root
+            depth_expansion.append((d,depth_expansion_per_root[d],a_root, 1,
+                                    depth_min_time_per_root[d] if d in depth_min_time_per_root else None,
+                                    depth_max_time_per_root[d] if d in depth_max_time_per_root else None)) # 1 for distinct root
         for (degree,depth) in branching_dist_per_root: #Collecting out degree distribution for branching process.
             if (degree,depth) in branching_dist:
                 branching_dist[(degree,depth)] += branching_dist_per_root[(degree,depth)]
             else:
                 branching_dist[(degree,depth)] = branching_dist_per_root[(degree,depth)]
+        for (degree,week) in out_degree_per_week_per_root: #Collecting out degree distribution for branching process.
+            if (degree,week) in out_degree_per_week:
+                out_degree_per_week[(degree,week)] += out_degree_per_week_per_root[(degree,week)]
+            else:
+                out_degree_per_week[(degree,week)] = out_degree_per_week_per_root[(degree,week)]
         for i in range(len(activities_per_root)):
             if activities_per_root[i][0] == a_root:
                 top_users_correlated_info.append((a_root,graph[a_root],graph[activities_per_root[i][1]],cascade_size,cascade_depth))
@@ -136,6 +171,9 @@ graph_node_count = 0
 activities_per_root = []
 evolution_per_root = {}
 cascade_evolution = []
+time_to_next_generation = {}
+out_degree_per_week_per_root = {}
+out_degree_per_week = {}
 depth_expansion_per_root = {}
 depth_expansion = []
 top_users_correlated_info = []
@@ -196,6 +234,8 @@ if __name__ == '__main__':
         depth_vs_expansion_file  = open(o_file_prefix+str(MAX_DEPTH)+'_depth_vs_expansion.csv', "w")
         branching_dist_file  = open(o_file_prefix+'branching_dist.csv', "w")
         evolution_file  = open(o_file_prefix+'evolution.csv', "w")
+        out_degree_per_week_file  = open(o_file_prefix+'out_degree_per_week.csv', "w")
+        time_to_next_generation_file  = open(o_file_prefix+'time_to_next_generation.csv', "w")
         rooted_top_users = resolve_cascades(top_users)
         writer = csv.writer(depth_vs_expansion_file, quoting=csv.QUOTE_MINIMAL)
         writer.writerows(depth_expansion)
@@ -210,10 +250,17 @@ if __name__ == '__main__':
             branching_dist_file.write('%s,%s,%s\n' %(outdeg,branching_dist[(outdeg,depth)],depth))
         branching_dist_file.close()
         for (each_root, each_evolution) in cascade_evolution:
-            for i in range(14413, 14822): #starting time 14413*86400
+            for i in range(2059, 2117): #starting time 14413*86400
                 if i in each_evolution:
                     evolution_file.write('%s,%s,%s\n' %(each_root, i,each_evolution[i]))
         evolution_file.close()        
+        for (outdeg,week) in out_degree_per_week:
+            out_degree_per_week_file.write('%s,%s,%s\n' %(outdeg,out_degree_per_week[(outdeg,week)],week))
+        out_degree_per_week_file.close()
+        for (each_week, each_time_diff) in time_to_next_generation:
+            time_to_next_generation_file.write('%s,%s,%s\n' %(each_week, each_time_diff,
+                                                              time_to_next_generation[(each_week, each_time_diff)]))
+        time_to_next_generation_file.close()
         if len(sys.argv) > 6:
             print 'Visualizing until %s depth' %sys.argv[6]
             visulization(each_infl_file, top_users, int(sys.argv[6]))

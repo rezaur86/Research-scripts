@@ -5,12 +5,18 @@ print_report <- function(title, variable){
 	print (variable)
 }
 
+myPlotTheme <- function(base_size = 12){
+	return(theme_bw(base_size = base_size, ))	
+}
+
 save_ggplot <- function (plot, file){
 	file_name <- file
 #	ggsave(plot,file=file_name)
 	pdf(file_name)
+	plot <- plot + myPlotTheme() + opts(legend.position=c(.7, .7))
 	print(plot)
 	dev.off()
+	return(plot)
 #	file_name_split <- strsplit(file_name,'\\.')[[1]]
 #	file_name_split <- file_name_split[file_name_split!="pdf"]
 #	command <- paste("convert -density 300x300", file_name, paste(c(file_name_split,'png'), collapse = '.'))
@@ -18,10 +24,11 @@ save_ggplot <- function (plot, file){
 }
 
 change_plot_attributes <- function(plot, group_title, group_ids, group_labels, xlabel, ylabel){
-	plot <- plot + scale_colour_hue(name=group_title, breaks=group_ids, 
-					labels=group_labels) +
-			scale_shape_discrete(name =group_title,  breaks=group_ids, 
-					labels=group_labels)
+	plot <- plot + #scale_colour_grey(name=group_title, breaks=group_ids, labels=group_labels) +
+			scale_colour_manual(values=c("black","gray55","gray55", rep("black", 2), rep("gray55", 3), rep("black", 3)),
+					name=group_title, breaks=group_ids, labels=group_labels)+
+			scale_shape_manual(values=c(0,1,2,3,4,5,6,7,8,9,10,12),
+					name =group_title,  breaks=group_ids, labels=group_labels)
 	plot <- plot + xlab(xlabel) + ylab(ylabel)
 	return(plot)
 }
