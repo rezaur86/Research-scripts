@@ -243,10 +243,16 @@ analyze_coverage <- function(dir){
 				one_partition
 			})
 	x_label <- c(10^(0:4),115000,10^6)/3734781
-	plot <- ggplot(cascade$size.df,aes(x = (cum_count), y = (cum_size))) + geom_line()+ scale_x_log10(breaks=c(1,10,10^2,10^3,10^4,115000,10^6,3734781),
-					labels=c('1\n0%','1e+1\n2.7e-4%	','1e+2\n.0027%','1e+3\n.027%','1e+4\n.27%','115000\n3.08%','1e+6\n26.78%','3734781\n100%'))+
-			scale_y_continuous(breaks=c(0,.1,.2,.3,.4,.5,.6,.7,.8,.9,1.0), labels=c('0','10%','20%','30%','40%','50%','60%','70%','80%','90%','100%'))
-	plot <- change_plot_attributes(plot, "Parent type", 0:(4-1), 0:(4-1), "Number of Top Cascades(Count and Percentage)", "Coverage(Percent of Total Population)")
+	plot <- ggplot(cascade$size.df,aes(x = (cum_count), y = (cum_size))) + geom_line()+ scale_x_log10(breaks=c(1,10,10^2,10^3,10^4,10^5,10^6),#,115000,10^6,3734781),
+#					labels=c('1\n0%','1e+1\n2.7e-4%	','1e+2\n.0027%','1e+3\n.027%','1e+4\n.27%','115000\n3.08%','1e+6\n26.78%','3734781\n100%'))+
+					labels=c('1\n','1e+1','1e+2','1e+3','1e+4','1e+5','1e+6'))+
+			scale_y_continuous(breaks=c(0,.1,.2,.3,.4,.5,.6,.7,.8,.9,1.0), labels=c('0','10%','20%','30%','40%','50%','60%','70%','80%','90%','100%'))+
+			geom_segment(aes(x = 115000, y = 0, xend = 115000, yend = 0.8), arrow = arrow(length = unit(0.3, "cm")))+
+			geom_text(aes(100000*7.5, .4, label="Top 3.08% of\ncascades"))+
+			geom_segment(aes(x = 115000, y = 0.8, xend = 0, yend = 0.8), arrow = arrow(length = unit(0.3, "cm")))+
+			geom_text(aes(10, .83, label="80% population"))
+	
+	plot <- change_plot_attributes(plot, "Parent type", 0:(4-1), 0:(4-1), "Cascades Ranked by Size (from Largest to Smallest)", "Coverage (Percentage of Total User Population)")
 	prev_dir = getwd()
 	setwd(dir)
 	save_ggplot(plot,file='size_coverage.pdf')
@@ -263,7 +269,7 @@ size_vs_root_characteristics <- function (dir){
 	colnames(size_vs_root_odeg) <- c('size', 'root_outdeg')
 	print('read 2')
 	plot1 <- ggplot(size_vs_root[size_vs_root$size>=156,], aes(x=depth, y=size))+ geom_point(size=.5)+ scale_y_log10() + #+ geom_smooth(method=lm)
-			xlab("Level of Influece of a Seed (Tree Height)")+ylab("Size of the Adoption\nRooted at the Seed") + myPlotTheme()
+			xlab("Reach of Influece of a Seed (Max Tree Depth)")+ylab("Size of the Adoption\nRooted at the Seed") + myPlotTheme()
 	plot2 <- ggplot(size_vs_root[size_vs_root$size>=156,], aes(x=lifespan, y=size))+ geom_point(size=.5)+ scale_y_log10() + #+ geom_smooth(method=lm)
 			scale_x_log10(breaks=c(86400,86400*7,2*86400*7,4*86400*7,8*86400*7,16*86400*7,32*86400*7,64*86400*7),labels=c('1day','1week','2week','4week','8week','16week','32week','64week'))+
 			myPlotTheme() + opts(axis.text.x=theme_text(angle=45,hjust=1,vjust=1))+
@@ -278,14 +284,14 @@ size_vs_root_characteristics <- function (dir){
 	return (list(info=size_vs_root,odeg=size_vs_root_odeg))
 }
 
-#bla <- parent_lifespan_comp(c('fp_nt_u/','disc_heavy_users_with_sc/','disc_heavy_users_no_sc'),c('N/A','With Second Chance','Without Second Chance'),'Secluding Heavy Seeds')
-#bla<-parent_lifespan_comp(c('fp_nt_u/','fp_less_356days_act_life/','fp_less_356days_nsc/','fp_less_290days_act_life/','fp_less_290days_nsc/'),c('N/A','Top 1% with Second Chance','Top 1% without Second Chance','Top 5% with Second Chance','Top 5% without Second Chance'), 'Secluding Persistent Users')
+#bla <- parent_lifespan_comp(c('fp_nt_u/','disc_heavy_users_with_sc/','disc_heavy_users_no_sc'),c('Original Cascade','With Second Chance','Without Second Chance'),'Secluding Heavy Seeds')
+#bla<-parent_lifespan_comp(c('fp_nt_u/','fp_less_356days_act_life/','fp_less_356days_nsc/','fp_less_290days_act_life/','fp_less_290days_nsc/'),c('Original Cascade','Top 1% with Second Chance','Top 1% without Second Chance','Top 5% with Second Chance','Top 5% without Second Chance'), 'Secluding Persistent Users')
 #plot1<-parent_lifespan_comp(c('fp_nt_u/','fp_1hr_act_life/','fp_1day_act_life/','fp_2day_act_life/','fp_4day_act_life/',
 #				'fp_1week_act_life/','fp_2week_act_life/', 'fp_4week_act_life/','fp_8week_act_life/','fp_16week_act_life/'),
-#		c('N/A','1 Hour','1 Day','2 Day','4 Day', '1 Week', '2 Week', '4 Week', '8 Week', '16 Week'),
+#		c('Original Cascade','1 Hour','1 Day','2 Day','4 Day', '1 Week', '2 Week', '4 Week', '8 Week', '16 Week'),
 #		'Secluding (with Second Chance) Short-term Users\nwith Lifetime under')
 #
 #plot2<-parent_lifespan_comp(c('fp_nt_u/','fp_1hr_act_life_nsc/','fp_1day_act_life_nsc/','fp_2day_act_life_nsc/','fp_4day_act_life_nsc/',
 #				'fp_1week_act_life_nsc/','fp_2week_act_life_nsc/', 'fp_4week_act_life_nsc/','fp_8week_act_life_nsc/','fp_16week_act_life_nsc/'),
-#		c('N/A','1 Hour','1 Day','2 Day','4 Day', '1 Week', '2 Week', '4 Week', '8 Week', '16 Week'),
+#		c('Original Cascade','1 Hour','1 Day','2 Day','4 Day', '1 Week', '2 Week', '4 Week', '8 Week', '16 Week'),
 #		'Secluding (w/o Second Chance) Short-term Users\nwith Lifetime under')

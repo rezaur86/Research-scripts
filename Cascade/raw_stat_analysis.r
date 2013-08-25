@@ -14,9 +14,10 @@ lifespan_analysis <- function(lifespan_file_name){
 	life_95 <- parent_lifespan[cumsum(parent_lifespan$count/sum(parent_lifespan$count))>=.95,]$time[1]
 	print_report('95 percentile lifespan', life_95)
 	plot <- ggplot(parent_lifespan, aes(x = time, y = cumsum(count/sum(count)))) + geom_line() +
-			xlab('Active Lifetime (bin = 600s)') + ylab('Cumulative Proportion of Count') + 
-			scale_x_log10(breaks=c(6,12,24,48,72,96,144,288,4*144,7*144,14*144,28*144,2*28*144,4*28*144,8*28*144), labels=c('1hr','2hr','4hr','8hr','12hr','16hr','1day','2day','4day','1week','2weeks','4weeks','8weeks','16weeks','32weeks')) +
-			scale_y_continuous(breaks=c(0,.1,.2,.3,.4,.5,.6,.7,.8,.9,1.0))+
+			xlab('Active Lifetime') + ylab('Empirical CDF') + 
+#			scale_x_log10(breaks=c(6,12,24,48,72,96,144,288,4*144,7*144,14*144,28*144,2*28*144,4*28*144,8*28*144), labels=c('1hr','2hr','4hr','8hr','12hr','16hr','1day','2day','4day','1week','2weeks','4weeks','8weeks','16weeks','32weeks')) +
+			scale_x_log10(breaks=c(1,2,4,7,7*2,7*4,7*8,7*16,7*32), labels=c('1day','2day','4day','1week','2week','4week','8week','16week','32week')) +
+			scale_y_continuous(breaks=c(0,.2,.4,.6,.8,1.0))+
 #			scale_y_log10() + # + xlim(1,200) + ylim(0,100000)
 			myPlotTheme() + opts(axis.text.x=theme_text(angle=45,hjust=1,vjust=1))
 	pdf('raw_stat/lifespan_cum_pdf.pdf')
