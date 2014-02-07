@@ -7,7 +7,7 @@ import operator
 
 conn = MySQLdb.Connect(
     host='localhost', user='root',
-    passwd='', db='hearts')
+    passwd='AvengersOnLeo', db='hearts')
 cursor = conn.cursor(cursorclass=MySQLdb.cursors.DictCursor)
 
 start_at = 1

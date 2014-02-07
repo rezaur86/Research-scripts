@@ -68,9 +68,13 @@ parent_type_comp <- function(dir_vector, parent_type_vector){
 				chosen[i + sample(c(0:min(19, length(colum_to_chose)-i)), 1, replace=TRUE)] <- 1
 				i <- i + 10
 			}
-			if (colum_to_chose[i] > 350){
+			if (colum_to_chose[i] > 350 & colum_to_chose[i] <= 10^4.5){
 				chosen[i + sample(c(0:min(99, length(colum_to_chose)-i)), 1, replace=TRUE)] <- 1
 				i <- i + 100
+			}
+			if (colum_to_chose[i] > 10^4.5){
+				chosen[i] <- 1
+				i <- i + 1
 			}
 		}
 		return(chosen)
@@ -120,11 +124,77 @@ parent_type_comp <- function(dir_vector, parent_type_vector){
 	d <- cascade_comp$depth
 	latex(d, file="parent_comp/comp_depth.tex", digits = 6, rowname = latexTranslate(rownames(d)))            # If you want all the data
 #	latex(describe(d), file="comp_summary.lex")  # If you just want a summary
-	print('Exiting, Done')
+#	print('Exiting, Done')
 	return(cascade_comp)
 }
 
-#parent_type_comp(c('fp_nt_u/','lp_nt_u/','hop_nt_u/','rp_nt_u/'),c('First','Last','Highest\nout degree', 'Random'))
+#parent_type_comp(c('fp_nt_u/','lp_nt_u/','hop_nt_u/','rp_nt_u/'),c('FP','LP','HODP', 'RP'))
+
+sampling_comp <- function(dir_vector, parent_type_vector){
+	plot_x_lim <- 100
+	cascade_comp <- c()
+	cascade_comp$size <- c()
+	cascade_comp$depth <- c()
+	parent_type_idx <- 0
+	for (dir in dir_vector){
+		parent_based_cascade <- load_size_depth(dir)
+		parent_based_cascade$size[,4] <- parent_type_idx
+		cascade_comp$size <- rbind(cascade_comp$size,parent_based_cascade$size)
+		parent_based_cascade$depth[,4] <- parent_type_idx
+		cascade_comp$depth <- rbind(cascade_comp$depth,parent_based_cascade$depth)
+		parent_type_idx <- parent_type_idx + 1
+	}
+	colnames(cascade_comp$size) <- c('size', 'count', 'threshold', 'parent_type')
+	colnames(cascade_comp$depth) <- c('depth', 'count', 'threshold', 'parent_type')
+	##	Cascade size summary
+	size_freq <- data.frame(size = rep(cascade_comp$size$size, times = cascade_comp$size$count), parent_type=rep(cascade_comp$size$parent_type, times = cascade_comp$size$count))
+#	Cascade size box plot
+	size_freq$parent_type <- factor(size_freq$parent_type)
+	plot <- ggplot(size_freq, aes(y=(size), x=parent_type))+ geom_boxplot() + scale_x_discrete(breaks=0:(parent_type_idx-1), labels=parent_type_vector)+ scale_y_log10() # + geom_histogram(binwidth=0.2, position="dodge")
+	plot <- change_plot_attributes(plot, "Parent Type", 0:(parent_type_idx-1), parent_type_vector, "Parent Type", "Cascade Size")
+	save_ggplot(plot,file='sample_comp/size_box.pdf')
+#	Cascade size detail
+	cascade_comp$size <- ddply(cascade_comp$size, c('threshold','parent_type'), function(one_partition){
+				one_partition = one_partition[order(one_partition$size),]
+				one_partition$cum_count = cumsum(one_partition$count)
+				one_partition$cum_size = cumsum(one_partition$size)
+				one_partition$cdf_val = one_partition$cum_count / max(one_partition$cum_count)
+				one_partition$pdf_val = one_partition$count / max(one_partition$cum_count)
+				one_partition
+			})
+	cascade_comp$size$parent_type <- factor(cascade_comp$size$parent_type)
+	plot <- ggplot(cascade_comp$size, aes(x = (size), y = (pdf_val))) + 
+			geom_point(aes(group = parent_type, colour = parent_type, shape = parent_type), size=1)+
+			scale_x_log10()+ scale_y_log10() #+ theme(legend.position=c(.8, .7)) + xlim(0,log10(plot_x_lim*100))
+	plot <- change_plot_attributes(plot, "Parent Type", 0:(parent_type_idx-1), parent_type_vector, "Cascade Size", "Empirical PDF")
+	save_ggplot(plot,file='sample_comp/size_pdf_logx_logy.pdf')
+#	Cascade depth summary
+	depth_freq <- data.frame(depth = rep(cascade_comp$depth$depth, times = cascade_comp$depth$count), parent_type=rep(cascade_comp$depth$parent_type, times = cascade_comp$depth$count))
+	cascade_comp$depth_summary <- ddply(depth_freq, c('parent_type'), summarise, min=summary(depth)[1], quart_1=summary(depth)[2], median=summary(depth)[3], mean=summary(depth)[4],
+			quart_3=summary(depth)[5], max=summary(depth)[6], var=var(depth))
+#	Cascade depth box plot
+	depth_freq$parent_type <- factor(depth_freq$parent_type)
+	plot <- ggplot(depth_freq, aes(y=depth, x=parent_type))+ scale_y_log10()+ geom_boxplot() #+ geom_histogram(binwidth=1, position="dodge") 
+	plot <- change_plot_attributes(plot, "Parent Type", 0:(parent_type_idx-1), parent_type_vector, "Parent type", "Cascade Depth")
+	save_ggplot(plot,file='sample_comp/depth_box.pdf')
+#	Cascade depth detail
+	cascade_comp$depth <- ddply(cascade_comp$depth, c('threshold','parent_type'), function(one_partition){
+				one_partition = one_partition[order(one_partition$depth),]
+				one_partition$cum_count = cumsum(one_partition$count)
+				one_partition$cdf_val = one_partition$cum_count / max(one_partition$cum_count)
+				one_partition$pdf_val = one_partition$count / max(one_partition$cum_count)
+				one_partition
+			})
+	cascade_comp$depth$parent_type <- factor(cascade_comp$depth$parent_type)
+	plot <- ggplot(cascade_comp$depth,aes(x = depth, y = (pdf_val))) + geom_point(aes(group = parent_type,colour = parent_type, shape = parent_type)) + 
+			scale_y_log10() #+ theme(legend.position=c(.8, .7))
+	plot <- change_plot_attributes(plot, "Parent Type", 0:(parent_type_idx-1), parent_type_vector,  "Cascade Depth", "Empirical PDF")
+	save_ggplot(plot,file='sample_comp/depth_pdf_logy.pdf')
+	plot <- ggplot(cascade_comp$depth,aes(x = depth, y = (pdf_val))) + geom_point(aes(group = parent_type,colour = parent_type)) + scale_x_log10() + scale_y_log10()
+	plot <- change_plot_attributes(plot, "Parent Type", 0:(parent_type_idx-1), parent_type_vector,  "Cascade Depth", "Proportion")
+	save_ggplot(plot,file='sample_comp/depth_pdf_log_log.pdf')
+	return(cascade_comp)
+}
 
 parent_lifespan_comp <- function(dir_vector, lifespan_threshold_vector, hub_sec='Hub Seclusion Effect'){
 	cascade_comp <- c()
@@ -162,9 +232,13 @@ parent_lifespan_comp <- function(dir_vector, lifespan_threshold_vector, hub_sec=
 				chosen[i + sample(c(0:min(19, length(colum_to_chose)-i)), 1, replace=TRUE)] <- 1
 				i <- i + 10
 			}
-			else if (colum_to_chose[i] > 350){
+			else if (colum_to_chose[i] > 350 & colum_to_chose[i] <= 10^4.5){
 				chosen[i + sample(c(0:min(99, length(colum_to_chose)-i)), 1, replace=TRUE)] <- 1
 				i <- i + 100
+			}
+			else if (colum_to_chose[i] < 10^6.5){
+				chosen[i] <- 1
+				i <- i + 1
 			}
 			else {
 				break
@@ -248,9 +322,9 @@ analyze_coverage <- function(dir){
 					labels=c('1\n','1e+1','1e+2','1e+3','1e+4','1e+5','1e+6'))+
 			scale_y_continuous(breaks=c(0,.1,.2,.3,.4,.5,.6,.7,.8,.9,1.0), labels=c('0','10%','20%','30%','40%','50%','60%','70%','80%','90%','100%'))+
 			geom_segment(aes(x = 115000, y = 0, xend = 115000, yend = 0.8), arrow = arrow(length = unit(0.3, "cm")))+
-			geom_text(aes(100000*7.5, .4, label="Top 3.08% of\ncascades"))+
+			geom_text(aes(100000*4, .4, label="Top 3.08% of\ncascades"), size=8)+
 			geom_segment(aes(x = 115000, y = 0.8, xend = 0, yend = 0.8), arrow = arrow(length = unit(0.3, "cm")))+
-			geom_text(aes(10, .83, label="80% population"))
+			geom_text(aes(15, .85, label="80% population"), size=8)
 	
 	plot <- change_plot_attributes(plot, "Parent type", 0:(4-1), 0:(4-1), "Cascades Ranked by Size (from Largest to Smallest)", "Coverage (Percentage of Total User Population)")
 	prev_dir = getwd()
@@ -269,13 +343,14 @@ size_vs_root_characteristics <- function (dir){
 	colnames(size_vs_root_odeg) <- c('size', 'root_outdeg')
 	print('read 2')
 	plot1 <- ggplot(size_vs_root[size_vs_root$size>=156,], aes(x=depth, y=size))+ geom_point(size=.5)+ scale_y_log10() + #+ geom_smooth(method=lm)
-			xlab("Reach of Influece of a Seed (Max Tree Depth)")+ylab("Size of the Adoption\nRooted at the Seed") + myPlotTheme()
+			xlab("Reach of Influece of a Seed (Max Tree Depth)")+ylab("Size of the Adoption\nRooted at the Seed") + myPlotTheme(12)
 	plot2 <- ggplot(size_vs_root[size_vs_root$size>=156,], aes(x=lifespan, y=size))+ geom_point(size=.5)+ scale_y_log10() + #+ geom_smooth(method=lm)
 			scale_x_log10(breaks=c(86400,86400*7,2*86400*7,4*86400*7,8*86400*7,16*86400*7,32*86400*7,64*86400*7),labels=c('1day','1week','2week','4week','8week','16week','32week','64week'))+
-			myPlotTheme() + opts(axis.text.x=theme_text(angle=45,hjust=1,vjust=1))+
+			myPlotTheme(12) + opts(axis.text.x=theme_text(angle=45,hjust=1,vjust=1))+
 			xlab("Active Lifetime of a Seed")+ylab("Size of the Adoption\nRooted at the Seed")
-	plot3 <- ggplot(size_vs_root_odeg[size_vs_root_odeg$size>=156,], aes(x=root_outdeg, y=size))+ geom_point(size=.5)+ scale_y_log10() + #+ geom_smooth(method=lm)
-			xlab("Out-degree of a Seed")+ylab("Size of the Adoption\nRooted at the Seed") + myPlotTheme()
+	plot3 <- ggplot(size_vs_root_odeg[size_vs_root_odeg$size>=156,], aes(x=root_outdeg, y=size))+ geom_point(size=.5)+ scale_y_log10() +
+			scale_x_log10(breaks=c(10,100,1000), labels=c('10','100','1000')) + #+ geom_smooth(method=lm)
+			xlab("Out-degree of a Seed")+ylab("Size of the Adoption\nRooted at the Seed") + myPlotTheme(12)
 	print('ploted')
 	pdf("size_vs_root.pdf")
 	grid.arrange(plot1, plot2, plot3)
@@ -284,14 +359,14 @@ size_vs_root_characteristics <- function (dir){
 	return (list(info=size_vs_root,odeg=size_vs_root_odeg))
 }
 
-#bla <- parent_lifespan_comp(c('fp_nt_u/','disc_heavy_users_with_sc/','disc_heavy_users_no_sc'),c('Original Cascade','With Second Chance','Without Second Chance'),'Secluding Heavy Seeds')
-#bla<-parent_lifespan_comp(c('fp_nt_u/','fp_less_356days_act_life/','fp_less_356days_nsc/','fp_less_290days_act_life/','fp_less_290days_nsc/'),c('Original Cascade','Top 1% with Second Chance','Top 1% without Second Chance','Top 5% with Second Chance','Top 5% without Second Chance'), 'Secluding Persistent Users')
+#bla <- parent_lifespan_comp(c('fp_nt_u/','disc_heavy_users_with_sc/','disc_heavy_users_no_sc'),c('Original Cascade','W/ Second Chance','W/o Second Chance'),'Secluding Heavy Seeds')
+#bla<-parent_lifespan_comp(c('fp_nt_u/','fp_less_356days_act_life/','fp_less_356days_nsc/','fp_less_290days_act_life/','fp_less_290days_nsc/'),c('Original Cascade','Top 1% w/ Second Chance','Top 1% w/o Second Chance','Top 5% w/ Second Chance','Top 5% w/o Second Chance'), 'Secluding Persistent Users')
 #plot1<-parent_lifespan_comp(c('fp_nt_u/','fp_1hr_act_life/','fp_1day_act_life/','fp_2day_act_life/','fp_4day_act_life/',
 #				'fp_1week_act_life/','fp_2week_act_life/', 'fp_4week_act_life/','fp_8week_act_life/','fp_16week_act_life/'),
 #		c('Original Cascade','1 Hour','1 Day','2 Day','4 Day', '1 Week', '2 Week', '4 Week', '8 Week', '16 Week'),
-#		'Secluding (with Second Chance) Short-term Users\nwith Lifetime under')
+#		'Secluding (w/ Second\nChance) Short-term\nUsers w/Active Lifetime\nBelow')
 #
 #plot2<-parent_lifespan_comp(c('fp_nt_u/','fp_1hr_act_life_nsc/','fp_1day_act_life_nsc/','fp_2day_act_life_nsc/','fp_4day_act_life_nsc/',
 #				'fp_1week_act_life_nsc/','fp_2week_act_life_nsc/', 'fp_4week_act_life_nsc/','fp_8week_act_life_nsc/','fp_16week_act_life_nsc/'),
 #		c('Original Cascade','1 Hour','1 Day','2 Day','4 Day', '1 Week', '2 Week', '4 Week', '8 Week', '16 Week'),
-#		'Secluding (w/o Second Chance) Short-term Users\nwith Lifetime under')
+#		'Secluding (w/o Second\nChance) Short-term\nUsers w/ Active Lifetime\nBelow')

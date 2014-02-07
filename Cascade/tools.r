@@ -5,7 +5,7 @@ print_report <- function(title, variable){
 	print (variable)
 }
 
-myPlotTheme <- function(base_size = 12){
+myPlotTheme <- function(base_size = 24){
 	return(theme_bw(base_size = base_size, ))	
 }
 
@@ -13,7 +13,7 @@ save_ggplot <- function (plot, file){
 	file_name <- file
 #	ggsave(plot,file=file_name)
 	pdf(file_name)
-	plot <- plot + myPlotTheme() + opts(legend.position=c(.7, .7))
+	plot <- plot + myPlotTheme(24) + opts(legend.position=c(.7, .7))
 	print(plot)
 	dev.off()
 	return(plot)

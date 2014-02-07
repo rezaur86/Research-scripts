@@ -80,10 +80,12 @@ draw_depth_expansion <- function(file_name,depth_expansion.df){
 							'(6) 681745', '(7) 622582', '(8) 554010', '(9) 497617', '(10) 480526'))
 	save_ggplot(plot, paste(c(file_name,'_depth_expansion.pdf'), collapse = ''))
 	plot <- ggplot(depth_expansion.df, aes(x = depth, y = log10(expansion))) + geom_line(aes(group = size_rank, colour = size_rank)) +
-			xlab('Depth') + ylab('log of Shell size') 
+			xlab('Depth') + ylab('log of Shell size')
 	save_ggplot(plot, paste(c(file_name,'_depth_log_expansion.pdf'), collapse = ''))
+	print(head(depth_expansion.df, 50))
+	print(10)
 	plot <- ggplot(depth_expansion.df, aes(x = depth, y = (diff))) + geom_line(aes(group = size_rank, colour = size_rank, linetype = size_rank)) +
-			xlab('Depth') + ylab('Shell Size Growth Rate') + myPlotTheme() + opts(legend.position=c(.7, .7)) +
+			xlab('Depth') + ylab('Difference in Shell Sizes') + myPlotTheme() + opts(legend.position=c(.7, .7)) +
 			scale_linetype_manual(values=c(1,2,3,4,5,6,1,2,3,4), name="Cascades Size", breaks=1:10, labels=c('(1) 1820995', '(2) 1757747', '(3) 1053378', '(4) 874514', '(5) 780809',
 							'(6) 681745', '(7) 622582', '(8) 554010', '(9) 497617', '(10) 480526'))+
 			scale_colour_manual(values=c(rep("black",6), rep("gray55",4)), name='Cascades Size', breaks=1:10, labels=c('(1) 1820995', '(2) 1757747', '(3) 1053378', '(4) 874514', '(5) 780809',
@@ -159,6 +161,7 @@ root_users_analysis <- function(output_dir){
 	very_big_root_depth_expansion.ranked <<- ddply(very_big_root_depth_expansion, c('root_user_id'), function(one_partition){
 				one_partition$size = rep(very_big_cascades[very_big_cascades$root_user_id%in%one_partition$root_user_id,]$size, nrow(one_partition))
 				one_partition$size_rank = rep(very_big_cascades[very_big_cascades$root_user_id%in%one_partition$root_user_id,]$size_rank, nrow(one_partition))
+				one_partition$rate = (one_partition$diff/c(1,one_partition$expansion[1:nrow(one_partition)-1]))
 				one_partition$size_rank_label = rep(paste('(',very_big_cascades[very_big_cascades$root_user_id%in%one_partition$root_user_id,]$size_rank, ')', 
 								very_big_cascades[very_big_cascades$root_user_id%in%one_partition$root_user_id,]$size), nrow(one_partition))
 				one_partition
