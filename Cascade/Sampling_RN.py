@@ -72,19 +72,19 @@ if sampling_method == 3:
         # Random Edge Sampling
         print "Sampling..."
         sampled_act = set(sample(xrange(total_activities), int(total_activities*.1)))
-#         w = csv.writer(open("/home/rezaur/data/sampled_users/RE.txt", "w"))
-#         for act in sampled_act:
-#             w.writerow([act]) 
+        w = csv.writer(open("/home/rezaur/data/sampled_users/RE.txt", "w"))
+        for act in sampled_act:
+            w.writerow([act]) 
         print "Sampling Done"
 
 if sampling_method == 4:
     each_app_anonym = each_app + '_sampled_RNE'
     # Random Node-Edge Sampling
     print "Sampling..."
-    sampled_users = set(sample(xrange(total_users), int(total_users*.01)))
-    for user_id,odeg,indeg,deg in csv.reader(open(sys.argv[3])):
+    sampled_users = set(sample(xrange(total_users), int(total_users*.1)))
+    for user_id,odeg,indeg,deg in csv.reader(open('/home/rezaur/data/iheart_ext_preprocessed_basic.txt')):
         if int(user_id) in sampled_users:
-            sampled_users_act[int(user_id)] = sample(xrange(int(deg)), 1)
+            sampled_users_act[int(user_id)] = sample(xrange(int(deg)), 1)[0]
     sampled_users = set([])
     w = csv.writer(open("/home/rezaur/data/sampled_users/RNE.txt", "w"))
     for user_id in sampled_users_act:
@@ -178,14 +178,18 @@ for each_file in file_list:
         timestamp = splits[2].strip()
         symid = splits[3].strip()
         anonymized_data.append((sender, recv, timestamp, symid))
-        sampled_graph_nodes.add(sender_org_id)
-        sampled_graph_nodes.add(recv_org_id)
+        if users[sender_org_id] != -1:
+            sampled_graph_nodes.add(sender_org_id)
+        if users[recv_org_id] != -1:
+            sampled_graph_nodes.add(recv_org_id)
     anonymized_file = open(each_app_anonym+'/'+each_file, "wb")
     writer = csv.writer(anonymized_file, quoting=csv.QUOTE_MINIMAL, delimiter=' ')
     writer.writerows(anonymized_data)
     anonymized_file.close()
     print each_file
     
+print len(users)
 w = csv.writer(open('/home/rezaur/data/user_seq/'+each_app_anonym+"_user_seq.txt", "w"))
 for user_id, seq in users.items():
-    w.writerow([user_id, seq])
+    if seq != -1:
+        w.writerow([user_id, seq])
