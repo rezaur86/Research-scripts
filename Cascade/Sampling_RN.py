@@ -103,8 +103,8 @@ if sampling_method == 6:
                 non_zero_odeg_users.append(int(user_id))
         total_parents = len(non_zero_odeg_users) 
         print "Sampling..."
-        sampled_senders = set(sample(non_zero_odeg_users, int(total_parents*.01)))
-        w = csv.writer(open("/home/rezaur/data/sampled_users/RDN.txt", "w"))
+        sampled_senders = set(sample(non_zero_odeg_users, int(total_parents*.1)))
+        w = csv.writer(open("/home/rezaur/data/sampled_users/RNN.txt", "w"))
         for user_id in sampled_senders:
             w.writerow([user_id]) 
         print "Sampling Done"
@@ -159,12 +159,12 @@ for each_file in file_list:
 
         # If desired sample size is already met then we don't want to
         # visit any new nodes, but we can explore the edges
-        if len(sampled_graph_nodes) == SAMPLE_SIZE:
+        if len(sampled_graph_nodes) >= SAMPLE_SIZE:
             if sender_org_id not in sampled_graph_nodes or recv_org_id not in sampled_graph_nodes:
                 take_this_act = False
-        if len(sampled_graph_nodes) == (SAMPLE_SIZE - 1):
-            if sender_org_id not in sampled_graph_nodes and recv_org_id not in sampled_graph_nodes:
-                take_this_act = False
+#         if len(sampled_graph_nodes) == (SAMPLE_SIZE - 1):
+#             if sender_org_id not in sampled_graph_nodes and recv_org_id not in sampled_graph_nodes:
+#                 take_this_act = False
         if take_this_act == False:
             continue        
         if users.has_key(sender_org_id) == False:
@@ -188,7 +188,6 @@ for each_file in file_list:
     anonymized_file.close()
     print each_file
     
-print len(users)
 w = csv.writer(open('/home/rezaur/data/user_seq/'+each_app_anonym+"_user_seq.txt", "w"))
 for user_id, seq in users.items():
     if seq != -1:

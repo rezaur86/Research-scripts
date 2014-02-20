@@ -33,6 +33,14 @@ change_plot_attributes <- function(plot, group_title, group_ids, group_labels, x
 	return(plot)
 }
 
+change_plot_attributes_fancy <- function(plot, group_title, group_ids, group_labels, xlabel, ylabel){
+	plot <- plot + #scale_colour_grey(name=group_title, breaks=group_ids, labels=group_labels) +
+			scale_colour_hue(name=group_title, breaks=group_ids, labels=group_labels)+
+			scale_shape_discrete(name =group_title,  breaks=group_ids, labels=group_labels)
+	plot <- plot + xlab(xlabel) + ylab(ylabel)
+	return(plot)
+}
+
 draw_two_y_axes_graph <- function (file_name, max_curve_count, x_val, y_l_val, y_r_val, lim_x, lim_l_y, lim_r_y, x_label, y_l_label, y_r_label, graph_name, x_mark=NA, y_l_mark=NA, y_r_mark=NA){
 	pdf(file=file_name,width=10,height=10)
 	color <- rainbow(max_curve_count)
