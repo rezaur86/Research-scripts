@@ -109,15 +109,128 @@ sampling_comp <- function(dir_vector, parent_type_vector){
 
 #node_info_null <<- as.data.frame(read.csv('../data/iheart_ext_preprocessed_basic.txt', header=FALSE))
 #colnames(node_info_null) <- c('id', 'outdeg', 'indeg', 'deg')
+#null_odeg_dist <<- as.data.frame(table(node_info_null$outdeg))
+#colnames(null_odeg_dist) <- c('outdeg', 'count')
+#null_indeg_dist <<- as.data.frame(table(node_info_null$indeg))
+#colnames(null_indeg_dist) <- c('indeg', 'count')
 
-sampling_node_basic_comp <- function(node_info_sample_file){
-	node_info_sample <- as.data.frame(read.csv(node_info_sample_file, header=FALSE))
-	colnames(node_info_sample) <- c('id', 'outdeg', 'indeg', 'deg', 'act_life')
-	print('KS-Test for out degree distribution')
-	print (ks.test(node_info_sample$outdeg, node_info_null$outdeg))
-	print('KS-Test for in degree distribution')
-	print (ks.test(node_info_sample$indeg, node_info_null$indeg))
+load_node_basic_info <- function(node_info_sample_vec, sample_type_vec){
+	odeg_dist <- null_odeg_dist
+	odeg_dist[,3] <- 0
+	colnames(odeg_dist) <- c('outdeg','count','sample_type')
+	indeg_dist <- null_indeg_dist
+	indeg_dist[,3] <- 0
+	colnames(indeg_dist) <- c('indeg','count','sample_type')
+	sample_type_idx <- 1
+	for (file in node_info_sample_vec){
+		node_info_sample <- as.data.frame(read.csv(file, header=FALSE))
+		colnames(node_info_sample) <- c('id', 'outdeg', 'indeg', 'deg', 'act_life')
+		sample_odeg_dist <- as.data.frame(table(node_info_sample$outdeg))
+		sample_odeg_dist[,3] <- sample_type_idx
+		colnames(sample_odeg_dist) <- c('outdeg','count','sample_type')
+		odeg_dist <- rbind(odeg_dist,sample_odeg_dist)
+		sample_indeg_dist <- as.data.frame(table(node_info_sample$indeg))
+		sample_indeg_dist[,3] <- sample_type_idx
+		colnames(sample_indeg_dist) <- c('indeg','count','sample_type')
+		indeg_dist <- rbind(indeg_dist,sample_indeg_dist)
+		sample_type_idx <- sample_type_idx + 1
+	}
+	
 }
+
+sampling_node_basic_comp <- function(node_info_sample_vec, sample_type_vec){
+	odeg_dist <- null_odeg_dist
+	odeg_dist[,3] <- 0
+	colnames(odeg_dist) <- c('outdeg','count','sample_type')
+	seeds_odeg_dist <- as.data.frame(table(node_info_null[node_info_null$indeg == 0,]$outdeg))
+	seeds_odeg_dist[,3] <- 0
+	colnames(seeds_odeg_dist) <- c('outdeg','count','sample_type')
+	indeg_dist <- null_indeg_dist
+	indeg_dist[,3] <- 0
+	colnames(indeg_dist) <- c('indeg','count','sample_type')
+	sample_type_idx <- 1
+#	sample_type_vec_out <<- c(sample_type_vec[1])
+#	sample_type_vec_in <<- c(sample_type_vec[1])
+	for (file in node_info_sample_vec){
+		node_info_sample <- as.data.frame(read.csv(file, header=FALSE))
+		colnames(node_info_sample) <- c('id', 'outdeg', 'indeg', 'deg', 'act_life')
+		sample_odeg_dist <- as.data.frame(table(node_info_sample$outdeg))
+		sample_odeg_dist[,3] <- sample_type_idx
+		colnames(sample_odeg_dist) <- c('outdeg','count','sample_type')
+		odeg_dist <- rbind(odeg_dist,sample_odeg_dist)
+		sample_seeds_odeg_dist <- as.data.frame(table(node_info_sample[node_info_sample$indeg == 0,]$outdeg))
+		sample_seeds_odeg_dist[,3] <- sample_type_idx
+		colnames(sample_seeds_odeg_dist) <- c('outdeg','count','sample_type')
+		seeds_odeg_dist <- rbind(seeds_odeg_dist,sample_seeds_odeg_dist)
+		sample_indeg_dist <- as.data.frame(table(node_info_sample$indeg))
+		sample_indeg_dist[,3] <- sample_type_idx
+		colnames(sample_indeg_dist) <- c('indeg','count','sample_type')
+		indeg_dist <- rbind(indeg_dist,sample_indeg_dist)
+		sample_type_idx <- sample_type_idx + 1
+		
+#		print('KS-Test for out degree distribution')
+#		sample_type_vec_out <<- c(sample_type_vec_out, paste(c(sample_type_vec[sample_type_idx],
+#								'(', ks.test(node_info_sample$outdeg, node_info_null$outdeg), ')'), collapse = ""))
+#		print('KS-Test for in degree distribution')
+#		sample_type_vec_in <<- c(sample_type_vec_in, paste(c(sample_type_vec[sample_type_idx],
+#								'(', ks.test(node_info_sample$indeg, node_info_null$indeg), ')'), collapse = ""))
+	}
+	odeg_dist.df <- ddply(odeg_dist, c('sample_type'), function(one_partition){
+				one_partition = one_partition[order(one_partition$outdeg),]
+				one_partition$cum_count = cumsum(one_partition$count)
+				one_partition$pdf_val = one_partition$count / max(one_partition$cum_count)
+				one_partition
+			})
+	odeg_dist.df[, 1] <- as.numeric(as.character( odeg_dist.df[, 1]))
+	odeg_dist.df[, 2] <- as.numeric(as.character( odeg_dist.df[, 2] ))
+	odeg_dist.df[, 3] <- as.numeric(as.character( odeg_dist.df[, 3] ))
+	odeg_dist.df[, 4] <- as.numeric(as.character( odeg_dist.df[, 4] ))
+	odeg_dist.df[, 5] <- as.numeric(as.character( odeg_dist.df[, 5] ))
+	odeg_dist.df$sample_type <- factor(odeg_dist.df$sample_type)
+	plot <- ggplot(odeg_dist.df, aes(x = (outdeg), y = (pdf_val))) + 
+			geom_point(aes(group = sample_type, colour = sample_type, shape = sample_type), size=1)+
+			scale_x_log10()+ scale_y_log10() #+ theme(legend.position=c(.8, .7)) + xlim(0,log10(plot_x_lim*100))
+	plot <- change_plot_attributes_fancy(plot, "Sampling Method", 0:(sample_type_idx-1), sample_type_vec_out, "Out Degree", "Empirical PDF")
+	save_ggplot(plot,file='sample_comp/odeg_pdf_logx_logy.pdf')
+	
+	seeds_odeg_dist.df <- ddply(seeds_odeg_dist, c('sample_type'), function(one_partition){
+				one_partition = one_partition[order(one_partition$outdeg),]
+				one_partition$cum_count = cumsum(one_partition$count)
+				one_partition$pdf_val = one_partition$count / max(one_partition$cum_count)
+				one_partition
+			})
+	seeds_odeg_dist.df[, 1] <- as.numeric(as.character( seeds_odeg_dist.df[, 1]))
+	seeds_odeg_dist.df[, 2] <- as.numeric(as.character( seeds_odeg_dist.df[, 2] ))
+	seeds_odeg_dist.df[, 3] <- as.numeric(as.character( seeds_odeg_dist.df[, 3] ))
+	seeds_odeg_dist.df[, 4] <- as.numeric(as.character( seeds_odeg_dist.df[, 4] ))
+	seeds_odeg_dist.df[, 5] <- as.numeric(as.character( seeds_odeg_dist.df[, 5] ))
+	seeds_odeg_dist.df$sample_type <- factor(seeds_odeg_dist.df$sample_type)
+	plot <- ggplot(seeds_odeg_dist.df, aes(x = (outdeg), y = (pdf_val))) + 
+			geom_point(aes(group = sample_type, colour = sample_type, shape = sample_type), size=1)+
+			scale_x_log10()+ scale_y_log10() #+ theme(legend.position=c(.8, .7)) + xlim(0,log10(plot_x_lim*100))
+	plot <- change_plot_attributes_fancy(plot, "Sampling Method", 0:(sample_type_idx-1), sample_type_vec, "Out Degree", "Empirical PDF")
+	save_ggplot(plot,file='sample_comp/seeds_odeg_pdf_logx_logy.pdf')
+	
+	indeg_dist.df <- ddply(indeg_dist, c('sample_type'), function(one_partition){
+				one_partition = one_partition[order(one_partition$indeg),]
+				one_partition$cum_count = cumsum(one_partition$count)
+				one_partition$pdf_val = one_partition$count / max(one_partition$cum_count)
+				one_partition
+			})
+	indeg_dist.df[, 1] <- as.numeric(as.character(indeg_dist.df[, 1]))
+	indeg_dist.df[, 2] <- as.numeric(as.character(indeg_dist.df[, 2]))
+	indeg_dist.df[, 3] <- as.numeric(as.character(indeg_dist.df[, 3]))
+	indeg_dist.df[, 4] <- as.numeric(as.character(indeg_dist.df[, 4]))
+	indeg_dist.df[, 5] <- as.numeric(as.character(indeg_dist.df[, 5]))
+	indeg_dist.df$sample_type <- factor(indeg_dist.df$sample_type)
+	plot <- ggplot(indeg_dist.df, aes(x = (indeg), y = (pdf_val))) + 
+			geom_point(aes(group = sample_type, colour = sample_type, shape = sample_type), size=1)+
+			scale_x_log10()+ scale_y_log10() #+ theme(legend.position=c(.8, .7)) + xlim(0,log10(plot_x_lim*100))
+	plot <- change_plot_attributes_fancy(plot, "Sampling Method", 0:(sample_type_idx-1), sample_type_vec_in, "In Degree", "Empirical PDF")
+	save_ggplot(plot,file='sample_comp/indeg_pdf_logx_logy.pdf')
+}
+
+comp <- sampling_node_basic_comp(c('../data/iheart_prep_sample_RDN_basic.txt','../data/iheart_prep_sample_RW_basic.txt','../data/iheart_prep_sample_BFS0_basic.txt','../data/iheart_prep_sample_FF_basic.txt'),c('No Sampling','RDN','RW','BFS','FF'))
 
 #sampling_node_basic_comp('../data/iheart_prep_sample_RE_basic.txt')
 #sampling_node_basic_comp('../data/iheart_prep_sample_RNE_basic.txt')
