@@ -6,14 +6,11 @@ from random import choice
 
 CLR_THRESHOLD = 500000
 f = open(sys.argv[1], "r")
-lifespan_stat_file = open(sys.argv[3]+"lifespan_stat.csv", "w")
-raw_outdeg_stat_file = open(sys.argv[3]+"raw_outdeg_stat.csv", "w")
-raw_indeg_stat_file = open(sys.argv[3]+"raw_indeg_stat.csv", "w")
-lifespan_bin_size = int(sys.argv[2])
+lifespan_bin_size = int(sys.argv[4])
 lifespan_stat = {}
 raw_outdeg = {}
-raw_indeg = {}
-raw_indeg[0] = 0
+parent_count = {}
+parent_count[0] = 0
 count = 0
 for line in f:
     element = line.split(' ')
@@ -25,14 +22,15 @@ for line in f:
     is_leaf = bool(int(element[5].strip()))
     odeg = int((element[6].strip()))
     parent_list = element[7:len(element)]
-    if parent_list[0].strip() == '-1':
-        raw_indeg[0] += 1
-    else:
-        indeg = len(parent_list)
-        if indeg in raw_indeg:
-            raw_indeg[indeg] += 1
+    if is_leaf == False:
+        if parent_list[0].strip() == '-1':
+            parent_count[0] += 1
         else:
-            raw_indeg[indeg] = 1
+            indeg = len(parent_list)
+            if indeg in parent_count:
+                parent_count[indeg] += 1
+            else:
+                parent_count[indeg] = 1
     count = count+1
     if (count % (CLR_THRESHOLD/10)) == 0:
         print count
@@ -52,16 +50,46 @@ for line in f:
         lifespan_stat[lifespan_bin] = 1
 f.close()
 
+f = open(sys.argv[2], "r")
+count = 0
+indeg_before_act = {}
+for line in f:
+    element = line.split(',')
+    node_id = int(element[0].strip())
+    odeg = int(element[1].strip())
+    indeg = int(element[2].strip())
+    indeg_until_active = int(element[3].strip())
+    act_time = int(element[4].strip())
+    count = count+1
+    if (count % (CLR_THRESHOLD/10)) == 0:
+        print count
+    if indeg_until_active == -1:
+        continue
+    if indeg_until_active in indeg_before_act:
+        indeg_before_act[indeg_until_active] += 1
+    else:
+        indeg_before_act[indeg_until_active] = 1
+f.close()
+
+lifespan_stat_file = open(sys.argv[3]+"lifespan_stat.csv", "w")
+raw_outdeg_stat_file = open(sys.argv[3]+"raw_outdeg_stat.csv", "w")
+parent_count_before_act_file = open(sys.argv[3]+"parent_count_before_act.csv", "w")
+indeg_before_act_file = open(sys.argv[3]+"indeg_before_act.csv", "w")
+
 temp = sorted(lifespan_stat.iteritems(), key=operator.itemgetter(0), reverse=True)
 for tuple in temp:
     lifespan_stat_file.write('%s,%s\n'%(tuple[0],tuple[1]))
 temp = sorted(raw_outdeg.iteritems(), key=operator.itemgetter(0), reverse=True)
 for tuple in temp:
     raw_outdeg_stat_file.write('%s,%s\n'%(tuple[0],tuple[1]))
-temp = sorted(raw_indeg.iteritems(), key=operator.itemgetter(0), reverse=True)
+temp = sorted(parent_count.iteritems(), key=operator.itemgetter(0), reverse=True)
 for tuple in temp:
-    raw_indeg_stat_file.write('%s,%s\n'%(tuple[0],tuple[1]))
+    parent_count_before_act_file.write('%s,%s\n'%(tuple[0],tuple[1]))
+temp = sorted(indeg_before_act.iteritems(), key=operator.itemgetter(0), reverse=True)
+for tuple in temp:
+    indeg_before_act_file.write('%s,%s\n'%(tuple[0],tuple[1]))
 
 lifespan_stat_file.close()
 raw_outdeg_stat_file.close()
-raw_indeg_stat_file.close()
+parent_count_before_act_file.close()
+indeg_before_act_file.close()
