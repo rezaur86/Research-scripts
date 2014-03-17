@@ -30,22 +30,23 @@ raw_outdeg_analysis <- function (raw_outdeg_file_name){
 	raw_outdeg <<- as.data.frame(read.csv(raw_outdeg_file_name, header=FALSE))
 	colnames(raw_outdeg) <<- c('outdeg', 'count')
 	plot <- ggplot(raw_outdeg, aes(x = outdeg, y = count)) + geom_line() + xlab('Raw out degree') + ylab('Count') + scale_x_log10() + scale_y_log10()
-	save_ggplot(plot, 'raw_stat/raw_outdeg.pdf')
+	save_ggplot(plot, 'raw_stat_v2/raw_outdeg.pdf')
 }
 
 influence_threshold_analysis <- function (parent_count_file_name, indeg_before_act_file){
 	influence <- as.data.frame(read.csv(parent_count_file_name, header=FALSE))
-	influence[,3] <- 0
-	colnames(influence) <- c('indeg', 'count', 'indeg_type')
+	influence[,4] <- 0
+	colnames(influence) <- c('indeg', 'act_count', 'total_count', 'indeg_type')
 	influence_ar <- as.data.frame(read.csv(indeg_before_act_file, header=FALSE))
-	influence_ar[,3] <- 1
-	colnames(influence_ar) <- c('indeg', 'count', 'indeg_type')
+	influence_ar[,4] <- 1
+	colnames(influence_ar) <- c('indeg', 'act_count', 'total_count', 'indeg_type')
 	influence <- rbind(influence, influence_ar)
 	influence.df <- ddply(influence, c('indeg_type'), function(one_partition){
 				one_partition = one_partition[order(one_partition$indeg),]
-				one_partition$cum_count = cumsum(one_partition$count)
+				one_partition$cum_count = cumsum(one_partition$total_count)
 				one_partition$cdf_val = one_partition$cum_count / max(one_partition$cum_count)
-				one_partition$pdf_val = one_partition$count / max(one_partition$cum_count)
+				one_partition$pdf_val = one_partition$total_count / max(one_partition$cum_count)
+				one_partition$prob = one_partition$act_count/ one_partition$total_count
 				one_partition
 			})
 	influence.df$indeg_type <- factor(influence.df$indeg_type)
@@ -53,13 +54,33 @@ influence_threshold_analysis <- function (parent_count_file_name, indeg_before_a
 #	plot <- ggplot(influence, aes(x = indeg, y = (cumsum(count/sum(count))))) + geom_point() + xlab("Distinct Parent Count in Received Gifts") + ylab('Cumulative Proportion of Users') + 
 #			scale_x_log10(breaks=c(1,2,4,8,16,32,64,128,256,1000)) +
 #			scale_y_continuous(breaks=c(.4,.5,.6,.7,.8,.9,1.0), labels=c('40%','50%','60%','70%','80%','90%','100%'), limits=c(.4,1.0))
-	plot <- ggplot(influence.df, aes(x = (indeg), y = (cdf_val))) + 
+	plot <- ggplot(influence.df, aes(x = (indeg), y = (prob))) + 
 			geom_point(aes(group = indeg_type, colour = indeg_type, shape = indeg_type), size=1)+
-			scale_x_log10()#+ scale_y_log10() #+ theme(legend.position=c(.8, .7)) + xlim(0,log10(plot_x_lim*100))
-	plot <- change_plot_attributes_fancy(plot, "Activation Threshold", 0:1, c('Distinct Parent', 'Distinct AR'), "Count Before Activation", "Empirical CDF")
-	save_ggplot(plot, 'raw_stat_v2/indeg.pdf')
+			scale_x_log10(limits = c(1, 100)) #+ scale_y_log10() #+ theme(legend.position=c(.8, .7)) + xlim(0,log10(plot_x_lim*100))
+	plot <- change_plot_attributes_fancy(plot, "Requests from", 0:1, c('Distinct Parent', 'Distinct AR'), "Number of Request", "Prob of activation")
+	save_ggplot(plot, 'raw_stat_v2/adop_prob.pdf')
+}
+
+active_proportion_analysis <- function (active_proportion_file){
+	influence <- as.data.frame(read.csv(active_proportion_file, header=FALSE))
+	influence[,3] <- 0
+	colnames(influence) <- c('proportion', 'count','dummy_type')
+	influence.df <- ddply(influence, c('dummy_type'), function(one_partition){
+				one_partition = one_partition[order(one_partition$proportion),]
+				one_partition$cum_count = cumsum(one_partition$count)
+				one_partition$cdf_val = one_partition$cum_count / max(one_partition$cum_count)
+				one_partition$pdf_val = one_partition$count / max(one_partition$cum_count)
+				one_partition
+			})
+	influence.df$dummy_type <- factor(influence.df$dummy_type)
+	plot <- ggplot(influence.df, aes(x = (proportion), y = (cdf_val))) + 
+			geom_point(aes(group = dummy_type, colour = dummy_type, shape = dummy_type), size=1)
+#			scale_x_log10(limits = c(1, 100)) #+ scale_y_log10() #+ theme(legend.position=c(.8, .7)) + xlim(0,log10(plot_x_lim*100))
+	plot <- change_plot_attributes_fancy(plot, "", 0:0, c('Distinct Parent'), "Proportion", "CDF")
+	save_ggplot(plot, 'raw_stat_v2/active_proportion.pdf')
 }
 
 #parent_lifespan<-lifespan_analysis('raw_stat_1/lifespan_stat.csv')
-#raw_outdeg_analysis('raw_stat_1/raw_outdeg_stat.csv')
-influence_threshold_analysis('raw_stat_v2/parent_count_before_act.csv', 'raw_stat_v2/indeg_before_act.csv')
+#raw_outdeg_analysis('raw_stat_v2/raw_outdeg_stat.csv')
+#influence_threshold_analysis('raw_stat_v2/parent_count_before_act.csv', 'raw_stat_v2/indeg_before_act.csv')
+active_proportion_analysis('raw_stat_v2/act_proportion_count.csv')
