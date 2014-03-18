@@ -111,6 +111,7 @@ raw_outdeg_stat_file = open(sys.argv[3]+"raw_outdeg_stat.csv", "w")
 parent_count_before_act_file = open(sys.argv[3]+"parent_count_before_act.csv", "w")
 indeg_before_act_file = open(sys.argv[3]+"indeg_before_act.csv", "w")
 act_proportion_count_file = open(sys.argv[3]+"act_proportion_count.csv", "w")
+parent_proportion_file = open(sys.argv[3]+"parent_proportion.csv", "w")
 
 temp = sorted(lifespan_stat.iteritems(), key=operator.itemgetter(0), reverse=True)
 for tuple in temp:
@@ -126,19 +127,26 @@ for tuple in temp:
     indeg_before_act_file.write('%s,%s,%s\n'%(tuple[0], indeg_before_act[tuple[0]] if tuple[0] in indeg_before_act else 0, tuple[1]))
 
 alpha_account = {}
+parent_alpha = {}
 for each_parent in children_count:
-    alpha =  round((100.0*active_children[each_parent] if each_parent in active_children else 0) / children_count[each_parent])
-    if alpha not in alpha_account:
-        alpha_account[alpha] = 1
+    alpha =  (1.0*active_children[each_parent] if each_parent in active_children else 0) / children_count[each_parent]
+    rounded_alpha = round(100*alpha)
+    if rounded_alpha not in alpha_account:
+        alpha_account[rounded_alpha] = 1
     else:
-        alpha_account[alpha] += 1
+        alpha_account[rounded_alpha] += 1
+    parent_alpha[each_parent] = alpha
 
 temp = sorted(alpha_account.iteritems(), key=operator.itemgetter(0), reverse=True)
 for tuple in temp:
     act_proportion_count_file.write('%s,%s\n'%(tuple[0],tuple[1]))
+
+for each_parent in parent_alpha:
+    parent_proportion_file.write('%s,%s\n'%(each_parent,parent_alpha[each_parent]))
 
 lifespan_stat_file.close()
 raw_outdeg_stat_file.close()
 parent_count_before_act_file.close()
 indeg_before_act_file.close()
 act_proportion_count_file.close()
+parent_proportion_file.close()
