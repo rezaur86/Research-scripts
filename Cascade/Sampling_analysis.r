@@ -230,7 +230,7 @@ sampling_node_basic_comp <- function(node_info_sample_vec, sample_type_vec){
 	save_ggplot(plot,file='sample_comp/indeg_pdf_logx_logy.pdf')
 }
 
-comp <- sampling_node_basic_comp(c('../data/iheart_prep_sample_RDN_basic.txt','../data/iheart_prep_sample_RW_basic.txt','../data/iheart_prep_sample_BFS0_basic.txt','../data/iheart_prep_sample_FF_basic.txt'),c('No Sampling','RDN','RW','BFS','FF'))
+#comp <- sampling_node_basic_comp(c('../data/iheart_prep_sample_RDN_basic.txt','../data/iheart_prep_sample_RW_basic.txt','../data/iheart_prep_sample_BFS0_basic.txt','../data/iheart_prep_sample_FF_basic.txt'),c('No Sampling','RDN','RW','BFS','FF'))
 
 #sampling_node_basic_comp('../data/iheart_prep_sample_RE_basic.txt')
 #sampling_node_basic_comp('../data/iheart_prep_sample_RNE_basic.txt')

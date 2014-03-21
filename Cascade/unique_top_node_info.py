@@ -4,7 +4,7 @@ import csv
 import array
 from bitarray import bitarray
 import operator
-from logging import root
+import numpy
 
 MAX_USERS = 2**29 - 1
 NO_PARENT = MAX_USERS + 1
@@ -121,7 +121,7 @@ def visulization (infl_file_name, user_list, max_depth):
         os.popen("rm "+infl_file_name+'_'+str(VIZ_CUT_OFF)+'_'+str(i)+"graph.dot")
 
 def resolve_cascades (user_list):
-    global depth_expansion, depth_expansion_per_root, top_users_correlated_info, branching_dist, cascade_evolution
+    global depth_expansion, depth_expansion_per_root, top_users_correlated_info, branching_dist, cascade_evolution, parent_alpha
     not_root_users = Set()
     root_contains_users = {}
     depth_expansion = []
@@ -164,6 +164,14 @@ def resolve_cascades (user_list):
         for i in range(len(activities_per_root)):
             if activities_per_root[i][0] == a_root:
                 top_users_correlated_info.append((a_root,graph[a_root],graph[activities_per_root[i][1]],cascade_size,cascade_depth))
+        parent_infulence_proportion = []
+        for each_parent in graph:
+            if graph[each_parent] > 0:
+                parent_infulence_proportion.append(round(parent_alpha[each_parent], 3))
+        for i in range(0,1001,1):
+            alpha_count = parent_infulence_proportion.count(i/1000.0)
+            if alpha_count > 0:
+                influence_proportion_stat.append((a_root, cascade_size, cascade_depth, i, alpha_count))
     return
 
 graph = {}
@@ -178,6 +186,7 @@ depth_expansion_per_root = {}
 depth_expansion = []
 top_users_correlated_info = []
 size_vs_root_odeg = []
+influence_proportion_stat = []
 branching_dist_per_root = {}
 branching_dist = {}
 children_of_parent = {}
@@ -207,6 +216,9 @@ if __name__ == '__main__':
             children_of_parent[parent] = []
         children_of_parent[parent].append((a_child,receiving_time))
     print 'children_of_parent_file is read'
+    parent_alpha = array.array('f',(0,)*MAX_USERS)
+    for parent_id,alpha in csv.reader(open('/home/rezaur/output_cascade/raw_stat_v2/parent_proportion.csv')):
+        parent_alpha[int(parent_id)] = float(alpha)
     for each_infl_file in sys.argv[2].split(','):
         top_users = {}
         seen_time_window = {}
@@ -236,6 +248,7 @@ if __name__ == '__main__':
         evolution_file  = open(o_file_prefix+'evolution.csv', "w")
         out_degree_per_week_file  = open(o_file_prefix+'out_degree_per_week.csv', "w")
         time_to_next_generation_file  = open(o_file_prefix+'time_to_next_generation.csv', "w")
+        influence_proportion_stat_file  = open(o_file_prefix+'influence_proportion_stat.csv', "w")
         rooted_top_users = resolve_cascades(top_users)
         writer = csv.writer(depth_vs_expansion_file, quoting=csv.QUOTE_MINIMAL)
         writer.writerows(depth_expansion)
@@ -243,6 +256,9 @@ if __name__ == '__main__':
         writer = csv.writer(size_vs_root_odeg_file, quoting=csv.QUOTE_MINIMAL)
         writer.writerows(size_vs_root_odeg)        
         size_vs_root_odeg_file.close()
+        writer = csv.writer(influence_proportion_stat_file, quoting=csv.QUOTE_MINIMAL)
+        writer.writerows(influence_proportion_stat)        
+        influence_proportion_stat_file.close()
         writer = csv.writer(top_users_correlated_info_file, quoting=csv.QUOTE_MINIMAL)
         writer.writerows(top_users_correlated_info)        
         top_users_correlated_info_file.close()
