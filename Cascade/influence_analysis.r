@@ -27,10 +27,10 @@ influence_analysis <- function (dir){
 				one_partition
 			})
 	size_vs_influence$category <- factor(size_vs_influence$category)
-	plot <- ggplot(size_vs_influence, aes(x = alpha, y = (pdf_val))) + geom_line(aes(group = category, colour = category)) +
+	plot <- ggplot(size_vs_influence, aes(x = alpha/1000, y = (pdf_val))) + geom_line(aes(group = category, colour = category)) +
 			xlab('Influence proportion') + ylab('Empirical PDF')
 	save_ggplot(plot, 'size_influence_cat_pdf.pdf')
-	plot <- ggplot(size_vs_influence, aes(x = alpha, y = (cdf_val))) + geom_line(aes(group = category, colour = category)) +
+	plot <- ggplot(size_vs_influence, aes(x = alpha/1000, y = (cdf_val))) + geom_line(aes(group = category, colour = category)) +
 			xlab('Influence proportion') + ylab('Empirical CDF')
 	save_ggplot(plot, 'size_influence_cat_cdf.pdf')
 	#	size_vs_influence.small_cascades <- ddply(size_vs_influence[size_vs_influence$size < 15, ],

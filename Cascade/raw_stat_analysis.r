@@ -56,7 +56,7 @@ influence_threshold_analysis <- function (parent_count_file_name, indeg_before_a
 #			scale_y_continuous(breaks=c(.4,.5,.6,.7,.8,.9,1.0), labels=c('40%','50%','60%','70%','80%','90%','100%'), limits=c(.4,1.0))
 	plot <- ggplot(influence.df, aes(x = (indeg), y = (prob))) + 
 			geom_point(aes(group = indeg_type, colour = indeg_type, shape = indeg_type), size=1)+
-			scale_x_log10(limits = c(1, 100)) #+ scale_y_log10() #+ theme(legend.position=c(.8, .7)) + xlim(0,log10(plot_x_lim*100))
+			scale_x_log10(limits = c(1, 1000)) #+ scale_y_log10() #+ theme(legend.position=c(.8, .7)) + xlim(0,log10(plot_x_lim*100))
 	plot <- change_plot_attributes_fancy(plot, "Requests from", 0:1, c('Distinct Parent', 'Distinct AR'), "Number of Request", "Prob of activation")
 	save_ggplot(plot, 'raw_stat_v2/adop_prob.pdf')
 }
@@ -83,4 +83,4 @@ active_proportion_analysis <- function (active_proportion_file){
 #parent_lifespan<-lifespan_analysis('raw_stat_1/lifespan_stat.csv')
 #raw_outdeg_analysis('raw_stat_v2/raw_outdeg_stat.csv')
 #influence_threshold_analysis('raw_stat_v2/parent_count_before_act.csv', 'raw_stat_v2/indeg_before_act.csv')
-active_proportion_analysis('raw_stat_v2/act_proportion_count.csv')
+#active_proportion_analysis('raw_stat_v2/act_proportion_count.csv')
