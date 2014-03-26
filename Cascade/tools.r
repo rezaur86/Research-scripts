@@ -9,11 +9,11 @@ myPlotTheme <- function(base_size = 24){
 	return(theme_bw(base_size = base_size, ))	
 }
 
-save_ggplot <- function (plot, file){
+save_ggplot <- function (plot, file, theme_size = 24, theme_opts = opts(legend.position=c(.7, .7))){
 	file_name <- file
 #	ggsave(plot,file=file_name)
 	pdf(file_name)
-	plot <- plot + myPlotTheme(24) + opts(legend.position=c(.7, .7))
+	plot <- plot + myPlotTheme(theme_size) + theme_opts
 	print(plot)
 	dev.off()
 	return(plot)
