@@ -151,6 +151,11 @@ def resolve_cascades (user_list):
             depth_expansion.append((d,depth_expansion_per_root[d],a_root, 1,
                                     depth_min_time_per_root[d] if d in depth_min_time_per_root else None,
                                     depth_max_time_per_root[d] if d in depth_max_time_per_root else None)) # 1 for distinct root
+        max_width = max(depth_expansion_per_root.iteritems(), key=operator.itemgetter(1))[1]
+        if max_width not in cascade_width:
+            cascade_width[max_width] = 1
+        else:
+            cascade_width[max_width] += 1
         for (degree,depth) in branching_dist_per_root: #Collecting out degree distribution for branching process.
             if (degree,depth) in branching_dist:
                 branching_dist[(degree,depth)] += branching_dist_per_root[(degree,depth)]
@@ -183,6 +188,7 @@ time_to_next_generation = {}
 out_degree_per_week_per_root = {}
 out_degree_per_week = {}
 depth_expansion_per_root = {}
+cascade_width = {}
 depth_expansion = []
 top_users_correlated_info = []
 size_vs_root_odeg = []
@@ -244,6 +250,7 @@ if __name__ == '__main__':
         top_users_correlated_info_file  = open(o_file_prefix+'roots_correlated_info.csv', "w")
         size_vs_root_odeg_file  = open(o_file_prefix+'size_vs_root_odeg.csv', "w")
         depth_vs_expansion_file  = open(o_file_prefix+str(MAX_DEPTH)+'_depth_vs_expansion.csv', "w")
+        width_file  = open(o_file_prefix+'_max_width.csv', "w")
         branching_dist_file  = open(o_file_prefix+'branching_dist.csv', "w")
         evolution_file  = open(o_file_prefix+'evolution.csv', "w")
         out_degree_per_week_file  = open(o_file_prefix+'out_degree_per_week.csv', "w")
@@ -253,6 +260,10 @@ if __name__ == '__main__':
         writer = csv.writer(depth_vs_expansion_file, quoting=csv.QUOTE_MINIMAL)
         writer.writerows(depth_expansion)
         depth_vs_expansion_file.close()
+        temp = sorted(cascade_width.iteritems(), key=operator.itemgetter(0), reverse=True)
+        for tuple in temp:
+            width_file.write('%s,%s\n'%(tuple[0],tuple[1]))
+        width_file.close()
         writer = csv.writer(size_vs_root_odeg_file, quoting=csv.QUOTE_MINIMAL)
         writer.writerows(size_vs_root_odeg)        
         size_vs_root_odeg_file.close()
