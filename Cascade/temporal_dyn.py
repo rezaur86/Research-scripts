@@ -39,7 +39,8 @@ for line in f:
     tmp_time = time.localtime(born_time)
     born_day = (time.strftime("%Y", tmp_time),
                       time.strftime("%U", tmp_time),
-                      time.strftime("%w", tmp_time))
+                      time.strftime("%w", tmp_time),
+                      time.strftime("%H", tmp_time))
     if born_day not in births:
         births[born_day] = 1
     else:
@@ -47,7 +48,8 @@ for line in f:
     tmp_time = time.localtime(last_seen_time)
     last_seen_day = (time.strftime("%Y", tmp_time),
                       time.strftime("%U", tmp_time),
-                      time.strftime("%w", tmp_time))
+                      time.strftime("%w", tmp_time),
+                      time.strftime("%H", tmp_time))
     if last_seen_day not in last_seens:
         last_seens[last_seen_day] = 1
     else:
@@ -56,7 +58,8 @@ for line in f:
         tmp_time = time.localtime(activation_time)
         activation_day = (time.strftime("%Y", tmp_time),
                           time.strftime("%U", tmp_time),
-                          time.strftime("%w", tmp_time))
+                          time.strftime("%w", tmp_time),
+                          time.strftime("%H", tmp_time))
         if activation_day not in activations:
             activations[activation_day] = 1
         else:
@@ -64,7 +67,8 @@ for line in f:
         tmp_time = time.localtime(last_act_time)
         last_act_day = (time.strftime("%Y", tmp_time),
                           time.strftime("%U", tmp_time),
-                          time.strftime("%w", tmp_time))
+                          time.strftime("%w", tmp_time),
+                          time.strftime("%H", tmp_time))
         if last_act_day not in last_acts:
             last_acts[last_act_day] = 1
         else:
@@ -76,20 +80,20 @@ f.close()
 
 daily_born_file = open(sys.argv[2]+"daily_born.csv", "w")
 for tuple in births:
-    daily_born_file.write('%s,%s,%s,%s\n'%(tuple[0],tuple[1],tuple[2],births[tuple]))
+    daily_born_file.write('%s,%s,%s,%s,%s\n'%(tuple[0],tuple[1],tuple[2],tuple[3],births[tuple]))
 daily_born_file.close()
 
 daily_activation_file = open(sys.argv[2]+"daily_activation.csv", "w")
 for tuple in activations:
-    daily_activation_file.write('%s,%s,%s,%s\n'%(tuple[0],tuple[1],tuple[2],activations[tuple]))
+    daily_activation_file.write('%s,%s,%s,%s,%s\n'%(tuple[0],tuple[1],tuple[2],tuple[3],activations[tuple]))
 daily_activation_file.close()
 
 daily_last_act_file = open(sys.argv[2]+"daily_last_act.csv", "w")
 for tuple in last_acts:
-    daily_last_act_file.write('%s,%s,%s,%s\n'%(tuple[0],tuple[1],tuple[2],last_acts[tuple]))
+    daily_last_act_file.write('%s,%s,%s,%s,%s\n'%(tuple[0],tuple[1],tuple[2],tuple[3],last_acts[tuple]))
 daily_last_act_file.close()
 
 daily_last_seen_file = open(sys.argv[2]+"daily_last_seen.csv", "w")
 for tuple in last_seens:
-    daily_last_seen_file.write('%s,%s,%s,%s\n'%(tuple[0],tuple[1],tuple[2],last_seens[tuple]))
+    daily_last_seen_file.write('%s,%s,%s,%s,%s\n'%(tuple[0],tuple[1],tuple[2],tuple[3],last_seens[tuple]))
 daily_last_seen_file.close()

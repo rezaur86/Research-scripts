@@ -1,5 +1,5 @@
-source('~/scripts/cascade/tools.r')
-source('~/scripts/cascade/plfit.r')
+source('~/scripts/Cascade/tools.r')
+#source('~/scripts/Cascade/plfit.r')
 library(ggplot2)
 library(gtable)
 library(grid)
@@ -265,6 +265,15 @@ analyze_coverage <- function(dir){
 	setwd(dir)
 	save_ggplot(plot,file='size_coverage.pdf')
 	setwd(prev_dir)
+}
+
+width_distribution <- function(file_name){
+	cascade_width <- as.data.frame(read.csv(file_name, header=FALSE))
+	colnames(cascade_width) <- c('width', 'count')
+	plot <- ggplot(cascade_width, aes(x = width, y = count)) + geom_line() + xlab('Width') + ylab('Count') +
+			scale_x_log10() + scale_y_log10()
+	save_ggplot(plot, 'iheart_cascade/width.pdf', 10,
+			opts(axis.text.x = element_text(angle = 0, hjust = 0), legend.position=c(.7, .7)))
 }
 
 size_vs_root_characteristics <- function (dir){

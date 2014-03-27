@@ -31,7 +31,7 @@ def manage_depth_time_per_root(depth,time):
 
 def evolution_size_per_root(out_degree, time):
     global evolution_per_root, out_degree_per_week_per_root
-    week = time/604800
+    week = time/ 86400 #604800
     if week not in evolution_per_root:
         evolution_per_root[week] = 1
     else:
@@ -247,7 +247,7 @@ if __name__ == '__main__':
                     top_users[long(splits[1].strip())] = long(splits[0].strip())
                 seen_time_window[time_window].add(int(splits[0].strip()))
         top_infl_file.close()
-        if TOP_N <= len(top_users):
+        if TOP_N < len(top_users):
             o_file_prefix = each_infl_file+'_top_'+str(TOP_N)
         else:
             o_file_prefix = each_infl_file+'_all_'
@@ -281,9 +281,9 @@ if __name__ == '__main__':
             branching_dist_file.write('%s,%s,%s\n' %(outdeg,branching_dist[(outdeg,depth)],depth))
         branching_dist_file.close()
         for (each_root, each_evolution) in cascade_evolution:
-            for i in range(2059, 2117): #starting time 14413*86400
-                if i in each_evolution:
-                    evolution_file.write('%s,%s,%s\n' %(each_root, i,each_evolution[i]))
+            for i in range(14413, 14819): # start,end time for week = range(2059, 2117): #start,end time for day 14413*86400, 14819*86400
+                evolution_file.write('%s,%s,%s\n' %(each_root, i-14413+1, each_evolution[i] if i in each_evolution else 0))
+                
         evolution_file.close()        
         for (outdeg,week) in out_degree_per_week:
             out_degree_per_week_file.write('%s,%s,%s\n' %(outdeg,out_degree_per_week[(outdeg,week)],week))
