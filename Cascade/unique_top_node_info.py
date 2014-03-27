@@ -122,6 +122,7 @@ def visulization (infl_file_name, user_list, max_depth):
 
 def resolve_cascades (user_list):
     global depth_expansion, depth_expansion_per_root, top_users_correlated_info, branching_dist, cascade_evolution, parent_alpha
+    global cascade_count, cascade_width
     not_root_users = Set()
     root_contains_users = {}
     depth_expansion = []
@@ -140,6 +141,8 @@ def resolve_cascades (user_list):
             #################################################################################
         else:
             continue
+        cascade_count += 1
+        print 'Cascade Count %s' %cascade_count
         cascade_size = len(graph)
         cascade_depth = max(depth_expansion_per_root)
         if cascade_depth == 0:
@@ -181,6 +184,7 @@ def resolve_cascades (user_list):
 
 graph = {}
 graph_node_count = 0
+cascade_count = 0
 activities_per_root = []
 evolution_per_root = {}
 cascade_evolution = []
