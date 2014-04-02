@@ -67,22 +67,45 @@ temporal_analysis <- function (daily_born, daily_activation, daily_last_act, dai
 			opts(axis.text.x = element_text(angle = 90, hjust = 0), legend.position=c(.9, .7)))
 }
 
-burstiness <- function(file){
+burstiness_analysis <- function(file='iheart_test/top_size.csv_all_evolution.csv'){
 	evolution <- as.data.frame(read.csv(file, header=FALSE))
-	colnames(evolution) <- c('root', 'day', 'evolution')
-	evolution.df <- ddply(evolution, c('root'), summarise, size_sd = sd(evolution), avg_size = mean(evolution),
-			burstiness = round((size_sd - avg_size) / (size_sd + avg_size)), 3)
-	evolution.df <- as.data.frame(table(evolution.df$burstiness))
+	colnames(evolution) <- c('root', 'first_day', 'last_day', 'burstiness')
+#	evolution.df <- ddply(evolution, c('root'), summarise, size_sd = sd(evolution), avg_size = mean(evolution))
+	print(summary(evolution))
+	evolution.df <- as.data.frame(table(evolution$burstiness))
 	colnames(evolution.df) <- c('burstiness','count')
-	plot <- ggplot(evolution.df, aes(x = burstiness, y = count)) + geom_line() + xlab('Burstiness') + ylab('Count') +
-			scale_x_log10() + scale_y_log10()
-	save_ggplot(plot, 'iheart_cascade/burstiness.pdf', 10,
+	evolution.df$burstiness <- as.numeric(levels(evolution.df$burstiness))[evolution.df$burstiness]
+	evolution.df <- evolution.df[order(evolution.df$burstiness), ]
+	evolution.df$cum_sum <- cumsum(evolution.df$count)
+	evolution.df$cdf <- evolution.df$cum_sum/max(evolution.df$cum_su)
+	print(head(evolution.df))
+	plot <- ggplot(evolution.df[((evolution.df$burstiness > -1) & (evolution.df$burstiness < 1)), ],
+			aes(x = burstiness, y = count)) + geom_line() + xlab('Burstiness') + ylab('Count')
+#			scale_x_log10() + scale_y_log10()
+	save_ggplot(plot, 'iheart_cascade/burstiness_count.pdf', 10,
 			opts(axis.text.x = element_text(angle = 0, hjust = 0), legend.position=c(.7, .7)))
+	plot <- ggplot(evolution.df[((evolution.df$burstiness > -1) & (evolution.df$burstiness < 1)), ],
+			aes(x = burstiness, y = cdf)) + geom_line() + xlab('Burstiness') + ylab('CDF')
+#			scale_x_log10() + scale_y_log10()
+	save_ggplot(plot, 'iheart_cascade/burstiness_cdf.pdf', 10,
+			opts(axis.text.x = element_text(angle = 0, hjust = 0), legend.position=c(.7, .7)))
+	evolution.life <- as.data.frame(table(evolution$last_day-evolution$first_day+1))
+	colnames(evolution.life) <- c('life_time','count')
+	evolution.life$life_time <- as.numeric(levels(evolution.life$life_time))[evolution.life$life_time]
+	evolution.life <- evolution.life[order(evolution.life$life_time), ]
+	evolution.life$cum_sum <- cumsum(evolution.life$count)
+	evolution.life$cdf <- evolution.life$cum_sum/max(evolution.life$cum_su)
+	print(summary(evolution.life))
+	plot <- ggplot(evolution.life,
+			aes(x = life_time, y = cdf)) + geom_line() + xlab('Life time (Day)') + ylab('CDF')
+	save_ggplot(plot, 'iheart_cascade/lifetime_cdf.pdf', 10,
+			opts(axis.text.x = element_text(angle = 0, hjust = 0), legend.position=c(.7, .7)))
+	return(evolution)
 }
 
-act<-temporal_analysis('raw_stat_v2/daily_born.csv', 'raw_stat_v2/daily_activation.csv',
-		'raw_stat_v2/daily_last_act.csv', 'raw_stat_v2/daily_last_seen.csv')
-burstiness ('iheart_cascade/')
+#act<-temporal_analysis('raw_stat_v2/daily_born.csv', 'raw_stat_v2/daily_activation.csv',
+#		'raw_stat_v2/daily_last_act.csv', 'raw_stat_v2/daily_last_seen.csv')
+#burstiness ('iheart_cascade/')
 #act<-temporal_analysis('iheart_test/daily_born.csv', 'iheart_test/daily_activation.csv',
 #		'iheart_test/daily_last_act.csv', 'iheart_test/daily_last_seen.csv')
 #raw_outdeg_analysis('raw_stat_v2/raw_outdeg_stat.csv')

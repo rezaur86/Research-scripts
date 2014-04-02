@@ -4,7 +4,8 @@ import csv
 import array
 from bitarray import bitarray
 import operator
-import numpy
+import numpy as np
+from numpy.lib.scimath import sqrt
 
 MAX_USERS = 2**29 - 1
 NO_PARENT = MAX_USERS + 1
@@ -281,9 +282,16 @@ if __name__ == '__main__':
             branching_dist_file.write('%s,%s,%s\n' %(outdeg,branching_dist[(outdeg,depth)],depth))
         branching_dist_file.close()
         for (each_root, each_evolution) in cascade_evolution:
-            for i in range(14413, 14819): # start,end time for week = range(2059, 2117): #start,end time for day 14413*86400, 14819*86400
-                evolution_file.write('%s,%s,%s\n' %(each_root, i-14413+1, each_evolution[i] if i in each_evolution else 0))
-                
+            first_day = min(each_evolution)
+            last_day = max(each_evolution)
+            temp_evolution = []
+            for i in range(first_day, last_day+1): # start,end time for week = range(2059, 2117): #start,end time for day 14413*86400, 14819*86400
+#                 evolution_file.write('%s,%s,%s\n' %(each_root, i-first_day+1, each_evolution[i] if i in each_evolution else 0))
+                temp_evolution.append(each_evolution[i] if i in each_evolution else 0)
+            sd = np.sqrt(np.var(temp_evolution))
+            avg = np.average(temp_evolution)
+            burstiness = round(((sd - avg) / (sd + avg)), 3)
+            evolution_file.write('%s,%s,%s,%s\n' %(each_root, first_day-14413+1, last_day-14413+1, burstiness))
         evolution_file.close()        
         for (outdeg,week) in out_degree_per_week:
             out_degree_per_week_file.write('%s,%s,%s\n' %(outdeg,out_degree_per_week[(outdeg,week)],week))
