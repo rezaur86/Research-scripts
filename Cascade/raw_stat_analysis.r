@@ -29,8 +29,25 @@ lifespan_analysis <- function(lifespan_file_name){
 raw_outdeg_analysis <- function (raw_outdeg_file_name){
 	raw_outdeg <<- as.data.frame(read.csv(raw_outdeg_file_name, header=FALSE))
 	colnames(raw_outdeg) <<- c('outdeg', 'count')
-	plot <- ggplot(raw_outdeg, aes(x = outdeg, y = count)) + geom_line() + xlab('Raw out degree') + ylab('Count') + scale_x_log10() + scale_y_log10()
+	raw_outdeg <- raw_outdeg[order(raw_outdeg$outdeg),]
+	raw_outdeg$cum_count <- cumsum(raw_outdeg$count)
+	raw_outdeg$cdf <- raw_outdeg$cum_count / max(raw_outdeg$cum_count)
+	plot <- ggplot(raw_outdeg, aes(x = outdeg, y = cdf)) + geom_line() +
+			xlab('Number of sent ARs') + ylab('Empirical CDF') + #+ scale_y_log10()
+			scale_x_log10(limits = c(1, 1000))
 	save_ggplot(plot, 'raw_stat_v2/raw_outdeg.pdf')
+}
+
+raw_indeg_analysis <- function (raw_indeg_file_name){
+	raw_indeg <<- as.data.frame(read.csv(raw_indeg_file_name, header=FALSE))
+	colnames(raw_indeg) <<- c('indeg', 'count')
+	raw_indeg <- raw_indeg[order(raw_indeg$indeg),]
+	raw_indeg$cum_count <- cumsum(raw_indeg$count)
+	raw_indeg$cdf <- raw_indeg$cum_count / max(raw_indeg$cum_count)
+	plot <- ggplot(raw_indeg, aes(x = indeg, y = cdf)) + geom_line() +
+			xlab('Number of received ARs') + ylab('Empirical CDF') + #+ scale_y_log10()
+			scale_x_log10(limits = c(1, 1000))
+	save_ggplot(plot, 'raw_stat_v2/raw_indeg.pdf')
 }
 
 influence_threshold_analysis <- function (parent_count_file_name, indeg_before_act_file){
@@ -78,6 +95,23 @@ active_proportion_analysis <- function (active_proportion_file){
 #			scale_x_log10(limits = c(1, 100)) #+ scale_y_log10() #+ theme(legend.position=c(.8, .7)) + xlim(0,log10(plot_x_lim*100))
 	plot <- change_plot_attributes_fancy(plot, "", 0:0, c('Distinct Parent'), "Proportion", "CDF")
 	save_ggplot(plot, 'raw_stat_v2/active_proportion.pdf')
+}
+
+invitation_burstiness <- function(file='raw_stat_v2/invitation_burstiness_stat.csv'){
+	invitations <- as.data.frame(read.csv(file, header=FALSE))
+	colnames(invitations) <- c('burstiness', 'count')
+#	invitations$burstiness <- as.numeric(levels(invitations$burstiness))[invitations$burstiness]
+	invitations <- invitations[order(invitations$burstiness), ]
+	invitations$cum_sum <- cumsum(invitations$count)
+	invitations$cdf <- invitations$cum_sum/max(invitations$cum_su)
+	plot <- ggplot(invitations[((invitations$burstiness > -1) & (invitations$burstiness < 1)), ],
+			aes(x = burstiness, y = count)) + geom_line() + xlab('Burstiness') + ylab('Count')
+#			scale_x_log10() + scale_y_log10()
+	save_ggplot(plot, 'raw_stat_v2/burstiness_count.pdf')
+	plot <- ggplot(invitations[((invitations$burstiness > -1) & (invitations$burstiness < 1)), ],
+			aes(x = burstiness, y = cdf)) + geom_line() + xlab('Burstiness') + ylab('Empirical CDF')
+#			scale_x_log10() + scale_y_log10()
+	save_ggplot(plot, 'raw_stat_v2/burstiness_cdf.pdf')
 }
 
 #parent_lifespan<-lifespan_analysis('raw_stat_1/lifespan_stat.csv')

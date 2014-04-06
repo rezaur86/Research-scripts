@@ -150,12 +150,21 @@ def resolve_cascades (user_list):
             size_vs_root_odeg.append((cascade_size,0))
         else:
             size_vs_root_odeg.append((cascade_size,depth_expansion_per_root[1]))
-        cascade_evolution.append((a_root,evolution_per_root))
+#         cascade_evolution.append((a_root,evolution_per_root))
+        first_day = min(evolution_per_root)
+        last_day = max(evolution_per_root)
+        temp_evolution = []
+        for i in range(first_day, last_day+1): # start,end time for week = range(2059, 2117): #start,end time for day 14413*86400, 14819*86400
+            temp_evolution.append(evolution_per_root[i] if i in evolution_per_root else 0)
+        sd = np.sqrt(np.var(temp_evolution))
+        avg = np.average(temp_evolution)
+        burstiness = round(((sd - avg) / (sd + avg)), 3)
         for d in depth_expansion_per_root:
             depth_expansion.append((d,depth_expansion_per_root[d],a_root, 1,
                                     depth_min_time_per_root[d] if d in depth_min_time_per_root else None,
                                     depth_max_time_per_root[d] if d in depth_max_time_per_root else None)) # 1 for distinct root
         max_width = max(depth_expansion_per_root.iteritems(), key=operator.itemgetter(1))[1]
+        cascade_evolution.append((a_root, cascade_size, cascade_depth, max_width, first_day-14413+1, last_day-14413+1, burstiness))
         if max_width not in cascade_width:
             cascade_width[max_width] = 1
         else:
@@ -281,17 +290,8 @@ if __name__ == '__main__':
         for (outdeg,depth) in branching_dist:
             branching_dist_file.write('%s,%s,%s\n' %(outdeg,branching_dist[(outdeg,depth)],depth))
         branching_dist_file.close()
-        for (each_root, each_evolution) in cascade_evolution:
-            first_day = min(each_evolution)
-            last_day = max(each_evolution)
-            temp_evolution = []
-            for i in range(first_day, last_day+1): # start,end time for week = range(2059, 2117): #start,end time for day 14413*86400, 14819*86400
-#                 evolution_file.write('%s,%s,%s\n' %(each_root, i-first_day+1, each_evolution[i] if i in each_evolution else 0))
-                temp_evolution.append(each_evolution[i] if i in each_evolution else 0)
-            sd = np.sqrt(np.var(temp_evolution))
-            avg = np.average(temp_evolution)
-            burstiness = round(((sd - avg) / (sd + avg)), 3)
-            evolution_file.write('%s,%s,%s,%s\n' %(each_root, first_day-14413+1, last_day-14413+1, burstiness))
+        writer = csv.writer(evolution_file, quoting=csv.QUOTE_MINIMAL)
+        writer.writerows(cascade_evolution)
         evolution_file.close()        
         for (outdeg,week) in out_degree_per_week:
             out_degree_per_week_file.write('%s,%s,%s\n' %(outdeg,out_degree_per_week[(outdeg,week)],week))
