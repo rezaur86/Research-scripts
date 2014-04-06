@@ -12,11 +12,11 @@ def reg_children(parent_list, is_leaf):
         u_p = parent_list[i].strip().split(',')
         if u_p[0] == '-1':
             return
-        invitation_day = int(u_p[1])/86400
-        if invitation_day in invitations:
-            invitations[invitation_day] += 1
+        invitation_hour = int(u_p[1])/3600 #Hourly
+        if invitation_hour in invitations:
+            invitations[invitation_hour] += 1
         else:
-            invitations[invitation_day] = 1
+            invitations[invitation_hour] = 1
         if u_p[0] not in children_count:
             children_count[u_p[0]] = 1
         else:
@@ -26,18 +26,25 @@ def reg_children(parent_list, is_leaf):
                 active_children[u_p[0]] = 1
             else:
                 active_children[u_p[0]] += 1
-    first_invitation_day = min(invitations)
-    last_invitation_day = max(invitations)
+    first_invitation_hour = min(invitations)
+    last_invitation_hour = max(invitations)
+    elapsed_hour = last_invitation_hour - first_invitation_hour + 1
+    if elapsed_hour in invitation_elapsed_time:
+        invitation_elapsed_time[elapsed_hour] += 1
+    else:
+        invitation_elapsed_time[elapsed_hour] = 1
+    if elapsed_hour == 1:
+        return
     temp_invitations = []
-    for i in range(first_invitation_day, last_invitation_day+1): # start,end time for week = range(2059, 2117): #start,end time for day 14413*86400, 14819*86400
+    for i in range(first_invitation_hour, last_invitation_hour+1):
         temp_invitations.append(invitations[i] if i in invitations else 0)
     sd = np.sqrt(np.var(temp_invitations))
     avg = np.average(temp_invitations)
     burstiness = round(((sd - avg) / (sd + avg)), 3)
     if burstiness in invitation_burstiness_stat:
-        invitation_burstiness_stat[burstiness] += 1
+        invitation_burstiness_stat[burstiness].append(elapsed_hour)
     else:
-        invitation_burstiness_stat[burstiness] = 1
+        invitation_burstiness_stat[burstiness] = [elapsed_hour]
 
     
 CLR_THRESHOLD = 500000
@@ -52,6 +59,7 @@ critical_parent_count[0] = 0
 children_count = {}
 active_children = {}
 invitation_burstiness_stat = {}
+invitation_elapsed_time = {}
 count = 0
 for line in f:
     element = line.split(' ')
@@ -140,6 +148,7 @@ indeg_before_act_file = open(sys.argv[3]+"indeg_before_act.csv", "w")
 act_proportion_count_file = open(sys.argv[3]+"act_proportion_count.csv", "w")
 parent_proportion_file = open(sys.argv[3]+"parent_proportion.csv", "w")
 invitation_burstiness_stat_file = open(sys.argv[3]+"invitation_burstiness_stat.csv", "w")
+invitation_elapsed_time_stat_file = open(sys.argv[3]+"invitation_elapsed_time_stat.csv", "w")
 
 temp = sorted(lifespan_stat.iteritems(), key=operator.itemgetter(0), reverse=True)
 for tuple in temp:
@@ -158,7 +167,12 @@ for tuple in temp:
     indeg_before_act_file.write('%s,%s,%s\n'%(tuple[0], indeg_before_act[tuple[0]] if tuple[0] in indeg_before_act else 0, tuple[1]))
 temp = sorted(invitation_burstiness_stat.iteritems(), key=operator.itemgetter(0), reverse=True)
 for tuple in temp:
-    invitation_burstiness_stat_file.write('%s,%s\n'%(tuple[0],tuple[1]))
+    invitation_burstiness_stat_file.write('%s,%s,%s,%s\n'%(tuple[0], len(tuple[1]),
+                                                           round(np.average(tuple[1]),3),
+                                                           round(np.median(tuple[1]),3)))
+temp = sorted(invitation_elapsed_time.iteritems(), key=operator.itemgetter(0), reverse=True)
+for tuple in temp:
+    invitation_elapsed_time_stat_file.write('%s,%s\n'%(tuple[0],tuple[1]))
 
 alpha_account = {}
 for each_parent in children_count:
@@ -183,3 +197,4 @@ indeg_before_act_file.close()
 act_proportion_count_file.close()
 parent_proportion_file.close()
 invitation_burstiness_stat_file.close()
+invitation_elapsed_time_stat_file.close()
