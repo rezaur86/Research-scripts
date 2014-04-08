@@ -267,13 +267,32 @@ analyze_coverage <- function(dir){
 	setwd(prev_dir)
 }
 
+size_distribution <- function(file_name){
+	cascade_size <- as.data.frame(read.csv(file_name, header=FALSE))
+	colnames(cascade_size) <- c('size', 'count')
+	cascade_size$cum_count <- cumsum(cascade_size$count)
+	cascade_size$pdf <- cascade_size$count / max(cascade_size$cum_count)
+	plot <- ggplot(cascade_size, aes(x = size, y = pdf)) + geom_point(size=0.8) + xlab('Size') + ylab('Empirical PDF') +
+			scale_x_log10() + scale_y_log10()
+	save_ggplot(plot, 'iheart_cascade/size.pdf')
+}
+depth_distribution <- function(file_name){
+	cascade_depth <- as.data.frame(read.csv(file_name, header=FALSE))
+	colnames(cascade_depth) <- c('depth', 'count')
+	cascade_depth$cum_count <- cumsum(cascade_depth$count)
+	cascade_depth$pdf <- cascade_depth$count / max(cascade_depth$cum_count)
+	plot <- ggplot(cascade_depth, aes(x = depth, y = pdf)) + geom_point() + xlab('Depth') + ylab('Empirical PDF') +
+			scale_y_log10()
+	save_ggplot(plot, 'iheart_cascade/depth.pdf')
+}
 width_distribution <- function(file_name){
 	cascade_width <- as.data.frame(read.csv(file_name, header=FALSE))
 	colnames(cascade_width) <- c('width', 'count')
-	plot <- ggplot(cascade_width, aes(x = width, y = count)) + geom_line() + xlab('Width') + ylab('Count') +
+	cascade_width$cum_count <- cumsum(cascade_width$count)
+	cascade_width$pdf <- cascade_width$count / max(cascade_width$cum_count)
+	plot <- ggplot(cascade_width, aes(x = width, y = pdf)) + geom_point(size=0.8) + xlab('Width') + ylab('Empirical PDF') +
 			scale_x_log10() + scale_y_log10()
-	save_ggplot(plot, 'iheart_cascade/width.pdf', 10,
-			opts(axis.text.x = element_text(angle = 0, hjust = 0), legend.position=c(.7, .7)))
+	save_ggplot(plot, 'iheart_cascade/width.pdf')
 }
 
 size_vs_root_characteristics <- function (dir){
