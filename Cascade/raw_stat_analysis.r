@@ -68,7 +68,8 @@ raw_indeg_analysis <- function (raw_indeg_file_name){
 	save_ggplot(plot, 'raw_stat_v2/raw_indeg.pdf')
 }
 
-influence_threshold_analysis <- function (parent_count_file_name, indeg_before_act_file){
+influence_threshold_analysis <- function (parent_count_file_name = 'raw_stat_v2/parent_count_before_act.csv',
+		indeg_before_act_file= 'raw_stat_v2/indeg_before_act.csv'){
 	influence <- as.data.frame(read.csv(parent_count_file_name, header=FALSE))
 	influence[,4] <- 0
 	colnames(influence) <- c('indeg', 'act_count', 'total_count', 'indeg_type')
@@ -91,9 +92,12 @@ influence_threshold_analysis <- function (parent_count_file_name, indeg_before_a
 #			scale_y_continuous(breaks=c(.4,.5,.6,.7,.8,.9,1.0), labels=c('40%','50%','60%','70%','80%','90%','100%'), limits=c(.4,1.0))
 	plot <- ggplot(influence.df, aes(x = (indeg), y = (prob))) + 
 			geom_point(aes(group = indeg_type, colour = indeg_type, shape = indeg_type), size=1)+
-			scale_x_log10(limits = c(1, 1000)) #+ scale_y_log10() #+ theme(legend.position=c(.8, .7)) + xlim(0,log10(plot_x_lim*100))
-	plot <- change_plot_attributes_fancy(plot, "Requests from", 0:1, c('Distinct Parent', 'Distinct AR'), "Number of Request", "Prob of activation")
-	save_ggplot(plot, 'raw_stat_v2/adop_prob.pdf')
+			scale_x_log10(limits = c(1, 10^3)) #+ scale_y_log10()
+#			geom_smooth(aes(group = indeg_type, colour = indeg_type, shape = indeg_type), se=FALSE)
+	plot <- change_plot_attributes_fancy(plot, "Requests from", 0:1, c('Distinct Parent', 'Distinct AR'),
+			"Number of Request", "Prob of activation")
+	save_ggplot(plot, 'raw_stat_v2/adop_prob.pdf', 24,
+			opts(axis.title.x = theme_text(vjust=-0.5), legend.position=c(.3, .7)))
 }
 
 success_ratio_analysis <- function (success_ratio_file='raw_stat_v2/act_proportion_count.csv'){
