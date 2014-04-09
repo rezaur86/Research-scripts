@@ -295,6 +295,32 @@ width_distribution <- function(file_name){
 	save_ggplot(plot, 'iheart_cascade/width.pdf')
 }
 
+size_vs_properties <- function(file='iheart_cascade/top_size.csv_all_evolution.csv'){
+	evolution <- as.data.frame(read.csv(file, header=FALSE))
+	colnames(evolution) <- c('root', 'size', 'depth', 'width', 'first_day', 'last_day', 'burstiness')
+	size_vs_prop <- ddply(evolution, c('size'), summarise, avg_depth = mean(depth), avg_width = mean(width))
+	plot <- ggplot(size_vs_prop, aes(x = size, y = avg_depth)) + geom_point() + xlab('Size') + ylab('Avg. depth') +
+			scale_x_log10() + geom_smooth(method=lm, se=FALSE)
+	save_ggplot(plot, 'iheart_cascade/size_vs_depth.pdf')
+	plot <- ggplot(size_vs_prop, aes(x = size, y = avg_width)) + geom_point() + xlab('Size') + ylab('Avg. width') +
+			scale_x_log10() + geom_smooth(method=lm, se=FALSE)
+	save_ggplot(plot, 'iheart_cascade/size_vs_width.pdf')
+	return(size_vs_prop)
+}
+
+size_vs_root_contribution <- function(file='iheart_cascade/top_size.csv_all_size_vs_root_odeg.csv'){
+	size_vs_root_odeg <- unique(as.data.frame(read.csv(file, header=FALSE)))
+	colnames(size_vs_root_odeg) <- c('size', 'root_outdeg')
+	contribution_ratio <- round(size_vs_root_odeg$root_outdeg/ size_vs_root_odeg$size, 3)
+	contr.df <- as.data.frame(table(contribution_ratio))
+	colnames(contr.df) <- c('ratio','count')
+	contr.df$ratio <- as.numeric(levels(contr.df$ratio))[contr.df$ratio]
+	contr.df$cum_count <- cumsum(contr.df$count)
+	contr.df$cdf <- contr.df$cum_count/max(contr.df$cum_count)
+	plot <- ggplot(contr.df, aes(x = ratio, y = cdf)) + geom_point() + xlab('Contribution ratio of seeds') + ylab('Empirical CDF') #+scale_x_log10()
+	save_ggplot(plot, 'iheart_cascade/seed_contribution_ratio.pdf')
+}
+
 size_vs_root_characteristics <- function (dir){
 	prev_dir = getwd()
 	setwd(dir)

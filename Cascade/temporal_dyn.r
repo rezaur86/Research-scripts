@@ -67,27 +67,25 @@ temporal_analysis <- function (daily_born, daily_activation, daily_last_act, dai
 			opts(axis.text.x = element_text(angle = 90, hjust = 0), legend.position=c(.9, .7)))
 }
 
-burstiness_analysis <- function(file='iheart_test/top_size.csv_all_evolution.csv'){
+burstiness_analysis <- function(file='iheart_cascade/top_size.csv_all_evolution.csv'){
 	evolution <- as.data.frame(read.csv(file, header=FALSE))
 	colnames(evolution) <- c('root', 'size', 'depth', 'width', 'first_day', 'last_day', 'burstiness')
 	print(summary(evolution))
-	evolution.df <- as.data.frame(table(evolution$burstiness))
+	evolution.df <- as.data.frame(table(evolution[evolution$first_day != evolution$last_day, ]$burstiness))
 	colnames(evolution.df) <- c('burstiness','count')
 	evolution.df$burstiness <- as.numeric(levels(evolution.df$burstiness))[evolution.df$burstiness]
 	evolution.df <- evolution.df[order(evolution.df$burstiness), ]
 	evolution.df$cum_sum <- cumsum(evolution.df$count)
 	evolution.df$cdf <- evolution.df$cum_sum/max(evolution.df$cum_su)
 	print(head(evolution.df))
-	plot <- ggplot(evolution.df[((evolution.df$burstiness > -1) & (evolution.df$burstiness < 1)), ],
-			aes(x = burstiness, y = count)) + geom_line() + xlab('Burstiness') + ylab('Count')
+	plot <- ggplot(evolution.df, aes(x = burstiness, y = count)) + geom_point(size= 0.8) + xlab('Burstiness') + ylab('Count')+
+			geom_smooth(se=FALSE)
 #			scale_x_log10() + scale_y_log10()
-	save_ggplot(plot, 'iheart_cascade/burstiness_count.pdf', 10,
-			opts(axis.text.x = element_text(angle = 0, hjust = 0), legend.position=c(.7, .7)))
-	plot <- ggplot(evolution.df[((evolution.df$burstiness > -1) & (evolution.df$burstiness < 1)), ],
-			aes(x = burstiness, y = cdf)) + geom_line() + xlab('Burstiness') + ylab('CDF')
+	save_ggplot(plot, 'iheart_cascade/burstiness_count.pdf')
+	plot <- ggplot(evolution.df,
+			aes(x = burstiness, y = cdf)) + geom_point(size= 0.8) + xlab('Burstiness') + ylab('Empirical CDF')
 #			scale_x_log10() + scale_y_log10()
-	save_ggplot(plot, 'iheart_cascade/burstiness_cdf.pdf', 10,
-			opts(axis.text.x = element_text(angle = 0, hjust = 0), legend.position=c(.7, .7)))
+	save_ggplot(plot, 'iheart_cascade/burstiness_cdf.pdf')
 	evolution.life <- as.data.frame(table(evolution$last_day-evolution$first_day+1))
 	colnames(evolution.life) <- c('life_time','count')
 	evolution.life$life_time <- as.numeric(levels(evolution.life$life_time))[evolution.life$life_time]
@@ -95,14 +93,24 @@ burstiness_analysis <- function(file='iheart_test/top_size.csv_all_evolution.csv
 	evolution.life$cum_sum <- cumsum(evolution.life$count)
 	evolution.life$cdf <- evolution.life$cum_sum/max(evolution.life$cum_su)
 	print(summary(evolution.life))
-	plot <- ggplot(evolution.life,
-			aes(x = life_time, y = cdf)) + geom_line() + xlab('Life time (Day)') + ylab('CDF')
-	save_ggplot(plot, 'iheart_cascade/lifetime_cdf.pdf', 10,
-			opts(axis.text.x = element_text(angle = 0, hjust = 0), legend.position=c(.7, .7)))
+	plot <- ggplot(evolution.life, aes(x = life_time, y = cdf)) + geom_point(size=0.8) + xlab('Life time (Day)') + ylab('Empirical CDF')
+	save_ggplot(plot, 'iheart_cascade/lifetime_cdf.pdf')
 	evolution.related <- as.data.frame(evolution[,c(2,3,4,7)])
 	evolution.related$lifetime <- evolution$last_day - evolution$first_day + 1
 	return(evolution.related)
 }
+
+analyze_inter_adoption_time <- function(file = 'iheart_cascade/top_size.csv_all_time_to_next_generation.csv'){
+	time_to_next_generation <- as.data.frame(read.csv(file, header=FALSE))
+	colnames(time_to_next_generation) <- c('parent_week', 'day_taken', 'count')
+	inter_adoption_time <- ddply(time_to_next_generation, c('day_taken'), summarise, count = sum (count))
+	inter_adoption_time <- inter_adoption_time[order(inter_adoption_time$day_taken),]
+	inter_adoption_time$cum_count <- cumsum(inter_adoption_time$count)
+	inter_adoption_time$cdf <- inter_adoption_time$cum_count / max(inter_adoption_time$cum_count)
+ 	plot <- ggplot(inter_adoption_time, aes(x=day_taken, y=cdf))+ geom_point(size=0.8) + xlab('Days taken to adopt') + ylab('Empirical CDF')
+	save_ggplot(plot,'iheart_cascade/inter_adoption_time.pdf')
+}
+
 
 #act<-temporal_analysis('raw_stat_v2/daily_born.csv', 'raw_stat_v2/daily_activation.csv',
 #		'raw_stat_v2/daily_last_act.csv', 'raw_stat_v2/daily_last_seen.csv')
