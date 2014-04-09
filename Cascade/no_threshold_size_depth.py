@@ -175,6 +175,12 @@ def process(child):
         graph[pID].setSize(graph[pID].getSize()+1)
         if graph[pID].getDepth() <= child.getDepth():
             graph[pID].setDepth(child.getDepth()+1)
+        if child.getActTime() != 0:
+            inter_adoption_hr = (child.getActTime() - graph[pID].getActTime() + 1)/3600
+            if inter_adoption_hr in inter_adoption_time_stat:
+                inter_adoption_time_stat[inter_adoption_hr] += 1
+            else:
+                inter_adoption_time_stat[inter_adoption_hr] = 1
         cascade_root = process(graph[pID])
         if cascade_root[0] == -1:
             root_id = pID
@@ -198,6 +204,7 @@ f = open(sys.argv[1], "r")
 graph = {}
 result_size = {}
 result_depth = {}
+inter_adoption_time_stat = {}
 size_file = open(sys.argv[2]+"size.csv", "w")
 depth_file = open(sys.argv[2]+"depth.csv", "w")
 top_n_size_file = open(sys.argv[2]+"top_size.csv", "w")
@@ -205,6 +212,7 @@ top_n_depth_file = open(sys.argv[2]+"top_depth.csv", "w")
 size_vs_root_file = open(sys.argv[2]+"size_vs_root.csv", "w")
 children_of_parent = {} # To hold children of all parents
 children_of_parent_file = open(sys.argv[2]+"children_of_parent.txt", "w")
+inter_adoption_time_stat_file = open(sys.argv[2]+"inter_adoption_time_stat.txt", "w")
 infertile_parents = bitarray(MAX_USERS)
 infertile_parents.setall(False)
 nonleaves_with_infertile_parents = bitarray(MAX_USERS)
@@ -356,3 +364,8 @@ for tuple in temp:
     for each_user in users:
         top_n_depth_file.write('%s,%s,%s\n'%(depth,each_user,63072000))
 top_n_depth_file.close()
+
+temp = sorted(inter_adoption_time_stat.iteritems(), key=operator.itemgetter(0), reverse=True)
+for tuple in temp:
+    inter_adoption_time_stat_file.write('%s,%s\n'%(tuple[0],tuple[1]))
+inter_adoption_time_stat_file.close()

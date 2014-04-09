@@ -100,14 +100,14 @@ burstiness_analysis <- function(file='iheart_cascade/top_size.csv_all_evolution.
 	return(evolution.related)
 }
 
-analyze_inter_adoption_time <- function(file = 'iheart_cascade/top_size.csv_all_time_to_next_generation.csv'){
-	time_to_next_generation <- as.data.frame(read.csv(file, header=FALSE))
-	colnames(time_to_next_generation) <- c('parent_week', 'day_taken', 'count')
-	inter_adoption_time <- ddply(time_to_next_generation, c('day_taken'), summarise, count = sum (count))
-	inter_adoption_time <- inter_adoption_time[order(inter_adoption_time$day_taken),]
+analyze_inter_adoption_time <- function(file = 'iheart_cascade/inter_adoption_time_stat.txt'){
+	inter_adoption_time <- as.data.frame(read.csv(file, header=FALSE))
+	colnames(inter_adoption_time) <- c('hour_taken', 'count')
+	inter_adoption_time <- inter_adoption_time[order(inter_adoption_time$hour_taken),]
 	inter_adoption_time$cum_count <- cumsum(inter_adoption_time$count)
 	inter_adoption_time$cdf <- inter_adoption_time$cum_count / max(inter_adoption_time$cum_count)
- 	plot <- ggplot(inter_adoption_time, aes(x=day_taken, y=cdf))+ geom_point(size=0.8) + xlab('Days taken to adopt') + ylab('Empirical CDF')
+ 	plot <- ggplot(inter_adoption_time, aes(x=hour_taken, y=cdf))+ geom_point(size=0.8) +
+			xlab('Inter adoption time (Hr.)') + ylab('Empirical CDF')
 	save_ggplot(plot,'iheart_cascade/inter_adoption_time.pdf')
 }
 
