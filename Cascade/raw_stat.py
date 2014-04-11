@@ -146,6 +146,7 @@ raw_indeg_stat_file = open(sys.argv[3]+"raw_indeg_stat.csv", "w")
 parent_count_before_act_file = open(sys.argv[3]+"parent_count_before_act.csv", "w")
 indeg_before_act_file = open(sys.argv[3]+"indeg_before_act.csv", "w")
 act_proportion_count_file = open(sys.argv[3]+"act_proportion_count.csv", "w")
+parent_children_act_file = open(sys.argv[3]+"parent_children_act.csv", "w")
 parent_proportion_file = open(sys.argv[3]+"parent_proportion.csv", "w")
 invitation_burstiness_stat_file = open(sys.argv[3]+"invitation_burstiness_stat.csv", "w")
 invitation_elapsed_time_stat_file = open(sys.argv[3]+"invitation_elapsed_time_stat.csv", "w")
@@ -182,8 +183,9 @@ for each_parent in children_count:
         alpha_account[rounded_alpha] = 1
     else:
         alpha_account[rounded_alpha] += 1
-    parent_proportion_file.write('%s,%s\n'%(active_children[each_parent] if each_parent in active_children else 0,
+    parent_children_act_file.write('%s,%s\n'%(active_children[each_parent] if each_parent in active_children else 0,
                                             children_count[each_parent]))
+    parent_proportion_file.write('%s,%s\n'%(each_parent, alpha))
 
 temp = sorted(alpha_account.iteritems(), key=operator.itemgetter(0), reverse=True)
 for tuple in temp:
@@ -195,6 +197,7 @@ raw_indeg_stat_file.close()
 parent_count_before_act_file.close()
 indeg_before_act_file.close()
 act_proportion_count_file.close()
+parent_children_act_file.close()
 parent_proportion_file.close()
 invitation_burstiness_stat_file.close()
 invitation_elapsed_time_stat_file.close()

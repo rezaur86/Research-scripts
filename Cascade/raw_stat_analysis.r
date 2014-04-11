@@ -111,7 +111,7 @@ success_ratio_analysis <- function (success_ratio_file='raw_stat_v2/act_proporti
 	save_ggplot(plot, 'raw_stat_v2/success_ratio.pdf')
 }
 
-sender_success_ratio_analysis <- function (success_ratio_file='raw_stat_v2/parent_proportion.csv'){
+sender_success_ratio_analysis <- function (success_ratio_file='raw_stat_v2/parent_children_act.csv'){
 	sender_success <- as.data.frame(read.csv(success_ratio_file, header=FALSE))
 	colnames(sender_success) <- c('active_children', 'children')
 	sender_success$ratio <- round(sender_success$active_children/sender_success$children, 3)
