@@ -147,9 +147,9 @@ def resolve_cascades (user_list):
         cascade_size = len(graph)
         cascade_depth = max(depth_expansion_per_root)
         if cascade_depth == 0:
-            size_vs_root_odeg.append((cascade_size,0))
+            size_vs_root_odeg.append((cascade_size, 0, round(parent_alpha[a_root], 3)))
         else:
-            size_vs_root_odeg.append((cascade_size,depth_expansion_per_root[1]))
+            size_vs_root_odeg.append((cascade_size, depth_expansion_per_root[1], round(parent_alpha[a_root], 3)))
 #         cascade_evolution.append((a_root,evolution_per_root))
         first_day = min(evolution_per_root)
         last_day = max(evolution_per_root)
@@ -165,6 +165,13 @@ def resolve_cascades (user_list):
                                     depth_max_time_per_root[d] if d in depth_max_time_per_root else None)) # 1 for distinct root
         max_width = max(depth_expansion_per_root.iteritems(), key=operator.itemgetter(1))[1]
         cascade_evolution.append((a_root, cascade_size, cascade_depth, max_width, first_day-14413+1, last_day-14413+1, burstiness))
+        for d in depth_min_time_per_root:
+            if d > 1:
+                inter_generation_time = depth_min_time_per_root[d] - depth_min_time_per_root[d-1]
+                if d in inter_generation_time_stat:
+                    inter_generation_time_stat[d].append(inter_generation_time)
+                else:
+                    inter_generation_time_stat[d] = [inter_generation_time]
         if max_width not in cascade_width:
             cascade_width[max_width] = 1
         else:
@@ -186,10 +193,10 @@ def resolve_cascades (user_list):
         for each_parent in graph:
             if graph[each_parent] > 0:
                 parent_infulence_proportion.append(round(parent_alpha[each_parent], 3))
-        for i in range(0,1001,1):
-            alpha_count = parent_infulence_proportion.count(i/1000.0)
-            if alpha_count > 0:
-                influence_proportion_stat.append((a_root, cascade_size, cascade_depth, i, alpha_count))
+        influence_proportion_stat.append((a_root, cascade_size, cascade_depth,
+                                          np.sum(parent_infulence_proportion),
+                                          np.average(parent_infulence_proportion),
+                                          np.std(parent_infulence_proportion)))
     return
 
 graph = {}
@@ -202,6 +209,7 @@ time_to_next_generation = {}
 out_degree_per_week_per_root = {}
 out_degree_per_week = {}
 depth_expansion_per_root = {}
+inter_generation_time_stat = {}
 cascade_width = {}
 depth_expansion = []
 top_users_correlated_info = []
@@ -264,6 +272,7 @@ if __name__ == '__main__':
         top_users_correlated_info_file  = open(o_file_prefix+'roots_correlated_info.csv', "w")
         size_vs_root_odeg_file  = open(o_file_prefix+'size_vs_root_odeg.csv', "w")
         depth_vs_expansion_file  = open(o_file_prefix+str(MAX_DEPTH)+'_depth_vs_expansion.csv', "w")
+        inter_generation_time_stat_file = open(o_file_prefix+'inter_generation_time_stat.csv', "w")
         width_file  = open(o_file_prefix+'_max_width.csv', "w")
         branching_dist_file  = open(o_file_prefix+'branching_dist.csv', "w")
         evolution_file  = open(o_file_prefix+'evolution.csv', "w")
@@ -300,6 +309,11 @@ if __name__ == '__main__':
             time_to_next_generation_file.write('%s,%s,%s\n' %(each_week, each_time_diff,
                                                               time_to_next_generation[(each_week, each_time_diff)]))
         time_to_next_generation_file.close()
+        for each_gen in inter_generation_time_stat:
+            inter_generation_time_stat_file.write('%s,%s,%s\n' %(each_gen,
+                                                                 round(np.average(inter_generation_time_stat[each_gen]),3),
+                                                                 np.median(inter_generation_time_stat[each_gen])))
+        inter_generation_time_stat_file.close()
         if len(sys.argv) > 6:
             print 'Visualizing until %s depth' %sys.argv[6]
             visulization(each_infl_file, top_users, int(sys.argv[6]))
