@@ -40,7 +40,7 @@ temporal_analysis <- function (daily_born, daily_activation, daily_last_act, dai
 #			scale_x_discrete(breaks=c(rtimes), labels=c(weeks))
 	plot <- change_plot_attributes_fancy(plot, "Activity type", 0:3, c('Born', 'Activation', 'Last activity', 'Last seen' ),
 			"Time", "User count")
-	save_ggplot(plot, 'raw_stat_v2/weekly_activities.pdf', 10,
+	save_ggplot(plot, 'raw_stat_v2/overall_activities.pdf', 24,
 			opts(axis.text.x = element_text(angle = 90, hjust = 0), legend.position=c(.2, .8)))
 	activities$am_pm <- activities$hour < 12
 	activities$am_pm[activities$am_pm == TRUE] <- 'AM'
@@ -63,7 +63,7 @@ temporal_analysis <- function (daily_born, daily_activation, daily_last_act, dai
 					labels=c('Sun:AM','Sun:PM', 'Mon:AM','Mon:PM', 'Tue:AM','Tue:PM', 'Wed:AM','Wed:PM', 'Thu:AM','Thu:PM', 'Fri:AM','Fri:PM', 'Sat:AM', 'Sat:PM'))
 	plot <- change_plot_attributes_fancy(plot, "Activity type", 0:3, c('Born', 'Activation', 'Last activity', 'Last seen' ),
 			"Day:Hour", "User count")
-	save_ggplot(plot, 'raw_stat_v2/daily_activities.pdf', 10,
+	save_ggplot(plot, 'raw_stat_v2/daily_activities.pdf', 24,
 			opts(axis.text.x = element_text(angle = 90, hjust = 0), legend.position=c(.9, .7)))
 }
 

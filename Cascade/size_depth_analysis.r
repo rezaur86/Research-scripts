@@ -267,7 +267,7 @@ analyze_coverage <- function(dir){
 	setwd(prev_dir)
 }
 
-size_distribution <- function(file_name){
+size_distribution <- function(file_name='iheart_cascade/size.csv'){
 	cascade_size <- as.data.frame(read.csv(file_name, header=FALSE))
 	colnames(cascade_size) <- c('size', 'count')
 	cascade_size$cum_count <- cumsum(cascade_size$count)
@@ -276,7 +276,7 @@ size_distribution <- function(file_name){
 			scale_x_log10() + scale_y_log10()
 	save_ggplot(plot, 'iheart_cascade/size.pdf')
 }
-depth_distribution <- function(file_name){
+depth_distribution <- function(file_name='iheart_cascade/depth.csv'){
 	cascade_depth <- as.data.frame(read.csv(file_name, header=FALSE))
 	colnames(cascade_depth) <- c('depth', 'count')
 	cascade_depth$cum_count <- cumsum(cascade_depth$count)
@@ -285,7 +285,7 @@ depth_distribution <- function(file_name){
 			scale_y_log10()
 	save_ggplot(plot, 'iheart_cascade/depth.pdf')
 }
-width_distribution <- function(file_name){
+width_distribution <- function(file_name='top_size.csv_all__max_width.csv'){
 	cascade_width <- as.data.frame(read.csv(file_name, header=FALSE))
 	colnames(cascade_width) <- c('width', 'count')
 	cascade_width$cum_count <- cumsum(cascade_width$count)
@@ -310,7 +310,7 @@ size_vs_properties <- function(file='iheart_cascade/top_size.csv_all_evolution.c
 
 size_vs_root_contribution <- function(file='iheart_cascade/top_size.csv_all_size_vs_root_odeg.csv'){
 	size_vs_root_odeg <- unique(as.data.frame(read.csv(file, header=FALSE)))
-	colnames(size_vs_root_odeg) <- c('size', 'root_outdeg')
+	colnames(size_vs_root_odeg) <- c('size', 'root_outdeg', 'root_success_ratio')
 	size_vs_root_odeg$contribution_ratio <- round(size_vs_root_odeg$root_outdeg/ size_vs_root_odeg$size, 3)
 	contr.df <- as.data.frame(table(size_vs_root_odeg$contribution_ratio))
 	colnames(contr.df) <- c('ratio','count')
@@ -327,6 +327,10 @@ size_vs_root_contribution <- function(file='iheart_cascade/top_size.csv_all_size
 	plot <- ggplot(size_vs_root_odeg.df, aes(x = root_outdeg, y = avg_size)) + geom_point() +
 			xlab('Number of ARs sent by Seeds') + ylab('Avg. size') #+ scale_y_log10()
 	save_ggplot(plot, 'iheart_cascade/seed_ARs_vs_size.pdf')
+	size_vs_root_odeg.df <- ddply(size_vs_root_odeg, c('root_success_ratio'), summarise, avg_size = mean(size))
+	plot <- ggplot(size_vs_root_odeg.df, aes(x = root_success_ratio, y = avg_size)) + geom_point() +
+			xlab('Success ratio of seeds') + ylab('Avg. size') + scale_y_log10()
+	save_ggplot(plot, 'iheart_cascade/seed_success_ratio_vs_size.pdf')
 	return(size_vs_root_odeg.df)
 }
 
