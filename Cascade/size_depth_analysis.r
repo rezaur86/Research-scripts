@@ -311,14 +311,23 @@ size_vs_properties <- function(file='iheart_cascade/top_size.csv_all_evolution.c
 size_vs_root_contribution <- function(file='iheart_cascade/top_size.csv_all_size_vs_root_odeg.csv'){
 	size_vs_root_odeg <- unique(as.data.frame(read.csv(file, header=FALSE)))
 	colnames(size_vs_root_odeg) <- c('size', 'root_outdeg')
-	contribution_ratio <- round(size_vs_root_odeg$root_outdeg/ size_vs_root_odeg$size, 3)
-	contr.df <- as.data.frame(table(contribution_ratio))
+	size_vs_root_odeg$contribution_ratio <- round(size_vs_root_odeg$root_outdeg/ size_vs_root_odeg$size, 3)
+	contr.df <- as.data.frame(table(size_vs_root_odeg$contribution_ratio))
 	colnames(contr.df) <- c('ratio','count')
 	contr.df$ratio <- as.numeric(levels(contr.df$ratio))[contr.df$ratio]
 	contr.df$cum_count <- cumsum(contr.df$count)
 	contr.df$cdf <- contr.df$cum_count/max(contr.df$cum_count)
 	plot <- ggplot(contr.df, aes(x = ratio, y = cdf)) + geom_point() + xlab('Contribution ratio of seeds') + ylab('Empirical CDF') #+scale_x_log10()
 	save_ggplot(plot, 'iheart_cascade/seed_contribution_ratio.pdf')
+	size_vs_root_odeg.df <- ddply(size_vs_root_odeg, c('contribution_ratio'), summarise, avg_size = mean(size))
+	plot <- ggplot(size_vs_root_odeg.df, aes(x = contribution_ratio, y = avg_size)) + geom_point() +
+			xlab('Contribution ratio of seeds') + ylab('Avg. size') + scale_y_log10()
+	save_ggplot(plot, 'iheart_cascade/seed_contribution_vs_size.pdf')
+	size_vs_root_odeg.df <- ddply(size_vs_root_odeg, c('root_outdeg'), summarise, avg_size = mean(size))
+	plot <- ggplot(size_vs_root_odeg.df, aes(x = root_outdeg, y = avg_size)) + geom_point() +
+			xlab('Number of ARs sent by Seeds') + ylab('Avg. size') #+ scale_y_log10()
+	save_ggplot(plot, 'iheart_cascade/seed_ARs_vs_size.pdf')
+	return(size_vs_root_odeg.df)
 }
 
 size_vs_root_characteristics <- function (dir){
