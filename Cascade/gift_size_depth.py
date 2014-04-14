@@ -51,12 +51,12 @@ class Node:
 
 def record_a_child(child_id, parent_list):
     global children_of_parent
-    for (each_parent,receiving_time) in parent_list:
+    for (each_parent,receiving_time,hid) in parent_list:
         if each_parent in children_of_parent:
-            children_of_parent[each_parent].append((child_id,receiving_time))
+            children_of_parent[each_parent].append((child_id,receiving_time,hid))
         else:
             children_of_parent[each_parent] = []
-            children_of_parent[each_parent].append((child_id,receiving_time))
+            children_of_parent[each_parent].append((child_id,receiving_time,hid))
 
 def is_fertile_parent (parent_id):
     if parent_id in graph:
@@ -158,15 +158,16 @@ def parent_chooser (node_id, parent_list, choice_type, activation_time):
                     chosen_pid = pID
                     chosen_pid_alpha = graph[pID].getAlpha()
                     chosen_receiving_time = int(a_parent[1])
+                    chosen_hid = int(a_parent[2])
         if chosen_pid != -1:
-            potential_parents.append((chosen_pid, chosen_receiving_time))
+            potential_parents.append((chosen_pid, chosen_receiving_time, chosen_hid))
             return potential_parents
     if len(potential_parents) == 0:
         return -1
         
 def process(child):
     cascade_root = (-1,0)
-    for (pID,receiving_time) in child.parent_list:
+    for (pID,receiving_time,hid) in child.parent_list:
         if pID not in graph:
             log_file = open('size_depth.log','a')
             print 'Out of graph', pID
@@ -190,8 +191,8 @@ def clearMem():
     global result_size, result_depth
     global children_of_parent
     for each_parent in children_of_parent:
-        for (each_child,receiving_time) in children_of_parent[each_parent]:
-            children_of_parent_file.write('%s %s %s\n'%(each_parent,each_child,receiving_time))
+        for (each_child,receiving_time,hid) in children_of_parent[each_parent]:
+            children_of_parent_file.write('%s %s %s %s\n'%(each_parent,each_child,receiving_time,hid))
     children_of_parent = {}
 
 #python size_depth.py iheart_preprocessed_sorted.txt First_parent/
@@ -203,6 +204,7 @@ inter_adoption_time_per_root = {}
 size_vs_inter_adoption_time = {}
 generation_time = {}
 width = {}
+cascade_gift_ids = {}
 size_file = open(sys.argv[2]+"size.csv", "w")
 depth_file = open(sys.argv[2]+"depth.csv", "w")
 width_file = open(sys.argv[2]+"width.csv", "w")
@@ -214,6 +216,7 @@ children_of_parent_file = open(sys.argv[2]+"children_of_parent.txt", "w")
 size_vs_inter_adoption_time_file = open(sys.argv[2]+"size_vs_inter_adoption_time.txt", "w")
 inter_adoption_time_stat_file = open(sys.argv[2]+"inter_adoption_time_stat.txt", "w")
 inter_generation_time_stat_file = open(sys.argv[2]+"inter_generation_time_stat.txt", "w")
+cascade_gift_popularity_stat_file = open(sys.argv[2]+"cascade_gift_popularity_stat.txt", "w")
 infertile_parents = bitarray(MAX_USERS)
 infertile_parents.setall(False)
 nonleaves_with_infertile_parents = bitarray(MAX_USERS)
@@ -292,7 +295,7 @@ for line in f:
         if cascade_root_id == -1:
             inter_adoption_time_per_root[node_id] = []
         else:
-            for (pID,receiving_time) in newNode.parent_list:
+            for (pID,receiving_time,hid) in newNode.parent_list:
                 inter_adoption_time = newNode.getActTime() - graph[pID].getActTime() + 1
             inter_adoption_time_per_root[cascade_root_id].append(inter_adoption_time)
     ########################### Inter-adoption times per cascade root ##########################
@@ -308,6 +311,13 @@ for line in f:
             width[cascade_root_id] = {}
             width[cascade_root_id][root_distance] = 1
     ########################################### Width ##########################################
+    #####################################  Size gift popularity ################################
+    if cascade_root_id != -1:
+        if cascade_root_id in cascade_gift_ids:
+            cascade_gift_ids[cascade_root_id].append(newNode.parent_list[0][2])
+        else:
+            cascade_gift_ids[cascade_root_id] = [newNode.parent_list[0][2]]
+    #####################################  Size gift popularity ################################
     if is_leaf == True:
         newNode.parent_list = None
         newNode.cascade_att = None
@@ -358,8 +368,32 @@ for node_id in graph:
     else:
         generation_time[root_id] = {}
         generation_time[root_id][root_distance] = graph[node_id].getActTime()
-    ########################### Inter-generation times per cascade root ##########################
 
+############################### Major gift types per cascade ##################################
+cascade_gift_popularity = {}
+gift_types = []
+for key, val in csv.reader(open("/home/rezaur/data/iheart_node_gift_type_stat.txt")):
+    gift_types.append(int(key))
+for each_root in cascade_gift_ids:
+    major_gift_count = 0
+    major_gift = -1
+    for gift_id in gift_types:
+        prev_major_gift_count = major_gift_count
+        major_gift_count = max(prev_major_gift_count, cascade_gift_ids[each_root].count(gift_id))
+        if prev_major_gift_count < major_gift_count:
+            major_gift = gift_id
+    cascade_gift_popularity[each_root] = major_gift
+cascade_gift_popularity_stat = {}
+for each_root in cascade_gift_popularity:
+    if cascade_gift_popularity[each_root] in cascade_gift_popularity_stat:
+        cascade_gift_popularity_stat[cascade_gift_popularity[each_root]] += 1
+    else:
+        cascade_gift_popularity_stat[cascade_gift_popularity[each_root]] = 1
+temp = sorted(cascade_gift_popularity_stat.iteritems(), key=operator.itemgetter(1), reverse=True)
+for tuple in temp:
+    cascade_gift_popularity_stat_file.write('%s,%s\n'%(tuple[0], tuple[1]))
+cascade_gift_popularity_stat_file.close()
+############################### Major gift types per cascade ##################################
 top_n_sizes = []
 top_n_depths = []
 temp = sorted(result_size.iteritems(), key=operator.itemgetter(0), reverse=True)
@@ -378,6 +412,24 @@ for tuple in temp:
         top_counter += tuple[1]
     depth_file.write('%s,%s,%s\n'%(tuple[0],tuple[1],63072000))
 depth_file.close()
+############################### Max width ##################################
+max_width = {}
+max_width_stat = {}
+for each_root in generation_time:
+    max_width_per_root = 1
+    if each_root in width:
+        for each_gen in width[each_root]:
+            max_width_per_root = max(max_width_per_root, width[each_root][each_gen])
+    max_width[each_root] = max_width_per_root
+    if max_width_per_root in max_width_stat:
+        max_width_stat[max_width_per_root] += 1
+    else:
+        max_width_stat[max_width_per_root] = 1
+temp = sorted(max_width_stat.iteritems(), key=operator.itemgetter(0), reverse=True)
+for tuple in temp:
+    width_file.write('%s,%s\n'%(tuple[0], tuple[1]))
+width_file.close()
+############################### Max width ##################################
 top_n_size_users = []
 top_n_depth_users = []
 top_n_size_users = {}
@@ -400,8 +452,12 @@ for tuple in temp:
     users = tuple[1]
     for each_user in users:
         top_n_size_file.write('%s,%s,%s\n'%(size,each_user,63072000))
-        size_vs_root_file.write('%s,%s,%s,%s,%s\n'%(size,graph[each_user].getDepth(),graph[each_user].getLifespan(),
-                                                 graph[each_user].getOutDeg(),graph[each_user].getAlpha()))
+        size_vs_root_file.write('%s,%s,%s,%s,%s,%s,%s\n'%(size, graph[each_user].getDepth(),
+                                                    max_width[each_user],
+                                                    cascade_gift_popularity[each_user] if each_user in cascade_gift_popularity else -1,
+                                                    graph[each_user].getLifespan(),
+                                                    graph[each_user].getOutDeg(),
+                                                    round(graph[each_user].getAlpha(),3)))
 top_n_size_file.close()
 size_vs_root_file.close()
 temp = sorted(top_n_depth_users.iteritems(), key=operator.itemgetter(0), reverse=True)
@@ -441,18 +497,4 @@ for each_gen in inter_generation_time_stat:
                                                     np.percentile(inter_generation_time_stat[each_gen], 25),
                                                     np.median(inter_generation_time_stat[each_gen]),
                                                     np.percentile(inter_generation_time_stat[each_gen], 75)))
-inter_generation_time_stat_file.close()
-max_width = {}
-for each_root in generation_time:
-    max_width_per_root = 1
-    if each_root in width:
-        for each_gen in width[each_root]:
-            max_width_per_root = max(max_width_per_root, width[each_root][each_gen])
-    if max_width_per_root in max_width:
-        max_width[max_width_per_root] += 1
-    else:
-        max_width[max_width_per_root] = 1
-temp = sorted(max_width.iteritems(), key=operator.itemgetter(0), reverse=True)
-for tuple in temp:
-    width_file.write('%s,%s\n'%(tuple[0], tuple[1]))
-width_file.close()
+inter_generation_time_stat_file.close()   

@@ -61,6 +61,7 @@ if __name__ == '__main__':
             sender = long(splits[0].strip())
             recv = long(splits[1].strip())
             timestamp = long(splits[2].strip())
+            hid = int(splits[3].strip())
             if sender != -1 and recv != -1:
                 if(sender > vertices_count - 1):
                     vertices_count += 1
@@ -84,7 +85,7 @@ if __name__ == '__main__':
                 if(recv > vertices_count - 1):
                     vertices_count += 1
                     potential_parents.append([])
-                    potential_parents[recv].append((sender,timestamp))
+                    potential_parents[recv].append((sender,timestamp,hid))
                     born_time.append(timestamp)
                     activation_time.append(NEVER) # Not yet Activated
                     user_last_act_time.append(NEVER)
@@ -96,12 +97,12 @@ if __name__ == '__main__':
                     if out_degree[recv] < 1:
 #                         in_degree_until_active[recv]  += 1 # If increased here, then I don't know if it gets active or not
                         sender_is_already_parent = False
-                        for (p,t) in potential_parents[recv]:
+                        for (p,t,h) in potential_parents[recv]:
                             if sender == p:
                                 sender_is_already_parent = True
                                 break
                         if sender_is_already_parent == False:
-                            potential_parents[recv].append((sender,timestamp))
+                            potential_parents[recv].append((sender,timestamp,hid))
             
                 if user_last_seen_time[sender]==activity_line:
                     users_done.append(sender)
@@ -144,8 +145,8 @@ if __name__ == '__main__':
                     if potential_parents[i] == NO_PARENT:
                         o_f.write(' -1')
                     else:
-                        for (p,t) in potential_parents[i]:
-                            o_f.write(' %s,%s'%(p,t))
+                        for (p,t,h) in potential_parents[i]:
+                            o_f.write(' %s,%s,%s'%(p,t,h))
                     potential_parents[i] = None
                     o_f.write('\n')
                     node_basic_f.write('\n')

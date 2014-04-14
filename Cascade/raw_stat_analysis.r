@@ -166,6 +166,19 @@ invitation_elapsed_time_analysis <- function (invitation_elapsed_time_file='raw_
 	save_ggplot(plot, 'raw_stat_v2/invitation_elased_time.pdf')
 }
 
+gift_popularity_analysis <- function (file='raw_stat_v2/iheart_node_gift_type_stat.txt'){
+	gift_stat <- as.data.frame(read.csv(file, header=FALSE))
+	colnames(gift_stat) <- c('hid', 'count')
+	gift_stat <- gift_stat[order(gift_stat$hid),]
+	gift_stat$cum_count <- cumsum(gift_stat$count)
+	gift_stat$cdf_val <- gift_stat$cum_count / max(gift_stat$cum_count)
+	gift_stat$pdf_val <- gift_stat$count / max(gift_stat$cum_count)
+	gift_stat$hid <- factor(gift_stat$hid)
+	plot <- ggplot(gift_stat, aes(x = (hid), y = (count))) + geom_bar(stat = "identity") + scale_y_log10()+
+			 xlab('Gift ids') + ylab('Count') + scale_x_discrete(breaks=factor(seq(0,450,50)), labels=seq(0,450,50))
+	save_ggplot(plot, 'raw_stat_v2/gift_popularity.pdf')
+}
+
 #parent_lifespan<-lifespan_analysis('raw_stat_1/lifespan_stat.csv')
 #raw_outdeg_analysis('raw_stat_v2/raw_outdeg_stat.csv')
 #influence_threshold_analysis('raw_stat_v2/parent_count_before_act.csv', 'raw_stat_v2/indeg_before_act.csv')
