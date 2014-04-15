@@ -308,30 +308,44 @@ size_vs_properties <- function(file='iheart_cascade/top_size.csv_all_evolution.c
 	return(size_vs_prop)
 }
 
-size_vs_root_contribution <- function(file='iheart_cascade/top_size.csv_all_size_vs_root_odeg.csv'){
-	size_vs_root_odeg <- unique(as.data.frame(read.csv(file, header=FALSE)))
-	colnames(size_vs_root_odeg) <- c('size', 'root_outdeg', 'root_success_ratio')
-	size_vs_root_odeg$contribution_ratio <- round(size_vs_root_odeg$root_outdeg/ size_vs_root_odeg$size, 3)
-	contr.df <- as.data.frame(table(size_vs_root_odeg$contribution_ratio))
+size_vs_root_contribution <- function(file='iheart_gift/size_vs_root.csv'){
+	size_vs_root <- unique(as.data.frame(read.csv(file, header=FALSE)))
+	colnames(size_vs_root) <- c('root', 'size', 'depth' ,'width', 'major_gift',
+			'root_act_lifespan', 'root_outdeg', 'root_contribution' , 'root_success_ratio')
+	size_vs_root <- size_vs_root[size_vs_root$size > 1, ]
+	size_vs_root$contribution_ratio <- round(size_vs_root$root_contribution/ size_vs_root$size, 3)
+	contr.df <- as.data.frame(table(size_vs_root$contribution_ratio))
 	colnames(contr.df) <- c('ratio','count')
 	contr.df$ratio <- as.numeric(levels(contr.df$ratio))[contr.df$ratio]
 	contr.df$cum_count <- cumsum(contr.df$count)
 	contr.df$cdf <- contr.df$cum_count/max(contr.df$cum_count)
 	plot <- ggplot(contr.df, aes(x = ratio, y = cdf)) + geom_point() + xlab('Contribution ratio of seeds') + ylab('Empirical CDF') #+scale_x_log10()
 	save_ggplot(plot, 'iheart_cascade/seed_contribution_ratio.pdf')
-	size_vs_root_odeg.df <- ddply(size_vs_root_odeg, c('contribution_ratio'), summarise, avg_size = mean(size))
-	plot <- ggplot(size_vs_root_odeg.df, aes(x = contribution_ratio, y = avg_size)) + geom_point() +
+	size_vs_root.df <- ddply(size_vs_root, c('contribution_ratio'), summarise, avg_size = mean(size))
+	plot <- ggplot(size_vs_root.df, aes(x = contribution_ratio, y = avg_size)) + geom_point() +
 			xlab('Contribution ratio of seeds') + ylab('Avg. size') + scale_y_log10()
 	save_ggplot(plot, 'iheart_cascade/seed_contribution_vs_size.pdf')
-	size_vs_root_odeg.df <- ddply(size_vs_root_odeg, c('root_outdeg'), summarise, avg_size = mean(size))
-	plot <- ggplot(size_vs_root_odeg.df, aes(x = root_outdeg, y = avg_size)) + geom_point() +
-			xlab('Number of ARs sent by Seeds') + ylab('Avg. size') #+ scale_y_log10()
+	size_vs_root.df <- ddply(size_vs_root, c('root_outdeg'), summarise, avg_size = mean(size))
+	plot <- ggplot(size_vs_root.df, aes(x = root_outdeg, y = avg_size)) + geom_point() +
+			xlab('Number of ARs sent by Seeds') + ylab('Avg. size') + scale_y_log10() + scale_x_log10()
 	save_ggplot(plot, 'iheart_cascade/seed_ARs_vs_size.pdf')
-	size_vs_root_odeg.df <- ddply(size_vs_root_odeg, c('root_success_ratio'), summarise, avg_size = mean(size))
-	plot <- ggplot(size_vs_root_odeg.df, aes(x = root_success_ratio, y = avg_size)) + geom_point() +
+	size_vs_root.df <- ddply(size_vs_root, c('root_success_ratio'), summarise, avg_size = mean(size))
+	plot <- ggplot(size_vs_root.df, aes(x = root_success_ratio, y = avg_size)) + geom_point() +
 			xlab('Success ratio of seeds') + ylab('Avg. size') + scale_y_log10()
 	save_ggplot(plot, 'iheart_cascade/seed_success_ratio_vs_size.pdf')
-	return(size_vs_root_odeg.df)
+	size_vs_root.df <- ddply(size_vs_root, c('major_gift'), summarise, avg_size = mean(size))
+	plot <- ggplot(size_vs_root.df, aes(x = major_gift, y = avg_size)) + geom_point() +
+			xlab('Major gift types') + ylab('Avg. size') + scale_y_log10()
+	save_ggplot(plot, 'iheart_cascade/major_gift_vs_size.pdf')
+	size_vs_root.df <- ddply(size_vs_root, c('major_gift'), summarise, avg_depth = mean(depth))
+	plot <- ggplot(size_vs_root.df, aes(x = major_gift, y = avg_depth)) + geom_point() +
+			xlab('Major gift types') + ylab('Avg. depth')
+	save_ggplot(plot, 'iheart_cascade/major_gift_vs_depth.pdf')
+	size_vs_root.df <- ddply(size_vs_root, c('major_gift'), summarise, avg_width = mean(width))
+	plot <- ggplot(size_vs_root.df, aes(x = major_gift, y = avg_width)) + geom_point() +
+			xlab('Major gift types') + ylab('Avg. width')
+	save_ggplot(plot, 'iheart_cascade/major_gift_vs_width.pdf')
+	return(size_vs_root)
 }
 
 size_vs_root_characteristics <- function (dir){

@@ -452,12 +452,14 @@ for tuple in temp:
     users = tuple[1]
     for each_user in users:
         top_n_size_file.write('%s,%s,%s\n'%(size,each_user,63072000))
-        size_vs_root_file.write('%s,%s,%s,%s,%s,%s,%s\n'%(size, graph[each_user].getDepth(),
-                                                    max_width[each_user],
-                                                    cascade_gift_popularity[each_user] if each_user in cascade_gift_popularity else -1,
-                                                    graph[each_user].getLifespan(),
-                                                    graph[each_user].getOutDeg(),
-                                                    round(graph[each_user].getAlpha(),3)))
+        size_vs_root_file.write('%s,%s,%s,%s,%s,%s,%s,%s,%s\n'%(
+            each_user, size, graph[each_user].getDepth(),
+            max_width[each_user],
+            cascade_gift_popularity[each_user] if each_user in cascade_gift_popularity else -1,
+            graph[each_user].getLifespan(),
+            graph[each_user].getOutDeg(),#root's raw out degree
+            width[each_user][1] if each_user in width else 0, #root's out degree in the tree
+            round(graph[each_user].getAlpha(),3)))
 top_n_size_file.close()
 size_vs_root_file.close()
 temp = sorted(top_n_depth_users.iteritems(), key=operator.itemgetter(0), reverse=True)
