@@ -6,6 +6,8 @@ library(grid)
 library(plyr)
 library(Hmisc)
 library(gridExtra) 
+library(nnet)
+library(pROC)
 
 load_size_depth <- function(directoryname){
 	prev_dir = getwd()
@@ -372,6 +374,152 @@ size_vs_root_characteristics <- function (dir){
 	dev.off()
 	setwd(prev_dir)
 	return (list(info=size_vs_root,odeg=size_vs_root_odeg))
+}
+
+
+cascade_lm_model <- function(file='iheart_gift/size_vs_root.csv',
+		evolution_file='iheart_gift/top_size.csv_all_evolution.csv',
+		growth_file = 'iheart_gift/top_size.csv_all_weekly_evolution.csv'){
+	size_vs_root <- as.data.frame(read.csv(file, header=FALSE))
+	colnames(size_vs_root) <- c('root', 'size', 'depth' ,'width', 'major_gift',
+			'root_act_lifespan', 'root_outdeg', 'root_contribution' , 'root_success_ratio')
+	size_vs_root <- size_vs_root[size_vs_root$size > 1, ]
+	evolution <- as.data.frame(read.csv(evolution_file, header=FALSE))
+	colnames(evolution) <- c('root', 'size', 'depth', 'width', 'first_day', 'last_day', 'burstiness')
+	evolution <- evolution[evolution$size > 1, c(1,7)]
+	growth <- as.data.frame(read.csv(growth_file, header=FALSE))
+	colnames(growth) <- c('root', 'week_1', 'week_2', 'week_3', 'week_4', 'week_5',
+			'week_6', 'week_7', 'week_8', 'week_9', 'week_10', 'week_11', 'week_12')
+	growth <- growth[!is.na(growth$week_1),]
+	temp <- merge(size_vs_root, evolution, by="root")
+	cascade <- merge(temp, growth, by="root")
+#	cascade.small <- cascade[cascade$size < 156, ]
+#	nrow(cascade.small)
+#	cascade.big <- cascade[cascade$size >= 156, ]
+#	nrow(cascade.big)
+#	training <- c()
+#	test <- c()
+#	splitted_data <- split(cascade.small, sample(1:2, nrow(cascade.small), replace=TRUE, prob=c(1,2)))
+#	training$small <- splitted_data[[2]]
+#	test$small <- splitted_data[[1]]
+#	splitted_data <- split(cascade.big, sample(1:2, nrow(cascade.big), replace=TRUE, prob=c(1,2)))
+#	training$big <- splitted_data[[2]]
+#	test$big <- splitted_data[[1]]
+	cascade <- cascade[cascade$size > 150, ]
+	cascade$size_prop <- cascade$size / sum(cascade$size)
+	cascade$week_1_prop <- cascade$week_1 / sum(cascade$size)
+	cascade$week_2_prop <- cascade$week_2 / sum(cascade$size)
+	splitted_data <- split(cascade, sample(1:2, nrow(cascade), replace=TRUE, prob=c(1,2)))
+	training <- splitted_data[[2]]
+	test <- splitted_data[[1]]
+	model <- lm(size_prop~week_1_prop+week_2_prop, data = training)
+	print(summary(model))
+#	save_ggplot(plot(model), 'model.pdf')
+	pred <- round(predict(model, list(week_1_prop = test$week_1_prop, week_2_prop = test$week_2_prop))*sum(cascade$size), 0)
+	test_size <- count(test$size)
+	test_size[,3] <- 0
+	colnames(test_size) <- c('size', 'count', 'type')
+	pred_size <- count(pred)
+	pred_size[,3] <- 1
+	colnames(pred_size) <- c('size', 'count', 'type')
+	size_comp <- rbind(test_size, pred_size)
+	size_comp.df <- ddply(size_comp, c('type'), function(one_partition){
+				one_partition = one_partition[order(one_partition$size),]
+				one_partition$cum_count = cumsum(one_partition$count)
+				one_partition$cdf_val = one_partition$cum_count / max(one_partition$cum_count)
+				one_partition$pdf_val = one_partition$count / max(one_partition$cum_count)
+				one_partition
+			})
+	size_comp.df$type <- factor(size_comp.df$type)
+	plot <- ggplot(size_comp.df, aes(x = (size), y = (cdf_val))) + 
+			geom_point(aes(group = type, colour = type, shape = type), size=.8)+
+			scale_x_log10()
+	plot <- change_plot_attributes(plot, "", 0:1, c('Actual','Simulated'), "Cascade Size", "Empirical CDF")
+	save_ggplot(plot,file='iheart_gift/model_size.pdf')
+	plot <- ggplot(size_comp.df, aes(x = (size), y = (pdf_val))) + 
+			geom_point(aes(group = type, colour = type, shape = type), size=.8)+
+			scale_x_log10()+ scale_y_log10() #+ theme(legend.position=c(.8, .7)) + xlim(0,log10(plot_x_lim*100))
+	plot <- change_plot_attributes(plot, "", 0:1, c('Actual','Simulated'), "Cascade Size", "Empirical PDF")
+	save_ggplot(plot,file='iheart_gift/model_size_pdf.pdf')
+	return(list(training = training, test = test))
+}
+
+cascade_logit_model <- function(file='iheart_gift/size_vs_root.csv',
+		evolution_file='iheart_gift/top_size.csv_all_evolution.csv',
+		growth_file = 'iheart_gift/top_size.csv_all_weekly_evolution.csv'){
+	size_vs_root <- as.data.frame(read.csv(file, header=FALSE))
+	colnames(size_vs_root) <- c('root', 'size', 'depth' ,'width', 'major_gift',
+			'root_act_lifespan', 'root_outdeg', 'root_contribution' , 'root_success_ratio')
+	size_vs_root <- size_vs_root[size_vs_root$size > 1, ]
+	evolution <- as.data.frame(read.csv(evolution_file, header=FALSE))
+	colnames(evolution) <- c('root', 'size', 'depth', 'width', 'first_day', 'last_day', 'burstiness')
+	evolution <- evolution[evolution$size > 1, c(1,7)]
+	growth <- as.data.frame(read.csv(growth_file, header=FALSE))
+	colnames(growth) <- c('root', 'week_1', 'week_2', 'week_3', 'week_4', 'week_5',
+			'week_6', 'week_7', 'week_8', 'week_9', 'week_10', 'week_11', 'week_12')
+	growth <- growth[!is.na(growth$week_4),]
+	temp <- merge(size_vs_root, evolution, by="root")
+	cascade <- merge(temp, growth, by="root")
+	cascade$week_1_4 <- cascade$week_1 + cascade$week_2 + cascade$week_3 + cascade$week_4
+	size_bin <- unique(10^seq(0, 7, by=1))
+	cascade <- transform(cascade, bin = cut(cascade$size, breaks=size_bin))
+	categories <- levels(cascade$bin)
+	cascade$cat <- factor(cascade$bin, levels = categories, labels = c(1,2,3,4,5,6,7))
+	cascade$cat <- relevel(cascade$cat, ref = 1)
+	splitted_data <- split(cascade, sample(1:2, nrow(cascade), replace=TRUE, prob=c(1,2)))
+	training <- splitted_data[[2]]
+	test <- splitted_data[[1]]
+	model <- multinom(cat~root_outdeg + root_contribution + root_success_ratio + major_gift + week_1_4, data = training)
+	model_summary <- summary(model)
+	z <- model_summary$coefficients/model_summary$standard.errors
+	p <- (1 - pnorm(abs(z), 0, 1)) * 2
+	test$cat.pred <- predict(model, list(root_outdeg = test$root_outdeg, root_contribution = test$root_contribution,
+					root_success_ratio = test$root_success_ratio, major_gift = test$major_gift,
+					week_1_4 = test$week_1_4))#, level = 0.95)
+	test$cat <- as.numeric(test$cat)
+	true_pos <- c()
+	false_pos <- c()
+	prec <- c()
+	recall <- c()
+	for (i in seq(1, 7, by=1)){
+		true_pos <- c(true_pos, length(which(test$cat.pred == test$cat & test$cat == i)))
+		false_pos <- c(false_pos, length(which(test$cat.pred != test$cat & test$cat.pred == i)))
+		prec <- c(prec, (true_pos[i] / (length(which(test$cat.pred == i)))))
+		recall <- c(recall, (true_pos[i] / (length(which(test$cat == i)))))
+	}
+	print(prec)
+	print(recall)
+	test_size <- as.data.frame(table(test$cat))
+	test_size[,3] <- 0
+	print(summary(test_size))
+	colnames(test_size) <- c('bin', 'count', 'type')
+	print(summary(test_size))
+	test_size$size <- as.numeric(sub("[^,]*,([^]]*)\\]", "\\1", levels(test_size$bin)))
+	print(summary(test_size))
+	pred_size <- as.data.frame(table(test$cat.pred))
+	pred_size[,3] <- 1
+	colnames(pred_size) <- c('bin', 'count', 'type')
+	pred_size$size <- as.numeric(sub("[^,]*,([^]]*)\\]", "\\1", levels(pred_size$bin)))
+	size_comp <- rbind(test_size, pred_size)
+	size_comp.df <- ddply(size_comp, c('type'), function(one_partition){
+				one_partition = one_partition[order(one_partition$size),]
+				one_partition$cum_count = cumsum(one_partition$count)
+				one_partition$cdf_val = one_partition$cum_count / max(one_partition$cum_count)
+				one_partition$pdf_val = one_partition$count / max(one_partition$cum_count)
+				one_partition
+			})
+	size_comp.df$type <- factor(size_comp.df$type)
+	plot <- ggplot(size_comp.df, aes(x = (size), y = (cdf_val))) + 
+			geom_point(aes(group = type, colour = type, shape = type), size=.8)+
+			scale_x_log10()
+	plot <- change_plot_attributes(plot, "", 0:1, c('Actual','Simulated'), "Cascade Size", "Empirical CDF")
+	save_ggplot(plot,file='iheart_gift/model_size.pdf')
+	plot <- ggplot(size_comp.df, aes(x = (size), y = (pdf_val))) + 
+			geom_point(aes(group = type, colour = type, shape = type), size=.8)+
+			scale_x_log10()+ scale_y_log10() #+ theme(legend.position=c(.8, .7)) + xlim(0,log10(plot_x_lim*100))
+	plot <- change_plot_attributes(plot, "", 0:1, c('Actual','Simulated'), "Cascade Size", "Empirical PDF")
+	save_ggplot(plot,file='iheart_gift/model_size_pdf.pdf')
+	return(list(training = training, test = test, prec=prec, recall=recall, p=p, true_pos = true_pos, false_pos = false_pos))
 }
 
 #bla <- parent_lifespan_comp(c('fp_nt_u/','disc_heavy_users_with_sc/','disc_heavy_users_no_sc'),c('Original Cascade','W/ Second Chance','W/o Second Chance'),'Secluding Heavy Seeds')

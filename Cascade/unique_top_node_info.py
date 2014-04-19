@@ -154,8 +154,16 @@ def resolve_cascades (user_list):
         first_day = min(evolution_per_root)
         last_day = max(evolution_per_root)
         temp_evolution = []
+        weekly_cum_evolution = [a_root]
+        this_week_evolution = 0
         for i in range(first_day, last_day+1): # start,end time for week = range(2059, 2117): #start,end time for day 14413*86400, 14819*86400
             temp_evolution.append(evolution_per_root[i] if i in evolution_per_root else 0)
+            this_week_evolution += (evolution_per_root[i] if i in evolution_per_root else 0)
+            if (((i - first_day + 1) % 7) == 0 and (i - first_day + 1) <= 12*7) or (
+                ((last_day - first_day + 1) < 12*7) and (i == last_day)):
+                weekly_cum_evolution.append(this_week_evolution)
+                this_week_evolution = 0
+                
         sd = np.sqrt(np.var(temp_evolution))
         avg = np.average(temp_evolution)
         burstiness = round(((sd - avg) / (sd + avg)), 3)
@@ -165,6 +173,7 @@ def resolve_cascades (user_list):
                                     depth_max_time_per_root[d] if d in depth_max_time_per_root else None)) # 1 for distinct root
         max_width = max(depth_expansion_per_root.iteritems(), key=operator.itemgetter(1))[1]
         cascade_evolution.append((a_root, cascade_size, cascade_depth, max_width, first_day-14413+1, last_day-14413+1, burstiness))
+        cascade_weekly_evolution.append((weekly_cum_evolution))
         for d in depth_min_time_per_root:
             if d > 1:
                 inter_generation_time = depth_min_time_per_root[d] - depth_min_time_per_root[d-1]
@@ -205,6 +214,7 @@ cascade_count = 0
 activities_per_root = []
 evolution_per_root = {}
 cascade_evolution = []
+cascade_weekly_evolution = []
 time_to_next_generation = {}
 out_degree_per_week_per_root = {}
 out_degree_per_week = {}
@@ -269,6 +279,7 @@ if __name__ == '__main__':
             o_file_prefix = each_infl_file+'_top_'+str(TOP_N)
         else:
             o_file_prefix = each_infl_file+'_all_'
+        rooted_top_users = resolve_cascades(top_users)
         top_users_correlated_info_file  = open(o_file_prefix+'roots_correlated_info.csv', "w")
         size_vs_root_odeg_file  = open(o_file_prefix+'size_vs_root_odeg.csv', "w")
         depth_vs_expansion_file  = open(o_file_prefix+str(MAX_DEPTH)+'_depth_vs_expansion.csv', "w")
@@ -276,10 +287,10 @@ if __name__ == '__main__':
         width_file  = open(o_file_prefix+'_max_width.csv', "w")
         branching_dist_file  = open(o_file_prefix+'branching_dist.csv', "w")
         evolution_file  = open(o_file_prefix+'evolution.csv', "w")
+        weekly_evolution_file  = open(o_file_prefix+'weekly_evolution.csv', "w")
         out_degree_per_week_file  = open(o_file_prefix+'out_degree_per_week.csv', "w")
         time_to_next_generation_file  = open(o_file_prefix+'time_to_next_generation.csv', "w")
         influence_proportion_stat_file  = open(o_file_prefix+'influence_proportion_stat.csv', "w")
-        rooted_top_users = resolve_cascades(top_users)
         writer = csv.writer(depth_vs_expansion_file, quoting=csv.QUOTE_MINIMAL)
         writer.writerows(depth_expansion)
         depth_vs_expansion_file.close()
@@ -302,6 +313,9 @@ if __name__ == '__main__':
         writer = csv.writer(evolution_file, quoting=csv.QUOTE_MINIMAL)
         writer.writerows(cascade_evolution)
         evolution_file.close()        
+        writer = csv.writer(weekly_evolution_file, quoting=csv.QUOTE_MINIMAL)
+        writer.writerows(cascade_weekly_evolution)
+        weekly_evolution_file.close()        
         for (outdeg,week) in out_degree_per_week:
             out_degree_per_week_file.write('%s,%s,%s\n' %(outdeg,out_degree_per_week[(outdeg,week)],week))
         out_degree_per_week_file.close()
