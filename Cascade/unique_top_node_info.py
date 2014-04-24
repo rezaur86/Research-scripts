@@ -30,17 +30,17 @@ def manage_depth_time_per_root(depth,time):
     else:
         depth_max_time_per_root[depth] = max(depth_max_time_per_root[depth], time)
 
-def evolution_size_per_root(out_degree, time):
-    global evolution_per_root, out_degree_per_week_per_root
-    week = time/ 86400 #604800
-    if week not in evolution_per_root:
-        evolution_per_root[week] = 1
+def evolution_size_per_root(time, depth):
+    global evolution_per_root, depth_evolution_per_root, width_evolution_per_root
+    day = time/ 86400 #604800
+    if day not in evolution_per_root:
+        evolution_per_root[day] = 1
+        depth_evolution_per_root[day] = depth
+        width_evolution_per_root[day] = [depth]
     else:
-        evolution_per_root[week] += 1
-    if (out_degree, week) not in out_degree_per_week_per_root:
-        out_degree_per_week_per_root[(out_degree, week)] = 1
-    else:
-        out_degree_per_week_per_root[(out_degree, week)] += 1
+        evolution_per_root[day] += 1
+        depth_evolution_per_root[day] = max(depth_evolution_per_root[day], depth)
+        width_evolution_per_root[day].append(depth)
                         
 def manage_outdegree_per_root(outdegree, depth):
     global branching_dist_per_root
@@ -59,11 +59,13 @@ def manage_time_to_next_generation(parent_time, time_diff):
         time_to_next_generation[(parent_time_week, time_diff_day)] += 1
 
 def initialize_traverse ():
-    global graph, graph_node_count, activities_per_root, depth_expansion_per_root, depth_min_time_per_root, depth_max_time_per_root, branching_dist_per_root, evolution_per_root, out_degree_per_week_per_root
+    global graph, graph_node_count, activities_per_root, depth_expansion_per_root, depth_min_time_per_root, depth_max_time_per_root, branching_dist_per_root
+    global evolution_per_root, depth_evolution_per_root, width_evolution_per_root
     graph = {}
     graph_node_count = 0
     evolution_per_root = {}
-    out_degree_per_week_per_root = {}
+    depth_evolution_per_root = {}
+    width_evolution_per_root = {}
     activities_per_root = []
     depth_expansion_per_root = {}
     depth_min_time_per_root = {}
@@ -75,14 +77,13 @@ def cascade_traverse (parent,depth,time):
     if parent not in graph:
         graph[parent] = 0
         manage_depth_expansion_per_root(MAX_DEPTH-depth, 1)
+        evolution_size_per_root(time, MAX_DEPTH-depth)
         graph_node_count += 1
         if parent in children_of_parent:
             graph[parent] = len(children_of_parent[parent])
             manage_outdegree_per_root(graph[parent],MAX_DEPTH-depth)
-            evolution_size_per_root(graph[parent], time)
         else:
             manage_outdegree_per_root(0,MAX_DEPTH-depth)
-            evolution_size_per_root(0, time)
             return True
         if depth > 0:
             for (each_child,receiving_time) in children_of_parent[parent]:
@@ -123,7 +124,7 @@ def visulization (infl_file_name, user_list, max_depth):
 
 def resolve_cascades (user_list):
     global depth_expansion, depth_expansion_per_root, top_users_correlated_info, branching_dist, cascade_evolution, parent_alpha
-    global cascade_count, cascade_width
+    global cascade_count, cascade_width, evolution_per_root, depth_evolution_per_root, width_evolution_per_root
     not_root_users = Set()
     root_contains_users = {}
     depth_expansion = []
@@ -156,14 +157,28 @@ def resolve_cascades (user_list):
         temp_evolution = []
         weekly_cum_evolution = [a_root]
         this_week_evolution = 0
+        this_week_depth = 0
+        this_week_width = [0]*(cascade_depth+1)
         for i in range(first_day, last_day+1): # start,end time for week = range(2059, 2117): #start,end time for day 14413*86400, 14819*86400
             temp_evolution.append(evolution_per_root[i] if i in evolution_per_root else 0)
-            this_week_evolution += (evolution_per_root[i] if i in evolution_per_root else 0)
-            if (((i - first_day + 1) % 7) == 0 and (i - first_day + 1) <= 12*7) or (
-                ((last_day - first_day + 1) < 12*7) and (i == last_day)):
-                weekly_cum_evolution.append(this_week_evolution)
-                this_week_evolution = 0
-                
+            if (i - first_day + 1) <= 4*7:
+                this_week_evolution += (evolution_per_root[i] if i in evolution_per_root else 0)
+                this_week_depth = max(this_week_depth, depth_evolution_per_root[i] if i in depth_evolution_per_root else 0)
+                for each_depth in range(1, this_week_depth+1):
+                    this_week_width[each_depth] += width_evolution_per_root[i].count(each_depth) if i in width_evolution_per_root else 0
+                if (((i - first_day + 1) % 7) == 0 and (i - first_day + 1) <= 4*7) or (
+                    ((last_day - first_day + 1) < 4*7) and (i == last_day)):
+                    sd = np.sqrt(np.var(temp_evolution))
+                    avg = np.average(temp_evolution)
+                    burstiness = round(((sd - avg) / (sd + avg)), 3)
+                    weekly_cum_evolution.append(this_week_width[1]) #Root's contribution
+                    weekly_cum_evolution.append(this_week_width[2] if this_week_depth > 1 else 0) #Root's neighbor's contribution
+                    weekly_cum_evolution.append(burstiness)
+                    weekly_cum_evolution.append(this_week_depth)
+                    weekly_cum_evolution.append(max(this_week_width))
+                    weekly_cum_evolution.append(this_week_evolution)
+                    this_week_evolution = 0
+
         sd = np.sqrt(np.var(temp_evolution))
         avg = np.average(temp_evolution)
         burstiness = round(((sd - avg) / (sd + avg)), 3)
@@ -190,11 +205,6 @@ def resolve_cascades (user_list):
                 branching_dist[(degree,depth)] += branching_dist_per_root[(degree,depth)]
             else:
                 branching_dist[(degree,depth)] = branching_dist_per_root[(degree,depth)]
-        for (degree,week) in out_degree_per_week_per_root: #Collecting out degree distribution for branching process.
-            if (degree,week) in out_degree_per_week:
-                out_degree_per_week[(degree,week)] += out_degree_per_week_per_root[(degree,week)]
-            else:
-                out_degree_per_week[(degree,week)] = out_degree_per_week_per_root[(degree,week)]
         for i in range(len(activities_per_root)):
             if activities_per_root[i][0] == a_root:
                 top_users_correlated_info.append((a_root,graph[a_root],graph[activities_per_root[i][1]],cascade_size,cascade_depth))
@@ -213,11 +223,11 @@ graph_node_count = 0
 cascade_count = 0
 activities_per_root = []
 evolution_per_root = {}
+depth_evolution_per_root = {}
+width_evolution_per_root = {}
 cascade_evolution = []
 cascade_weekly_evolution = []
 time_to_next_generation = {}
-out_degree_per_week_per_root = {}
-out_degree_per_week = {}
 depth_expansion_per_root = {}
 inter_generation_time_stat = {}
 cascade_width = {}
@@ -288,7 +298,6 @@ if __name__ == '__main__':
         branching_dist_file  = open(o_file_prefix+'branching_dist.csv', "w")
         evolution_file  = open(o_file_prefix+'evolution.csv', "w")
         weekly_evolution_file  = open(o_file_prefix+'weekly_evolution.csv', "w")
-        out_degree_per_week_file  = open(o_file_prefix+'out_degree_per_week.csv', "w")
         time_to_next_generation_file  = open(o_file_prefix+'time_to_next_generation.csv', "w")
         influence_proportion_stat_file  = open(o_file_prefix+'influence_proportion_stat.csv', "w")
         writer = csv.writer(depth_vs_expansion_file, quoting=csv.QUOTE_MINIMAL)
@@ -316,9 +325,6 @@ if __name__ == '__main__':
         writer = csv.writer(weekly_evolution_file, quoting=csv.QUOTE_MINIMAL)
         writer.writerows(cascade_weekly_evolution)
         weekly_evolution_file.close()        
-        for (outdeg,week) in out_degree_per_week:
-            out_degree_per_week_file.write('%s,%s,%s\n' %(outdeg,out_degree_per_week[(outdeg,week)],week))
-        out_degree_per_week_file.close()
         for (each_week, each_time_diff) in time_to_next_generation:
             time_to_next_generation_file.write('%s,%s,%s\n' %(each_week, each_time_diff,
                                                               time_to_next_generation[(each_week, each_time_diff)]))

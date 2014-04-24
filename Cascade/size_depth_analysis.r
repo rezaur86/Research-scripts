@@ -450,38 +450,70 @@ cascade_logit_model <- function(file='iheart_gift/size_vs_root.csv',
 	size_vs_root <- as.data.frame(read.csv(file, header=FALSE))
 	colnames(size_vs_root) <- c('root', 'size', 'depth' ,'width', 'major_gift',
 			'root_act_lifespan', 'root_outdeg', 'root_contribution' , 'root_success_ratio')
-	size_vs_root <- size_vs_root[size_vs_root$size > 1, ]
-	evolution <- as.data.frame(read.csv(evolution_file, header=FALSE))
-	colnames(evolution) <- c('root', 'size', 'depth', 'width', 'first_day', 'last_day', 'burstiness')
-	evolution <- evolution[evolution$size > 1, c(1,7)]
+	size_vs_root <- size_vs_root[size_vs_root$size > 1, c(1,2)]
+#	evolution <- as.data.frame(read.csv(evolution_file, header=FALSE))
+#	colnames(evolution) <- c('root', 'size', 'depth', 'width', 'first_day', 'last_day', 'burstiness')
+#	evolution <- evolution[evolution$size > 1, c(1,7)]
 	growth <- as.data.frame(read.csv(growth_file, header=FALSE))
-	colnames(growth) <- c('root', 'week_1', 'week_2', 'week_3', 'week_4', 'week_5',
-			'week_6', 'week_7', 'week_8', 'week_9', 'week_10', 'week_11', 'week_12')
-	growth <- growth[!is.na(growth$week_4),]
-	temp <- merge(size_vs_root, evolution, by="root")
-	cascade <- merge(temp, growth, by="root")
-	cascade$week_1_4 <- cascade$week_1 + cascade$week_2 + cascade$week_3 + cascade$week_4
-	size_bin <- unique(10^seq(0, 7, by=1))
+	colnames(growth) <- c('root', 'root_contr_1', 'rn_contr_1', 'burst_1', 'depth_1','width_1', 'week_1',
+			'root_contr_2', 'rn_contr_2', 'burst_2', 'depth_2','width_2', 'week_2',
+			'root_contr_3', 'rn_contr_3', 'burst_3', 'depth_3','width_3','week_3',
+			'root_contr_4', 'rn_contr_4', 'burst_4', 'depth_4', 'width_4','week_4')
+	growth$root_contr_2[is.na(growth$root_contr_2)] <- growth$root_contr_1
+	growth$root_contr_3[is.na(growth$root_contr_3)] <- growth$root_contr_2
+	growth$root_contr_4[is.na(growth$root_contr_4)] <- growth$root_contr_3
+	growth$rn_contr_2[is.na(growth$rn_contr_2)] <- growth$rn_contr_1
+	growth$rn_contr_3[is.na(growth$rn_contr_3)] <- growth$rn_contr_2
+	growth$rn_contr_4[is.na(growth$rn_contr_4)] <- growth$rn_contr_3
+	growth$burst_2[is.na(growth$burst_2)] <- growth$burst_1
+	growth$burst_3[is.na(growth$burst_3)] <- growth$burst_2
+	growth$burst_4[is.na(growth$burst_4)] <- growth$burst_3
+	growth$depth_2[is.na(growth$depth_2)] <- growth$depth_1
+	growth$depth_3[is.na(growth$depth_3)] <- growth$depth_2
+	growth$depth_4[is.na(growth$depth_4)] <- growth$depth_3
+	growth$width_2[is.na(growth$width_2)] <- growth$width_1
+	growth$width_3[is.na(growth$width_3)] <- growth$width_2
+	growth$width_4[is.na(growth$width_4)] <- growth$width_3
+	growth$week_2[is.na(growth$week_2)] <- 0
+	growth$week_3[is.na(growth$week_3)] <- 0
+	growth$week_4[is.na(growth$week_4)] <- 0
+	growth$evol_1 <- growth$week_1
+	growth$evol_2 <- growth$week_1 + growth$week_2
+	growth$evol_3 <- growth$week_1 + growth$week_2 + growth$week_3
+	growth$evol_4 <- growth$week_1 + growth$week_2 + growth$week_3 + growth$week_4
+	cascade <- merge(size_vs_root, growth, by="root")	
+#	cascade$speed_1 <- cascade$week_1
+#	cascade$accelerate_1 <- (cascade$week_1 - 0)
+#	cascade$speed_2 <- (cascade$week_1 + cascade$week_2)/2
+#	cascade$accelerate_2 <- (cascade$week_2 - cascade$week_1)
+#	cascade$speed_3 <- (cascade$week_1 + cascade$week_2 + cascade$week_3)/3
+#	cascade$accelerate_3 <- (cascade$week_3 - cascade$week_2)
+#	cascade$speed_4 <- (cascade$week_1 + cascade$week_2 + cascade$week_3 + cascade$week_4) / 4
+#	cascade$accelerate_4 <- (cascade$speed_4 - cascade$speed_3)
+#	cascade$avg_accelerate <- (cascade$accelerate_1 + cascade$accelerate_2 + cascade$accelerate_3 + cascade$accelerate_4) / 4
+#	cascade$d_w_4 <- cascade$depth_4*cascade$width_4*cascade$avg_accelerate
+	size_bin <- unique(c(1, 10, 100, 1000, 10000000))
+	size_cat <- c('Tiny', 'Small', 'Medium', 'Large')
 	cascade <- transform(cascade, bin = cut(cascade$size, breaks=size_bin))
 	categories <- levels(cascade$bin)
-	cascade$cat <- factor(cascade$bin, levels = categories, labels = c(1,2,3,4,5,6,7))
+	cascade$cat <- factor(cascade$bin, levels = categories, labels = c(1,2,3,4))
 	cascade$cat <- relevel(cascade$cat, ref = 1)
 	splitted_data <- split(cascade, sample(1:2, nrow(cascade), replace=TRUE, prob=c(1,2)))
 	training <- splitted_data[[2]]
 	test <- splitted_data[[1]]
-	model <- multinom(cat~root_outdeg + root_contribution + root_success_ratio + major_gift + week_1_4, data = training)
-	model_summary <- summary(model)
-	z <- model_summary$coefficients/model_summary$standard.errors
-	p <- (1 - pnorm(abs(z), 0, 1)) * 2
-	test$cat.pred <- predict(model, list(root_outdeg = test$root_outdeg, root_contribution = test$root_contribution,
-					root_success_ratio = test$root_success_ratio, major_gift = test$major_gift,
-					week_1_4 = test$week_1_4))#, level = 0.95)
+	model <- multinom(cat~ root_contr_3 + rn_contr_3 + burst_3 + week_1 + week_2 + week_3 + depth_3 + width_3, data = training)
+#	model_summary <- summary(model)
+#	z <- model_summary$coefficients/model_summary$standard.errors
+	p <- 0 # (1 - pnorm(abs(z), 0, 1)) * 2
+	test$cat.pred <- predict(model, newdata = test)
+	test$cat.pred_prob <- predict(model, newdata = test, "probs")
+	print(multiclass.roc(test$cat, apply(test$cat.pred_prob, 1, function(row) which.max(row))))
 	test$cat <- as.numeric(test$cat)
 	true_pos <- c()
 	false_pos <- c()
 	prec <- c()
 	recall <- c()
-	for (i in seq(1, 7, by=1)){
+	for (i in seq(1, 4, by=1)){
 		true_pos <- c(true_pos, length(which(test$cat.pred == test$cat & test$cat == i)))
 		false_pos <- c(false_pos, length(which(test$cat.pred != test$cat & test$cat.pred == i)))
 		prec <- c(prec, (true_pos[i] / (length(which(test$cat.pred == i)))))
@@ -489,6 +521,8 @@ cascade_logit_model <- function(file='iheart_gift/size_vs_root.csv',
 	}
 	print(prec)
 	print(recall)
+	print(2*prec*recall/ (prec+recall))
+	print(true_pos/(true_pos+false_pos))
 	test_size <- as.data.frame(table(test$cat))
 	test_size[,3] <- 0
 	print(summary(test_size))
@@ -520,6 +554,82 @@ cascade_logit_model <- function(file='iheart_gift/size_vs_root.csv',
 	plot <- change_plot_attributes(plot, "", 0:1, c('Actual','Simulated'), "Cascade Size", "Empirical PDF")
 	save_ggplot(plot,file='iheart_gift/model_size_pdf.pdf')
 	return(list(training = training, test = test, prec=prec, recall=recall, p=p, true_pos = true_pos, false_pos = false_pos))
+}
+
+
+size_feature_correlation <- function(file='iheart_gift/size_vs_root.csv',
+		evolution_file='iheart_gift/top_size.csv_all_evolution.csv',
+		growth_file = 'iheart_gift/top_size.csv_all_weekly_evolution.csv'){
+	size_vs_root <- as.data.frame(read.csv(file, header=FALSE))
+	colnames(size_vs_root) <- c('root', 'size', 'depth' ,'width', 'major_gift',
+			'root_act_lifespan', 'root_outdeg', 'root_contribution' , 'root_success_ratio')
+	size_vs_root <- size_vs_root[size_vs_root$size > 1, c(1,2)]
+	growth <- as.data.frame(read.csv(growth_file, header=FALSE))
+	colnames(growth) <- c('root', 'root_contr_1', 'rn_contr_1', 'burst_1', 'depth_1','width_1', 'week_1',
+			'root_contr_2', 'rn_contr_2', 'burst_2', 'depth_2','width_2', 'week_2',
+			'root_contr_3', 'rn_contr_3', 'burst_3', 'depth_3','width_3','week_3',
+			'root_contr_4', 'rn_contr_4', 'burst_4', 'depth_4', 'width_4','week_4')
+	growth$root_contr_2[is.na(growth$root_contr_2)] <- growth$root_contr_1
+	growth$root_contr_3[is.na(growth$root_contr_3)] <- growth$root_contr_2
+	growth$root_contr_4[is.na(growth$root_contr_4)] <- growth$root_contr_3
+	growth$rn_contr_2[is.na(growth$rn_contr_2)] <- growth$rn_contr_1
+	growth$rn_contr_3[is.na(growth$rn_contr_3)] <- growth$rn_contr_2
+	growth$rn_contr_4[is.na(growth$rn_contr_4)] <- growth$rn_contr_3
+	growth$burst_2[is.na(growth$burst_2)] <- growth$burst_1
+	growth$burst_3[is.na(growth$burst_3)] <- growth$burst_2
+	growth$burst_4[is.na(growth$burst_4)] <- growth$burst_3
+	growth$depth_2[is.na(growth$depth_2)] <- growth$depth_1
+	growth$depth_3[is.na(growth$depth_3)] <- growth$depth_2
+	growth$depth_4[is.na(growth$depth_4)] <- growth$depth_3
+	growth$width_2[is.na(growth$width_2)] <- growth$width_1
+	growth$width_3[is.na(growth$width_3)] <- growth$width_2
+	growth$width_4[is.na(growth$width_4)] <- growth$width_3
+	growth$week_2[is.na(growth$week_2)] <- 0
+	growth$week_3[is.na(growth$week_3)] <- 0
+	growth$week_4[is.na(growth$week_4)] <- 0
+	growth$evol_1 <- growth$week_1
+	growth$evol_2 <- growth$week_1 + growth$week_2
+	growth$evol_3 <- growth$week_1 + growth$week_2 + growth$week_3
+	growth$evol_4 <- growth$week_1 + growth$week_2 + growth$week_3 + growth$week_4
+	cascade <- merge(size_vs_root, growth, by="root")	
+	size_bin <- unique(c(1, 10, 100, 1000, 10000000))
+	size_cat <- c('Tiny', 'Small', 'Medium', 'Large')
+	cascade <- transform(cascade, bin = cut(cascade$size, breaks=size_bin))
+	categories <- levels(cascade$bin)
+	cascade$cat <- factor(cascade$bin, levels = categories, labels = c(1,2,3,4))
+	cascade$cat <- relevel(cascade$cat, ref = 1)
+	cor.df <- c()
+	for (i in c(1,2,3,4)){
+		cor <- as.data.frame(c(1,2,3,4))
+		colnames(cor) <- c('Week')
+		cor$root_contr <- c(cor(cascade[cascade$cat == i, ]$size, cascade[cascade$cat == i, ]$root_contr_1),
+				cor(cascade[cascade$cat == i, ]$size, cascade[cascade$cat == i, ]$root_contr_2),
+				cor(cascade[cascade$cat == i, ]$size, cascade[cascade$cat == i, ]$root_contr_3),
+				cor(cascade[cascade$cat == i, ]$size, cascade[cascade$cat == i, ]$root_contr_4))
+		cor$rn_contr <- c(cor(cascade[cascade$cat == i, ]$size, cascade[cascade$cat == i, ]$rn_contr_1),
+				cor(cascade[cascade$cat == i, ]$size, cascade[cascade$cat == i, ]$rn_contr_2),
+				cor(cascade[cascade$cat == i, ]$size, cascade[cascade$cat == i, ]$rn_contr_3),
+				cor(cascade[cascade$cat == i, ]$size, cascade[cascade$cat == i, ]$rn_contr_4))
+		cor$burst <- c(cor(cascade[cascade$cat == i, ]$size, cascade[cascade$cat == i, ]$burst_1),
+				cor(cascade[cascade$cat == i, ]$size, cascade[cascade$cat == i, ]$burst_2),
+				cor(cascade[cascade$cat == i, ]$size, cascade[cascade$cat == i, ]$burst_3),
+				cor(cascade[cascade$cat == i, ]$size, cascade[cascade$cat == i, ]$burst_4))
+		cor$depth <- c(cor(cascade[cascade$cat == i, ]$size, cascade[cascade$cat == i, ]$depth_1),
+				cor(cascade[cascade$cat == i, ]$size, cascade[cascade$cat == i, ]$depth_2),
+				cor(cascade[cascade$cat == i, ]$size, cascade[cascade$cat == i, ]$depth_3),
+				cor(cascade[cascade$cat == i, ]$size, cascade[cascade$cat == i, ]$depth_4))
+		cor$width <- c(cor(cascade[cascade$cat == i, ]$size, cascade[cascade$cat == i, ]$width_1),
+				cor(cascade[cascade$cat == i, ]$size, cascade[cascade$cat == i, ]$width_2),
+				cor(cascade[cascade$cat == i, ]$size, cascade[cascade$cat == i, ]$width_3),
+				cor(cascade[cascade$cat == i, ]$size, cascade[cascade$cat == i, ]$width_4))
+		cor$evol <- c(cor(cascade[cascade$cat == i, ]$size, cascade[cascade$cat == i, ]$evol_1),
+				cor(cascade[cascade$cat == i, ]$size, cascade[cascade$cat == i, ]$evol_2),
+				cor(cascade[cascade$cat == i, ]$size, cascade[cascade$cat == i, ]$evol_3),
+				cor(cascade[cascade$cat == i, ]$size, cascade[cascade$cat == i, ]$evol_4))
+		cor$cat <- size_cat[i]
+		cor.df <- rbind(cor.df, cor)
+	}
+	return(cor.df)
 }
 
 #bla <- parent_lifespan_comp(c('fp_nt_u/','disc_heavy_users_with_sc/','disc_heavy_users_no_sc'),c('Original Cascade','W/ Second Chance','W/o Second Chance'),'Secluding Heavy Seeds')
