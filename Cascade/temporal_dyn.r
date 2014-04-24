@@ -1,26 +1,26 @@
 source('~/scripts/Cascade/tools.r')
 library(plyr)
+require(scales)
 
-temporal_analysis <- function (daily_born, daily_activation, daily_last_act, daily_last_seen){
+temporal_analysis <- function (daily_born = 'raw_stat_v2/daily_born.csv',
+		daily_activation = 'raw_stat_v2/daily_activation.csv',
+		daily_activities = 'iheart_cascade/activities_stat.txt'){
 	daily_born <- as.data.frame(read.csv(daily_born, header=FALSE))
 	daily_born[,6] <- 0
 	colnames(daily_born) <- c('year', 'week', 'day', 'hour', 'count', 'activity_type')
 	daily_activation <- as.data.frame(read.csv(daily_activation, header=FALSE))
 	daily_activation[,6] <- 1
 	colnames(daily_activation) <- c('year', 'week', 'day', 'hour', 'count', 'activity_type')
-	daily_last_act <- as.data.frame(read.csv(daily_last_act, header=FALSE))
-	daily_last_act[,6] <- 2
-	colnames(daily_last_act) <- c('year', 'week', 'day', 'hour', 'count', 'activity_type')
-	daily_last_seen <- as.data.frame(read.csv(daily_last_seen, header=FALSE))
-	daily_last_seen[,6] <- 3
-	colnames(daily_last_seen) <- c('year', 'week', 'day', 'hour', 'count', 'activity_type')
-	activities <- rbind(daily_born, daily_activation, daily_last_act, daily_last_seen)
+	daily_act <- as.data.frame(read.csv(daily_activities, header=FALSE))
+	daily_act[,6] <- 2
+	colnames(daily_act) <- c('year', 'week', 'day', 'hour', 'count', 'activity_type')
+	activities <- rbind(daily_born, daily_activation, daily_act)
 	activities.daily <- ddply(activities, c('activity_type', 'year', 'week', 'day'), summarise, daily_count = sum (count))
 	print(tail(activities.daily))
 	activities.df <- ddply(activities.daily, c('activity_type'), function(one_partition){
 				one_partition$date = do.call(paste, c(as.data.frame(cbind(one_partition$year, one_partition$week, one_partition$day)), sep="-"))
 				one_partition$week = do.call(paste, c(as.data.frame(cbind(one_partition$year, one_partition$week)), sep="-"))
-				one_partition$rtime = strptime(one_partition$date, format = "%Y-%U-%w")
+				one_partition$rtime = as.POSIXct(strptime(one_partition$date, format = "%Y-%U-%w"))
 				one_partition = one_partition[order(one_partition$rtime),]
 				one_partition$cum_count = cumsum(one_partition$daily_count)
 				one_partition$cdf_val = one_partition$cum_count / max(one_partition$cum_count)
@@ -34,34 +34,40 @@ temporal_analysis <- function (daily_born, daily_activation, daily_last_act, dai
 #	print(activities.df[activities.df$week %in% weeks[seq(length(weeks),15, -1)],])
 	print(rtimes)
 	print(weeks)
+#	activities.df$rtime <- as.Date(activities.df$rtime, format="%Y-%m-%d")
 	activities.df$activity_type <- factor(activities.df$activity_type)
 	plot <- ggplot(activities.df, aes(x = (rtime), y = (daily_count))) +
-			geom_line(aes(group = activity_type, colour = activity_type, shape = activity_type), size=.5) #+ scale_y_log10()
-#			scale_x_discrete(breaks=c(rtimes), labels=c(weeks))
-	plot <- change_plot_attributes_fancy(plot, "Activity type", 0:3, c('Born', 'Activation', 'Last activity', 'Last seen' ),
-			"Time", "User count")
+			geom_line(aes(group = activity_type, colour = activity_type, shape = activity_type), size=.5) + scale_y_log10(limits = c(10^4, 10^8)) +
+			scale_x_datetime(breaks = date_breaks("1 months"),
+					labels = date_format("%b"),
+					limits = as.POSIXct(c("2009-07-01 00:00:00", "2010-07-31 12:00:00")))
+	plot <- change_plot_attributes_fancy(plot, "Activity type", 0:2, c('Born', 'Adoption', 'Activity'),
+			"Jul 2009 - Jul 2010", "User count")
 	save_ggplot(plot, 'raw_stat_v2/overall_activities.pdf', 24,
 			opts(axis.text.x = element_text(angle = 90, hjust = 0), legend.position=c(.2, .8)))
-	activities$am_pm <- activities$hour < 12
-	activities$am_pm[activities$am_pm == TRUE] <- 'AM'
-	activities$am_pm[activities$am_pm == FALSE] <- 'PM'
-	activities.hourly <- ddply(activities, c('activity_type', 'day', 'am_pm'), summarise, hourly_act = sum (count))
+#	activities$am_pm <- activities$hour < 12
+#	activities$am_pm[activities$am_pm == TRUE] <- 'AM'
+#	activities$am_pm[activities$am_pm == FALSE] <- 'PM'
+	activities.hourly <- ddply(activities, c('activity_type', 'day', 'hour'), summarise, hourly_act = sum (count))
+	print(head(activities.hourly))
 	activities.df <- ddply(activities.hourly, c('activity_type'), function(one_partition){
-				one_partition = one_partition[order(one_partition$day, one_partition$am_pm),]
-				one_partition$day_hour = do.call(paste, c(as.data.frame(cbind(one_partition$day, one_partition$am_pm)), sep=":"))
+				one_partition = one_partition[order(one_partition$day, one_partition$hour),]
+				one_partition$day_hour = do.call(paste, c(as.data.frame(cbind(one_partition$day, one_partition$hour)), sep=":"))
+				one_partition$rtime = as.POSIXct(strptime(one_partition$day_hour, format = "%w:%H"))
 				one_partition$cum_count = cumsum(one_partition$hourly_act)
 				one_partition$cdf_val = one_partition$cum_count / max(one_partition$cum_count)
 				one_partition$pdf_val = one_partition$hourly_act / max(one_partition$cum_count)
 				one_partition
 			})
+	print('1')
 	print(head(activities.df, 50))
 	activities.df$activity_type <- factor(activities.df$activity_type)
-	plot <- ggplot(activities.df, aes(x = (day_hour), y = (pdf_val))) + 
+	plot <- ggplot(activities.df, aes(x = (day_hour), y = (hourly_act))) + 
 			geom_line(aes(group = activity_type, colour = activity_type, shape = activity_type), size=.5)+
 #			scale_y_log10()+
-			scale_x_discrete(breaks=c('0:AM','0:PM', '1:AM','1:PM', '2:AM','2:PM', '3:AM','3:PM', '4:AM','4:PM', '5:AM','5:PM', '6:AM','6:PM'),
+			scale_x_discrete(breaks=c('0:0','0:11', '1:0','1:11', '2:0','2:11', '3:0','3:11', '4:0','4:11', '5:0','5:11', '6:0','6:11'),
 					labels=c('Sun:AM','Sun:PM', 'Mon:AM','Mon:PM', 'Tue:AM','Tue:PM', 'Wed:AM','Wed:PM', 'Thu:AM','Thu:PM', 'Fri:AM','Fri:PM', 'Sat:AM', 'Sat:PM'))
-	plot <- change_plot_attributes_fancy(plot, "Activity type", 0:3, c('Born', 'Activation', 'Last activity', 'Last seen' ),
+	plot <- change_plot_attributes_fancy(plot, "Activity type", 0:2, c('Born', 'Adoption', 'Activity' ),
 			"Day:Hour", "User count")
 	save_ggplot(plot, 'raw_stat_v2/daily_activities.pdf', 24,
 			opts(axis.text.x = element_text(angle = 90, hjust = 0), legend.position=c(.9, .7)))
@@ -70,6 +76,7 @@ temporal_analysis <- function (daily_born, daily_activation, daily_last_act, dai
 burstiness_analysis <- function(file='iheart_cascade/top_size.csv_all_evolution.csv'){
 	evolution <- as.data.frame(read.csv(file, header=FALSE))
 	colnames(evolution) <- c('root', 'size', 'depth', 'width', 'first_day', 'last_day', 'burstiness')
+	evolution$lifetime <- evolution$last_day-evolution$first_day+1
 	evolution.df <- as.data.frame(table(evolution[evolution$first_day != evolution$last_day, ]$burstiness))
 	colnames(evolution.df) <- c('burstiness','count')
 	evolution.df$burstiness <- as.numeric(levels(evolution.df$burstiness))[evolution.df$burstiness]
@@ -84,14 +91,26 @@ burstiness_analysis <- function(file='iheart_cascade/top_size.csv_all_evolution.
 			aes(x = burstiness, y = cdf)) + geom_point(size= 0.8) + xlab('Burstiness') + ylab('Empirical CDF')
 #			scale_x_log10() + scale_y_log10()
 	save_ggplot(plot, 'iheart_cascade/burstiness_cdf.pdf')
-	evolution.life <- as.data.frame(table(evolution$last_day-evolution$first_day+1))
+	evolution.life <- as.data.frame(table(evolution$lifetime))
 	colnames(evolution.life) <- c('life_time','count')
 	evolution.life$life_time <- as.numeric(levels(evolution.life$life_time))[evolution.life$life_time]
 	evolution.life <- evolution.life[order(evolution.life$life_time), ]
 	evolution.life$cum_sum <- cumsum(evolution.life$count)
 	evolution.life$cdf <- evolution.life$cum_sum/max(evolution.life$cum_su)
-	plot <- ggplot(evolution.life, aes(x = life_time, y = cdf)) + geom_point(size=0.8) + xlab('Life time (Day)') + ylab('Empirical CDF')
+	plot <- ggplot(evolution.life, aes(x = life_time, y = cdf)) +
+			geom_point() + xlab('Life time') + ylab('Empirical CDF') +
+			scale_x_log10(breaks=c(1, 7, 2*7, 4*7, 3*4*7, 12*4*7),
+					labels=c('1d', '1w','2w', '4w', '3m', '1y'))	
 	save_ggplot(plot, 'iheart_cascade/lifetime_cdf.pdf')
+	evolution.df <- ddply(evolution, c('lifetime'), summarise, avg_size = mean (size))
+	plot <- ggplot(evolution.df, aes(x = lifetime, y = avg_size)) + geom_point() +
+			xlab('Life time') + ylab('Avg. size') +
+			scale_y_log10(breaks=c(1, 10, 100, 1000, 10000),
+					labels=c('1', '10','100', '1000', '10000')) +
+			scale_x_log10(breaks=c(1, 7, 2*7, 4*7, 3*4*7, 12*4*7),
+					labels=c('1d', '1w','2w', '4w', '3m', '1y'))
+	save_ggplot(plot, 'iheart_cascade/lifetime_vs_size.pdf')
+	
 	evolution.df <- evolution[evolution$first_day != evolution$last_day, c(2,7)]
 	evolution.df <- ddply(evolution.df, c('burstiness'), summarise, avg_size = mean (size))
 	plot <- ggplot(evolution.df, aes(x = burstiness, y = avg_size)) + geom_point() +

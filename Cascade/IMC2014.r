@@ -71,9 +71,9 @@ size_vs_root_contribution(file='iheart_cascade/top_size.csv_all_size_vs_root_ode
 #####################################################################################################
 print('Daily and overall activities')
 temporal_analysis(daily_born = 'raw_stat_v2/daily_born.csv',
-		daily_activation = 'daily_activation.csv',
-		daily_last_act = 'daily_last_act.csv',
-		daily_last_seen = 'daily_last_seen.csv')
+		daily_activation = 'raw_stat_v2/daily_activation.csv',
+		daily_activities = 'iheart_cascade/activities_stat.txt')
+
 #Outputs
 #raw_stat_v2/overall_activities.pdf
 #raw_stat_v2/daily_activities.pdf

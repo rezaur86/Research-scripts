@@ -3,6 +3,7 @@ import copy
 from sets import Set
 import csv
 import array
+import time
 from bitarray import bitarray
 import operator
 import numpy as np
@@ -12,20 +13,8 @@ NO_PARENT = MAX_USERS + 1
 NEVER = 2**31 - 1
 
 if __name__ == '__main__':
-    is_leaf = bitarray(MAX_USERS)
-    is_leaf.setall(True)
-    
-    out_degree = [] #array.array('I')
-    in_degree = [] #array.array('I')
-    in_degree_until_active = [] #array.array('I')
-    potential_parents = []
-    born_time = [] #array.array('l')
-    activation_time = [] #array.array('l')
-    user_last_act_time = []
     gift_type_stat = {}
-    sent_gifts = {}
-    recved_gifts = {}
-    
+    activities = {}
     file_list = sorted(os.listdir(sys.argv[1]))
     user_last_seen_time = array.array('l')
     activity_line = 0
@@ -42,42 +31,26 @@ if __name__ == '__main__':
                 gift_type_stat[hid] += 1
             else:
                 gift_type_stat[hid] = 1
-#             if sender != -1:
-#                 if sender in sent_gifts:
-#                     if hid in sent_gifts[sender]:
-#                         sent_gifts[sender][hid] += 1
-#                     else:
-#                         sent_gifts[sender][hid] = 1
-#                 else:
-#                     sent_gifts[sender] = {}
-#                     sent_gifts[sender][hid] = 1
-#             if recv != -1:
-#                 if recv in recved_gifts:
-#                     if hid in recved_gifts[recv]:
-#                         recved_gifts[recv][hid] += 1
-#                     else:
-#                         recved_gifts[recv][hid] = 1
-#                 else:
-#                     recved_gifts[recv] = {}
-#                     recved_gifts[recv][hid] = 1
+            tmp_time = time.localtime(timestamp)
+            activity = (time.strftime("%Y", tmp_time),
+                              time.strftime("%U", tmp_time),
+                              time.strftime("%w", tmp_time),
+                              time.strftime("%H", tmp_time))
+            if activity not in activities:
+                activities[activity] = 1
+            else:
+                activities[activity] += 1
         f.close()
         print each_file
     total_line = activity_line
     print 'Total line read: ', total_line
     #Gift type stat
-    f = open(sys.argv[2]+'_gift_type_stat.txt', "w")
+    f = open(sys.argv[2]+'gift_type_stat.txt', "w")
     for each_gift in gift_type_stat:
         f.write('%s,%s\n' %(each_gift,gift_type_stat[each_gift]))
     f.close()
-#     f_stat = csv.writer(open(sys.argv[2]+'_gift_sent_stat.txt', "w"))
-# #     f = csv.writer(open(sys.argv[2]+'_gift_sent.txt', "w"))
-#     temp = sorted(sent_gifts.iteritems(), key=operator.itemgetter(0), reverse=False)
-#     for tuple in temp:
-#         f_stat.writerow([tuple[0], len(tuple[1]), max(tuple[1], key=tuple[1].get)])
-# #         f.writerow(tuple[1])
-#     f_stat = csv.writer(open(sys.argv[2]+'_gift_received_stat.txt', "w"))
-# #     f = csv.writer(open(sys.argv[2]+'_gift_received.txt', "w"))
-#     temp = sorted(recved_gifts.iteritems(), key=operator.itemgetter(0), reverse=False)
-#     for tuple in temp:
-#         f_stat.writerow([tuple[0], len(tuple[1]), max(tuple[1], key=tuple[1].get)])
-# #         f.writerow(tuple[1])
+    #Activities
+    f = open(sys.argv[2]+'activities_stat.txt', "w")
+    for tuple in activities:
+        f.write('%s,%s,%s,%s,%s\n'%(tuple[0],tuple[1],tuple[2],tuple[3],activities[tuple]))
+    f.close()
