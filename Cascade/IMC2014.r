@@ -3,6 +3,20 @@ source('~/scripts/Cascade/size_depth_analysis.r')
 source('~/scripts/Cascade/temporal_dyn.r')
 
 #####################################################################################################
+print('Lifespan vs indeg,outdegree')
+lifespan_analysis(lifespan_file_name='raw_stat_v2/lifespan_stat.csv')
+#Outputs
+#raw_stat_v2/lifespan.pdf
+#raw_stat_v2/lifespan_degree.pdf
+#raw_stat_v2/lifespan_cdf.pdf
+
+print('Active lifespan vs indeg,outdegree')
+act_lifespan_analysis(lifespan_file_name='raw_stat_v2/act_lifespan_stat.csv')
+#Outputs
+#raw_stat_v2/act_lifespan.pdf
+#raw_stat_v2/act_lifespan_degree.pdf
+#raw_stat_v2/act_lifespan_cdf.pdf
+
 print('Indegree and Outdegree distribution in same plot')
 raw_outdeg_analysis(raw_outdeg_file_name = 'raw_stat_v2/raw_outdeg_stat.csv',
 		raw_indeg_file_name='raw_stat_v2/raw_indeg_stat.csv')

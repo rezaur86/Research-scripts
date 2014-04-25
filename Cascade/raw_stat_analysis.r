@@ -1,29 +1,97 @@
 source('~/scripts/Cascade/tools.r')
 library(plyr)
 
-lifespan_analysis <- function(lifespan_file_name){
+lifespan_analysis <- function(lifespan_file_name='raw_stat_v2/lifespan_stat.csv',
+		act_lifespan_file_name='raw_stat_v2/act_lifespan_stat.csv'){
 	lifespan <- as.data.frame(read.csv(lifespan_file_name, header=FALSE))
-	colnames(lifespan) <- c('time', 'count')
-	plot <- ggplot(lifespan[lifespan$time>0,], aes(x = time, y = count/sum(count))) + geom_line() + xlab('Life time (bin = 600s)') + ylab('proportion of Count') + 
-			scale_x_log10(breaks=c(6,12,24,48,72,96,144,288,4*144,7*144,14*144,28*144,2*28*144,4*28*144,8*28*144), labels=c('1hr','2hr','4hr','8hr','12hr','16hr','1day','2day','4day','1week','2weeks','4weeks','8weeks','16weeks','32weeks')) + 
-			scale_y_log10() + # + xlim(1,200) + ylim(0,100000)
-			myPlotTheme() + opts(axis.text.x=theme_text(angle=45,hjust=1,vjust=1))
-	save_ggplot(plot, 'raw_stat/lifespan.pdf')
-	lifespan <- lifespan[order(lifespan$time),]
-	parent_lifespan <- lifespan[lifespan$time>0,]
-	life_95 <- parent_lifespan[cumsum(parent_lifespan$count/sum(parent_lifespan$count))>=.95,]$time[1]
-	print_report('95 percentile lifespan', life_95)
-	plot <- ggplot(parent_lifespan, aes(x = time, y = cumsum(count/sum(count)))) + geom_line() +
-			xlab('Active Lifetime') + ylab('Empirical CDF') + 
-#			scale_x_log10(breaks=c(6,12,24,48,72,96,144,288,4*144,7*144,14*144,28*144,2*28*144,4*28*144,8*28*144), labels=c('1hr','2hr','4hr','8hr','12hr','16hr','1day','2day','4day','1week','2weeks','4weeks','8weeks','16weeks','32weeks')) +
-			scale_x_log10(breaks=c(1,2,4,7,7*2,7*4,7*8,7*16,7*32), labels=c('1day','2day','4day','1week','2week','4week','8week','16week','32week')) +
-			scale_y_continuous(breaks=c(0,.2,.4,.6,.8,1.0))+
-#			scale_y_log10() + # + xlim(1,200) + ylim(0,100000)
-			myPlotTheme() + opts(axis.text.x=theme_text(angle=45,hjust=1,vjust=1))
-	pdf('raw_stat/lifespan_cum_pdf.pdf')
-	print(plot)
-	dev.off()
-	return(parent_lifespan)
+	lifespan[,5] <- 0
+	colnames(lifespan) <- c('time', 'count', 'avg_indeg', 'avg_odeg', 'life_type')
+	act_lifespan <- as.data.frame(read.csv(act_lifespan_file_name, header=FALSE))
+	act_lifespan[,5] <- 1
+	colnames(act_lifespan) <- c('time', 'count', 'avg_indeg', 'avg_odeg', 'life_type')
+	lifespan.comb <- rbind(lifespan, act_lifespan)
+	lifespan <- lifespan.comb
+	lifespan$life_type <- factor(lifespan$life_type)
+	plot <- ggplot(lifespan, aes(x = time, y = count)) +
+			geom_line(aes(group = life_type, colour = life_type, shape = life_type), size=1) +
+			scale_y_log10()
+	plot <- change_plot_attributes_fancy(plot, "", 0:1, c('Lifespan', 'Active lifespan'), "Days", "Count")
+	save_ggplot(plot, 'raw_stat_v2/lifespan.pdf')
+	lifespan.df <- ddply(lifespan, c('life_type'), function(one_partition){
+				one_partition = one_partition[order(one_partition$time),]
+				one_partition$cum_count = cumsum(one_partition$count)
+				one_partition$cdf_val = one_partition$cum_count / max(one_partition$cum_count)
+				one_partition$pdf_val = one_partition$count / max(one_partition$cum_count)
+				one_partition
+			})
+	lifespan.df$life_type <- factor(lifespan.df$life_type)
+	plot <- ggplot(lifespan, aes(x = time, y = cumsum(count/sum(count)))) +
+			geom_line(aes(group = life_type, colour = life_type, shape = life_type), size=1) +
+			scale_y_continuous(breaks=c(0,.2,.4,.6,.8,1.0))
+	plot <- change_plot_attributes_fancy(plot, "", 0:1, c('Lifespan', 'Active lifespan'), "Days", "Empirical CDF")
+	save_ggplot(plot, 'raw_stat_v2/lifespan_cdf.pdf')
+
+	lifespan_indeg <- lifespan.comb[,c(1,3,5)]
+	colnames(lifespan_indeg) <- c('time', 'avg', 'life_type')
+	lifespan_indeg$degree_type <- 0
+	lifespan_odeg <- lifespan.comb[,c(1,4,5)]
+	colnames(lifespan_odeg) <- c('time', 'avg', 'life_type')
+	lifespan_odeg$degree_type <- 1
+	lifespan_indeg_odeg <- rbind(lifespan_indeg, lifespan_odeg)
+	print(summary(lifespan_indeg_odeg))
+	lifespan_indeg_odeg$degree_type <- do.call(paste, c(as.data.frame(cbind(
+									lifespan_indeg_odeg$degree_type, lifespan_indeg_odeg$life_type)), sep=""))
+	lifespan_indeg_odeg$degree_type <- factor(lifespan_indeg_odeg$degree_type)
+	plot <- ggplot(lifespan_indeg_odeg, aes(x = time, y = avg)) +
+			geom_line(aes(group = degree_type, colour = degree_type, shape = degree_type), size=1) +
+			scale_y_log10()
+	plot <- change_plot_attributes_fancy(plot, "", c('00','01','10','11'),
+			c('Lifespan received ARs', 'Active lifespan vs. Received ARs',
+					'Lifespan vs. Sent ARs', 'Active lifespan vs. Sent ARs'), "Days", "Avg. Number of ARs")
+	save_ggplot(plot, 'raw_stat_v2/lifespan_degree.pdf', 24,
+			opts(axis.text.x = element_text(angle = 0, hjust = 0), legend.position=c(.65, .2)))
+#	lifespan <- lifespan[order(lifespan$time),]
+#	parent_lifespan <- lifespan[lifespan$time>0,]
+#	life_95 <- parent_lifespan[cumsum(parent_lifespan$count/sum(parent_lifespan$count))>=.95,]$time[1]
+#	print_report('95 percentile lifespan', life_95)
+#	plot <- ggplot(lifespan, aes(x = time, y = cumsum(count/sum(count)))) + geom_line() +
+#			xlab('Lifetime (days)') + ylab('Empirical CDF') + 
+##			scale_x_log10(breaks=c(6,12,24,48,72,96,144,288,4*144,7*144,14*144,28*144,2*28*144,4*28*144,8*28*144), labels=c('1hr','2hr','4hr','8hr','12hr','16hr','1day','2day','4day','1week','2weeks','4weeks','8weeks','16weeks','32weeks')) +
+##			scale_x_log10(breaks=c(1,2,4,7,7*2,7*4,7*8,7*16,7*32), labels=c('1day','2day','4day','1week','2week','4week','8week','16week','32week')) +
+#			scale_y_continuous(breaks=c(0,.2,.4,.6,.8,1.0))
+#	save_ggplot(plot, 'raw_stat_v2/lifespan_cdf.pdf')
+#	return(lifespan)
+}
+
+act_lifespan_analysis <- function(lifespan_file_name='raw_stat_v2/acrt_lifespan_stat.csv'){
+	lifespan <- as.data.frame(read.csv(lifespan_file_name, header=FALSE))
+	colnames(lifespan) <- c('time', 'count', 'avg_indeg', 'avg_odeg')
+	plot <- ggplot(lifespan, aes(x = time, y = count)) + geom_line() +
+			xlab('Active lifetime (days)') + ylab('Count') + 
+			scale_y_log10()
+	save_ggplot(plot, 'raw_stat_v2/active_lifespan.pdf')
+	lifespan_indeg <- lifespan[,c(1,3)]
+	lifespan_indeg[,3] <- 0
+	colnames(lifespan_indeg) <- c('time', 'avg', 'degree_type')
+	lifespan_odeg <- lifespan[,c(1,4)]
+	lifespan_odeg[,3] <- 1
+	colnames(lifespan_odeg) <- c('time', 'avg', 'degree_type')
+	lifespan_indeg_odeg <- rbind(lifespan_indeg, lifespan_odeg)
+	lifespan_indeg_odeg$degree_type <- factor(lifespan_indeg_odeg$degree_type)
+	plot <- ggplot(lifespan_indeg_odeg, aes(x = time, y = avg)) +
+			geom_line(aes(group = degree_type, colour = degree_type, shape = degree_type), size=1) +
+			scale_y_log10()
+	plot <- change_plot_attributes_fancy(plot, "", 0:1, c('Received ARs', 'Sent ARs'), "Active lifetime (days)", "Avg. Number of ARs")
+	save_ggplot(plot, 'raw_stat_v2/active_lifespan_degree.pdf')
+#	lifespan <- lifespan[order(lifespan$time),]
+#	parent_lifespan <- lifespan[lifespan$time>0,]
+#	life_95 <- parent_lifespan[cumsum(parent_lifespan$count/sum(parent_lifespan$count))>=.95,]$time[1]
+#	print_report('95 percentile lifespan', life_95)
+	plot <- ggplot(lifespan, aes(x = time, y = cumsum(count/sum(count)))) + geom_line() +
+			xlab('Active lifetime (days)') + ylab('Empirical CDF') + 
+			scale_y_continuous(breaks=c(0,.2,.4,.6,.8,1.0))
+	save_ggplot(plot, 'raw_stat_v2/active_lifespan_cdf.pdf')
+#	return(parent_lifespan)
 }
 
 raw_outdeg_analysis <- function (raw_outdeg_file_name = 'raw_stat_v2/raw_outdeg_stat.csv',

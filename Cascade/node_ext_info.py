@@ -134,8 +134,9 @@ if __name__ == '__main__':
                     o_f.write('%s %s %s %s %s %s %s'%(i, born_time[i], activation_time[i] if is_leaf[i]==False else (user_last_seen_time[i]+1) # anything bigger than last seen time
                                                    , user_last_act_time[i] if is_leaf[i]==False else (user_last_seen_time[i]+1)
                                                    , user_last_seen_time[i], int(is_leaf[i]), out_degree[i]))
-                    node_basic_f.write('%s,%s,%s,%s,%s'%(i, out_degree[i], in_degree[i], in_degree_until_active[i],
-                                                      (user_last_act_time[i] - activation_time[i] + 1) if is_leaf[i]==False else 0))
+                    node_basic_f.write('%s,%s,%s,%s,%s,%s'%(i, out_degree[i], in_degree[i], in_degree_until_active[i],
+                                                      (user_last_act_time[i] - activation_time[i] + 1) if is_leaf[i]==False else 0,
+                                                      (user_last_seen_time[i] - born_time[i] + 1)))
                     born_time[i] = None
                     activation_time[i] = None
                     out_degree[i] = None

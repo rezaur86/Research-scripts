@@ -6,13 +6,13 @@ temporal_analysis <- function (daily_born = 'raw_stat_v2/daily_born.csv',
 		daily_activation = 'raw_stat_v2/daily_activation.csv',
 		daily_activities = 'iheart_cascade/activities_stat.txt'){
 	daily_born <- as.data.frame(read.csv(daily_born, header=FALSE))
-	daily_born[,6] <- 0
+	daily_born[,6] <- 1
 	colnames(daily_born) <- c('year', 'week', 'day', 'hour', 'count', 'activity_type')
 	daily_activation <- as.data.frame(read.csv(daily_activation, header=FALSE))
-	daily_activation[,6] <- 1
+	daily_activation[,6] <- 2
 	colnames(daily_activation) <- c('year', 'week', 'day', 'hour', 'count', 'activity_type')
 	daily_act <- as.data.frame(read.csv(daily_activities, header=FALSE))
-	daily_act[,6] <- 2
+	daily_act[,6] <- 0
 	colnames(daily_act) <- c('year', 'week', 'day', 'hour', 'count', 'activity_type')
 	activities <- rbind(daily_born, daily_activation, daily_act)
 	activities.daily <- ddply(activities, c('activity_type', 'year', 'week', 'day'), summarise, daily_count = sum (count))
@@ -39,12 +39,11 @@ temporal_analysis <- function (daily_born = 'raw_stat_v2/daily_born.csv',
 	plot <- ggplot(activities.df, aes(x = (rtime), y = (daily_count))) +
 			geom_line(aes(group = activity_type, colour = activity_type, shape = activity_type), size=.5) + scale_y_log10(limits = c(10^4, 10^8)) +
 			scale_x_datetime(breaks = date_breaks("1 months"),
-					labels = date_format("%b"),
-					limits = as.POSIXct(c("2009-07-01 00:00:00", "2010-07-31 12:00:00")))
-	plot <- change_plot_attributes_fancy(plot, "Activity type", 0:2, c('Born', 'Adoption', 'Activity'),
-			"Jul 2009 - Jul 2010", "User count")
+					labels = date_format("%b"))
+	plot <- change_plot_attributes_fancy(plot, "", 0:2, c( 'AR exchange', 'Birth of new user', 'Activation'),
+			"2009 - 2010", "User count")
 	save_ggplot(plot, 'raw_stat_v2/overall_activities.pdf', 24,
-			opts(axis.text.x = element_text(angle = 90, hjust = 0), legend.position=c(.2, .8)))
+			opts(axis.text.x = element_text(angle = 90, hjust = 0), legend.position=c(.25, .9)))
 #	activities$am_pm <- activities$hour < 12
 #	activities$am_pm[activities$am_pm == TRUE] <- 'AM'
 #	activities$am_pm[activities$am_pm == FALSE] <- 'PM'
