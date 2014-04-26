@@ -25,11 +25,12 @@ lifespan_analysis <- function(lifespan_file_name='raw_stat_v2/lifespan_stat.csv'
 				one_partition
 			})
 	lifespan.df$life_type <- factor(lifespan.df$life_type)
-	plot <- ggplot(lifespan, aes(x = time, y = cumsum(count/sum(count)))) +
+	plot <- ggplot(lifespan.df, aes(x = time, y = cdf_val)) +
 			geom_line(aes(group = life_type, colour = life_type, shape = life_type), size=1) +
 			scale_y_continuous(breaks=c(0,.2,.4,.6,.8,1.0))
 	plot <- change_plot_attributes_fancy(plot, "", 0:1, c('Lifespan', 'Active lifespan'), "Days", "Empirical CDF")
-	save_ggplot(plot, 'raw_stat_v2/lifespan_cdf.pdf')
+	save_ggplot(plot, 'raw_stat_v2/lifespan_cdf.pdf', 24,
+			opts(axis.text.x = element_text(angle = 0, hjust = 0), legend.position=c(.65, .5)))
 
 	lifespan_indeg <- lifespan.comb[,c(1,3,5)]
 	colnames(lifespan_indeg) <- c('time', 'avg', 'life_type')
@@ -46,10 +47,10 @@ lifespan_analysis <- function(lifespan_file_name='raw_stat_v2/lifespan_stat.csv'
 			geom_line(aes(group = degree_type, colour = degree_type, shape = degree_type), size=1) +
 			scale_y_log10()
 	plot <- change_plot_attributes_fancy(plot, "", c('00','01','10','11'),
-			c('Lifespan received ARs', 'Active lifespan vs. Received ARs',
+			c('Lifespan vs. received ARs', 'Active lifespan vs. Received ARs',
 					'Lifespan vs. Sent ARs', 'Active lifespan vs. Sent ARs'), "Days", "Avg. Number of ARs")
 	save_ggplot(plot, 'raw_stat_v2/lifespan_degree.pdf', 24,
-			opts(axis.text.x = element_text(angle = 0, hjust = 0), legend.position=c(.65, .2)))
+			opts(axis.text.x = element_text(angle = 0, hjust = 0), legend.position=c(.6, .2)))
 #	lifespan <- lifespan[order(lifespan$time),]
 #	parent_lifespan <- lifespan[lifespan$time>0,]
 #	life_95 <- parent_lifespan[cumsum(parent_lifespan$count/sum(parent_lifespan$count))>=.95,]$time[1]
