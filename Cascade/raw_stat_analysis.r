@@ -1,41 +1,45 @@
 source('~/scripts/Cascade/tools.r')
 library(plyr)
 
-lifespan_analysis <- function(lifespan_file_name='raw_stat_v2/lifespan_stat.csv',
-		act_lifespan_file_name='raw_stat_v2/act_lifespan_stat.csv'){
-	lifespan <- as.data.frame(read.csv(lifespan_file_name, header=FALSE))
-	lifespan[,5] <- 0
-	colnames(lifespan) <- c('time', 'count', 'avg_indeg', 'avg_odeg', 'life_type')
+lifespan_analysis <- function(adoption_delay_file_name='raw_stat_wo_burst/delay_recv_AR_stat.csv',
+		act_lifespan_file_name='raw_stat_wo_burst/act_lifespan_sent_AR_stat.csv'){
+	adoption_delay <- as.data.frame(read.csv(adoption_delay_file_name, header=FALSE))
+	adoption_delay[,5] <- 0
+	colnames(adoption_delay) <- c('time', 'count', 'avg_AR', 'avg_AR_', 'life_type')
+	adoption_delay[adoption_delay$time == 24855,]$time <- Inf
+	adoption_delay <- adoption_delay[adoption_delay$time < 24855,]
 	act_lifespan <- as.data.frame(read.csv(act_lifespan_file_name, header=FALSE))
 	act_lifespan[,5] <- 1
-	colnames(act_lifespan) <- c('time', 'count', 'avg_indeg', 'avg_odeg', 'life_type')
-	lifespan.comb <- rbind(lifespan, act_lifespan)
-	lifespan <- lifespan.comb
-	lifespan$life_type <- factor(lifespan$life_type)
-	plot <- ggplot(lifespan, aes(x = time, y = count)) +
+	colnames(act_lifespan) <- c('time', 'count', 'avg_AR', 'avg_AR_', 'life_type')
+	act_lifespan[act_lifespan$time == 24855,]$time <- Inf
+	act_lifespan <- act_lifespan[act_lifespan$time < 24855,]
+	adoption_times <- rbind(adoption_delay, act_lifespan)
+	adoptions_temp <- adoption_times
+	adoptions_temp$life_type <- factor(adoptions_temp$life_type)
+	plot <- ggplot(adoptions_temp, aes(x = time, y = count)) +
 			geom_line(aes(group = life_type, colour = life_type, shape = life_type), size=1) +
 			scale_y_log10()
-	plot <- change_plot_attributes_fancy(plot, "", 0:1, c('Lifespan', 'Active lifespan'), "Days", "Count")
-	save_ggplot(plot, 'raw_stat_v2/lifespan.pdf')
-	lifespan.df <- ddply(lifespan, c('life_type'), function(one_partition){
+	plot <- change_plot_attributes_fancy(plot, "", 0:1, c('Adoption delay', 'Active lifespan'), "Days", "Count")
+	save_ggplot(plot, 'raw_stat_v2/adoption_times.pdf')
+	adoptions_temp.df <- ddply(adoptions_temp, c('life_type'), function(one_partition){
 				one_partition = one_partition[order(one_partition$time),]
 				one_partition$cum_count = cumsum(one_partition$count)
 				one_partition$cdf_val = one_partition$cum_count / max(one_partition$cum_count)
 				one_partition$pdf_val = one_partition$count / max(one_partition$cum_count)
 				one_partition
 			})
-	lifespan.df$life_type <- factor(lifespan.df$life_type)
-	plot <- ggplot(lifespan.df, aes(x = time, y = cdf_val)) +
-			geom_line(aes(group = life_type, colour = life_type, shape = life_type), size=1) +
-			scale_y_continuous(breaks=c(0,.2,.4,.6,.8,1.0))
-	plot <- change_plot_attributes_fancy(plot, "", 0:1, c('Lifespan', 'Active lifespan'), "Days", "Empirical CDF")
-	save_ggplot(plot, 'raw_stat_v2/lifespan_cdf.pdf', 24,
-			opts(axis.text.x = element_text(angle = 0, hjust = 0), legend.position=c(.65, .5)))
+	adoptions_temp.df$life_type <- factor(adoptions_temp.df$life_type)
+	plot <- ggplot(adoptions_temp.df, aes(x = time, y = cdf_val)) +
+			geom_line(aes(group = life_type, colour = life_type, shape = life_type), size=1) #+ scale_y_log10()	
+#			scale_y_continuous(breaks=c(0,.2,.4,.6,.8,1.0))
+	plot <- change_plot_attributes_fancy(plot, "", 0:1, c('Adoption delay', 'Active lifespan'), "Days", "Empirical CDF")
+	save_ggplot(plot, 'raw_stat_v2/adoption_times_cdf.pdf', 24,
+			opts(axis.text.x = element_text(angle = 0, hjust = 0), legend.position=c(.65, .65)))
 
-	lifespan_indeg <- lifespan.comb[,c(1,3,5)]
+	lifespan_indeg <- adoption_times[,c(1,3,5)]
 	colnames(lifespan_indeg) <- c('time', 'avg', 'life_type')
 	lifespan_indeg$degree_type <- 0
-	lifespan_odeg <- lifespan.comb[,c(1,4,5)]
+	lifespan_odeg <- adoption_times[,c(1,4,5)]
 	colnames(lifespan_odeg) <- c('time', 'avg', 'life_type')
 	lifespan_odeg$degree_type <- 1
 	lifespan_indeg_odeg <- rbind(lifespan_indeg, lifespan_odeg)
@@ -43,66 +47,31 @@ lifespan_analysis <- function(lifespan_file_name='raw_stat_v2/lifespan_stat.csv'
 	lifespan_indeg_odeg$degree_type <- do.call(paste, c(as.data.frame(cbind(
 									lifespan_indeg_odeg$degree_type, lifespan_indeg_odeg$life_type)), sep=""))
 	lifespan_indeg_odeg$degree_type <- factor(lifespan_indeg_odeg$degree_type)
-	plot <- ggplot(lifespan_indeg_odeg, aes(x = time, y = avg)) +
+	plot <- ggplot(lifespan_indeg_odeg[lifespan_indeg_odeg$time < Inf, ], aes(x = time, y = avg)) +
 			geom_line(aes(group = degree_type, colour = degree_type, shape = degree_type), size=1) +
 			scale_y_log10()
-	plot <- change_plot_attributes_fancy(plot, "", c('00','01','10','11'),
-			c('Lifespan vs. received ARs', 'Active lifespan vs. Received ARs',
-					'Lifespan vs. Sent ARs', 'Active lifespan vs. Sent ARs'), "Days", "Avg. Number of ARs")
-	save_ggplot(plot, 'raw_stat_v2/lifespan_degree.pdf', 24,
-			opts(axis.text.x = element_text(angle = 0, hjust = 0), legend.position=c(.6, .2)))
-#	lifespan <- lifespan[order(lifespan$time),]
-#	parent_lifespan <- lifespan[lifespan$time>0,]
-#	life_95 <- parent_lifespan[cumsum(parent_lifespan$count/sum(parent_lifespan$count))>=.95,]$time[1]
-#	print_report('95 percentile lifespan', life_95)
-#	plot <- ggplot(lifespan, aes(x = time, y = cumsum(count/sum(count)))) + geom_line() +
-#			xlab('Lifetime (days)') + ylab('Empirical CDF') + 
-##			scale_x_log10(breaks=c(6,12,24,48,72,96,144,288,4*144,7*144,14*144,28*144,2*28*144,4*28*144,8*28*144), labels=c('1hr','2hr','4hr','8hr','12hr','16hr','1day','2day','4day','1week','2weeks','4weeks','8weeks','16weeks','32weeks')) +
-##			scale_x_log10(breaks=c(1,2,4,7,7*2,7*4,7*8,7*16,7*32), labels=c('1day','2day','4day','1week','2week','4week','8week','16week','32week')) +
-#			scale_y_continuous(breaks=c(0,.2,.4,.6,.8,1.0))
-#	save_ggplot(plot, 'raw_stat_v2/lifespan_cdf.pdf')
-#	return(lifespan)
+	plot <- change_plot_attributes_fancy(plot, "", c('00','10','01','11'),
+			c('Adoption delay vs. received ARs', 'Adoption delay vs. distinct inviter',
+			'Active lifespan vs. sent ARs', 'Active lifespan vs. distinct invitee'), "Days", "Avg. count")
+	save_ggplot(plot, 'raw_stat_v2/lifespan_AR.pdf', 24,
+			opts(axis.text.x = element_text(angle = 0, hjust = .4), legend.position=c(.4, .9)))
 }
 
-act_lifespan_analysis <- function(lifespan_file_name='raw_stat_v2/acrt_lifespan_stat.csv'){
-	lifespan <- as.data.frame(read.csv(lifespan_file_name, header=FALSE))
-	colnames(lifespan) <- c('time', 'count', 'avg_indeg', 'avg_odeg')
-	plot <- ggplot(lifespan, aes(x = time, y = count)) + geom_line() +
-			xlab('Active lifetime (days)') + ylab('Count') + 
-			scale_y_log10()
-	save_ggplot(plot, 'raw_stat_v2/active_lifespan.pdf')
-	lifespan_indeg <- lifespan[,c(1,3)]
-	lifespan_indeg[,3] <- 0
-	colnames(lifespan_indeg) <- c('time', 'avg', 'degree_type')
-	lifespan_odeg <- lifespan[,c(1,4)]
-	lifespan_odeg[,3] <- 1
-	colnames(lifespan_odeg) <- c('time', 'avg', 'degree_type')
-	lifespan_indeg_odeg <- rbind(lifespan_indeg, lifespan_odeg)
-	lifespan_indeg_odeg$degree_type <- factor(lifespan_indeg_odeg$degree_type)
-	plot <- ggplot(lifespan_indeg_odeg, aes(x = time, y = avg)) +
-			geom_line(aes(group = degree_type, colour = degree_type, shape = degree_type), size=1) +
-			scale_y_log10()
-	plot <- change_plot_attributes_fancy(plot, "", 0:1, c('Received ARs', 'Sent ARs'), "Active lifetime (days)", "Avg. Number of ARs")
-	save_ggplot(plot, 'raw_stat_v2/active_lifespan_degree.pdf')
-#	lifespan <- lifespan[order(lifespan$time),]
-#	parent_lifespan <- lifespan[lifespan$time>0,]
-#	life_95 <- parent_lifespan[cumsum(parent_lifespan$count/sum(parent_lifespan$count))>=.95,]$time[1]
-#	print_report('95 percentile lifespan', life_95)
-	plot <- ggplot(lifespan, aes(x = time, y = cumsum(count/sum(count)))) + geom_line() +
-			xlab('Active lifetime (days)') + ylab('Empirical CDF') + 
-			scale_y_continuous(breaks=c(0,.2,.4,.6,.8,1.0))
-	save_ggplot(plot, 'raw_stat_v2/active_lifespan_cdf.pdf')
-#	return(parent_lifespan)
-}
-
-raw_outdeg_analysis <- function (raw_outdeg_file_name = 'raw_stat_v2/raw_outdeg_stat.csv',
-		raw_indeg_file_name='raw_stat_v2/raw_indeg_stat.csv'){
-	raw_outdeg <- as.data.frame(read.csv(raw_outdeg_file_name, header=FALSE))
-	raw_outdeg[,3] <- 0
-	raw_indeg <- as.data.frame(read.csv(raw_indeg_file_name, header=FALSE))
-	raw_indeg[,3] <- 1
-	raw_degree <- rbind(raw_outdeg, raw_indeg)
+raw_outdeg_analysis <- function (raw_sent_AR_stat = 'raw_stat_wo_burst/raw_sent_AR_stat.csv',
+		raw_sent_AR_children_stat = 'raw_stat_wo_burst/raw_sent_AR_children_stat.csv',
+		raw_rec_AR_stat='raw_stat_wo_burst/raw_rec_AR_stat.csv',
+		raw_rec_AR_parent_stat = 'raw_stat_wo_burst/raw_rec_AR_parent_stat.csv'){
+	raw_sent_AR <- as.data.frame(read.csv(raw_sent_AR_stat, header=FALSE))
+	raw_sent_AR[,3] <- 0
+	raw_sent_AR_children <- as.data.frame(read.csv(raw_sent_AR_children_stat, header=FALSE))
+	raw_sent_AR_children[,3] <- 1
+	raw_rec_AR <- as.data.frame(read.csv(raw_rec_AR_stat, header=FALSE))
+	raw_rec_AR[,3] <- 2
+	raw_rec_AR_parent <- as.data.frame(read.csv(raw_rec_AR_parent_stat, header=FALSE))
+	raw_rec_AR_parent[,3] <- 3
+	raw_degree <- rbind(raw_sent_AR, raw_sent_AR_children, raw_rec_AR, raw_rec_AR_parent)
 	colnames(raw_degree) <- c('degree', 'count', 'degree_type')
+	raw_degree <- raw_degree[raw_degree$degree > 0, ]
 	raw_degree.df <- ddply(raw_degree, c('degree_type'), function(one_partition){
 				one_partition = one_partition[order(one_partition$degree),]
 				one_partition$cum_count = cumsum(one_partition$count)
@@ -112,16 +81,21 @@ raw_outdeg_analysis <- function (raw_outdeg_file_name = 'raw_stat_v2/raw_outdeg_
 			})
 	raw_degree.df$degree_type <- factor(raw_degree.df$degree_type)
 	print(summary(raw_degree.df))
-#	raw_outdeg <- raw_outdeg[order(raw_outdeg$outdeg),]
-#	raw_outdeg$cum_count <- cumsum(raw_outdeg$count)
-#	raw_outdeg$cdf <- raw_outdeg$cum_count / max(raw_outdeg$cum_count)
-#	raw_outdeg$pdf <- raw_outdeg$count / max(raw_outdeg$cum_count)
 	plot <- ggplot(raw_degree.df[raw_degree.df$degree > 0, ], aes(x = degree, y = pdf_val)) +
 			geom_point(aes(group = degree_type, colour = degree_type, shape = degree_type), size=1) +
-			xlab('Number of sent/received ARs') + ylab('Empirical PDF') + scale_y_log10() +
+			scale_y_log10() +
 			scale_x_log10(limits = c(1, 10^4))
-	plot <- change_plot_attributes_fancy(plot, "", 0:1, c('Out degree', 'In degree'), "Number of sent/received ARs", "Empirical PDF")
+	plot <- change_plot_attributes_fancy(plot, "", 0:3, c('Sent ARs', 'Distinct invitee',
+					'Received ARs', 'Disctinct inviter'), "Number of inviters/invitees", "Empirical PDF")
 	save_ggplot(plot, 'raw_stat_v2/degree.pdf')
+	plot <- ggplot(raw_degree.df[raw_degree.df$degree > 0, ], aes(x = degree, y = cdf_val)) +
+			geom_line(aes(group = degree_type, colour = degree_type, shape = degree_type), size=1) +
+#			scale_y_log10() +
+			scale_y_continuous(breaks=c(0,.2,.4,.6,.8,1.0)) + scale_x_log10() #limits = c(1, 10^4)
+	plot <- change_plot_attributes_fancy(plot, "", 0:3, c('K=Sent ARs by an inviter', 'K=Distinct invitee of an inviter',
+					'K=Received ARs by an invitee', 'K=Disctinct inviter of an invitee'), "K", "Empirical CDF of K")
+	save_ggplot(plot, 'raw_stat_v2/degree_cdf.pdf', 24,
+			opts(legend.position=c(.66, .5)))
 }
 
 raw_indeg_analysis <- function (raw_indeg_file_name){

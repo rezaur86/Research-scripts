@@ -38,16 +38,16 @@ def reg_children(parent_list, is_leaf):
         invitation_elapsed_time[elapsed_hour] = 1
     if elapsed_hour == 1:
         return
-    temp_invitations = []
-    for i in range(first_invitation_hour, last_invitation_hour+1):
-        temp_invitations.append(invitations[i] if i in invitations else 0)
-    sd = np.sqrt(np.var(temp_invitations))
-    avg = np.average(temp_invitations)
-    burstiness = round(((sd - avg) / (sd + avg)), 3)
-    if burstiness in invitation_burstiness_stat:
-        invitation_burstiness_stat[burstiness].append(elapsed_hour)
-    else:
-        invitation_burstiness_stat[burstiness] = [elapsed_hour]
+#     temp_invitations = []
+#     for i in range(first_invitation_hour, last_invitation_hour+1):
+#         temp_invitations.append(invitations[i] if i in invitations else 0)
+#     sd = np.sqrt(np.var(temp_invitations))
+#     avg = np.average(temp_invitations)
+#     burstiness = round(((sd - avg) / (sd + avg)), 3)
+#     if burstiness in invitation_burstiness_stat:
+#         invitation_burstiness_stat[burstiness].append(elapsed_hour)
+#     else:
+#         invitation_burstiness_stat[burstiness] = [elapsed_hour]
 
     
 CLR_THRESHOLD = 500000
@@ -61,7 +61,7 @@ parent_count[0] = 0
 critical_parent_count[0] = 0
 children_count = {}
 active_children = {}
-invitation_burstiness_stat = {}
+# invitation_burstiness_stat = {}
 invitation_elapsed_time = {}
 delay_recv_AR_parent_stat = {}
 delay_recv_AR_stat = {}
@@ -188,7 +188,7 @@ indeg_before_act_file = open(sys.argv[3]+"indeg_before_act.csv", "w")
 act_proportion_count_file = open(sys.argv[3]+"act_proportion_count.csv", "w")
 parent_children_act_file = open(sys.argv[3]+"parent_children_act.csv", "w")
 parent_proportion_file = open(sys.argv[3]+"parent_proportion.csv", "w")
-invitation_burstiness_stat_file = open(sys.argv[3]+"invitation_burstiness_stat.csv", "w")
+# invitation_burstiness_stat_file = open(sys.argv[3]+"invitation_burstiness_stat.csv", "w")
 invitation_elapsed_time_stat_file = open(sys.argv[3]+"invitation_elapsed_time_stat.csv", "w")
 
 temp = sorted(lifespan_stat.iteritems(), key=operator.itemgetter(0), reverse=True)
@@ -211,11 +211,11 @@ temp = sorted(critical_indeg.iteritems(), key=operator.itemgetter(0), reverse=Tr
 for tuple in temp:
     indeg_before_act_file.write('%s,%s,%s\n'%(tuple[0], indeg_before_act[tuple[0]] if tuple[0] in indeg_before_act else 0, tuple[1]))
     raw_rec_AR_stat_file.write('%s,%s\n'%(tuple[0], tuple[1]))
-temp = sorted(invitation_burstiness_stat.iteritems(), key=operator.itemgetter(0), reverse=True)
-for tuple in temp:
-    invitation_burstiness_stat_file.write('%s,%s,%s,%s\n'%(tuple[0], len(tuple[1]),
-                                                           round(np.average(tuple[1]),3),
-                                                           round(np.median(tuple[1]),3)))
+# temp = sorted(invitation_burstiness_stat.iteritems(), key=operator.itemgetter(0), reverse=True)
+# for tuple in temp:
+#     invitation_burstiness_stat_file.write('%s,%s,%s,%s\n'%(tuple[0], len(tuple[1]),
+#                                                            round(np.average(tuple[1]),3),
+#                                                            round(np.median(tuple[1]),3)))
 temp = sorted(invitation_elapsed_time.iteritems(), key=operator.itemgetter(0), reverse=True)
 for tuple in temp:
     invitation_elapsed_time_stat_file.write('%s,%s\n'%(tuple[0],tuple[1]))
@@ -271,5 +271,5 @@ indeg_before_act_file.close()
 act_proportion_count_file.close()
 parent_children_act_file.close()
 parent_proportion_file.close()
-invitation_burstiness_stat_file.close()
+# invitation_burstiness_stat_file.close()
 invitation_elapsed_time_stat_file.close()

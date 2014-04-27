@@ -22,6 +22,7 @@ for line in f:
     indeg_until_active = int(element[3].strip())
     act_lifespan = int(element[4].strip())
     lifespan = int(element[5].strip())
+    sent_ARs = int(element[6].strip())
     count = count+1
     if (count % (CLR_THRESHOLD/10)) == 0:
         print count

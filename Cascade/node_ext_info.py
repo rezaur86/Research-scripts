@@ -15,6 +15,7 @@ if __name__ == '__main__':
     is_leaf.setall(True)
     
     out_degree = [] #array.array('I')
+    sent_AR = [] #array.array('I')
     in_degree = [] #array.array('I')
     in_degree_until_active = [] #array.array('I')
     potential_parents = []
@@ -69,6 +70,7 @@ if __name__ == '__main__':
                     activation_time.append(timestamp)
                     user_last_act_time.append(timestamp)
                     out_degree.append(1)
+                    sent_AR.append(0)
                     in_degree.append(0)
                     in_degree_until_active.append(0)
                 else:
@@ -85,15 +87,18 @@ if __name__ == '__main__':
                     vertices_count += 1
                     potential_parents.append([])
                     potential_parents[recv].append((sender,timestamp))
+                    sent_AR[sender] += 1
                     born_time.append(timestamp)
                     activation_time.append(NEVER) # Not yet Activated
                     user_last_act_time.append(NEVER)
                     out_degree.append(0)
+                    sent_AR.append(0)
                     in_degree.append(1)
                     in_degree_until_active.append(-1)
                 else:
                     in_degree[recv] += 1 # Raising in degree even if multiple receiving at same node ??
                     if out_degree[recv] < 1:
+                        sent_AR[sender] += 1
 #                         in_degree_until_active[recv]  += 1 # If increased here, then I don't know if it gets active or not
                         sender_is_already_parent = False
                         for (p,t) in potential_parents[recv]:
@@ -134,13 +139,16 @@ if __name__ == '__main__':
                     o_f.write('%s %s %s %s %s %s %s'%(i, born_time[i], activation_time[i] if is_leaf[i]==False else (user_last_seen_time[i]+1) # anything bigger than last seen time
                                                    , user_last_act_time[i] if is_leaf[i]==False else (user_last_seen_time[i]+1)
                                                    , user_last_seen_time[i], int(is_leaf[i]), out_degree[i]))
-                    node_basic_f.write('%s,%s,%s,%s,%s,%s'%(i, out_degree[i], in_degree[i], in_degree_until_active[i],
+                    node_basic_f.write('%s,%s,%s,%s,%s,%s,%s'%(i, out_degree[i], in_degree[i], in_degree_until_active[i],
                                                       (user_last_act_time[i] - activation_time[i] + 1) if is_leaf[i]==False else 0,
-                                                      (user_last_seen_time[i] - born_time[i] + 1)))
+                                                      (activation_time[i] - born_time[i] + 1)if is_leaf[i]==False else 0,
+                                                      sent_AR[i]))
                     born_time[i] = None
                     activation_time[i] = None
                     out_degree[i] = None
+                    sent_AR[i] = None
                     in_degree[i] = None
+                    in_degree_until_active[i] = None
                     user_last_act_time[i] = None
                     if potential_parents[i] == NO_PARENT:
                         o_f.write(' -1')
@@ -158,7 +166,9 @@ if __name__ == '__main__':
     node_basic_f.close()
     
     out_degree = None
+    sent_AR = None
     in_degree = None
+    in_degree_until_active = None
     potential_parents = None
     born_time = None
     activation_time = None
