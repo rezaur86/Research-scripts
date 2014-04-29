@@ -37,13 +37,19 @@ temporal_analysis <- function (daily_born = 'raw_stat_v2/daily_born.csv',
 #	activities.df$rtime <- as.Date(activities.df$rtime, format="%Y-%m-%d")
 	activities.df$activity_type <- factor(activities.df$activity_type)
 	plot <- ggplot(activities.df, aes(x = (rtime), y = (daily_count))) +
-			geom_line(aes(group = activity_type, colour = activity_type, shape = activity_type), size=.5) + scale_y_log10(limits = c(10^4, 10^8)) +
+			geom_line(aes(group = activity_type, linetype = activity_type, colour = activity_type), size=1) +
+			scale_y_log10(limits = c(10^4, 10^8)) +
 			scale_x_datetime(breaks = date_breaks("1 months"),
-					labels = date_format("%b"))
-	plot <- change_plot_attributes_fancy(plot, "", 0:2, c( 'AR exchange', 'Birth of new user', 'Activation'),
-			"2009 - 2010", "User count")
+					labels = date_format("%b"))+
+			scale_linetype_manual(values=c(1,1,6), name='', breaks=0:2,
+					labels=c( 'Number of activities','Number of first time invited users','Number of new activations/adoptions')) +
+			scale_colour_manual(values=c("black", "gray55", "black"), name='', breaks=0:2,
+					labels=c( 'Number of activities','Number of first time invited users','Number of new activations/adoptions'))+
+			xlab('2009 - 2010') + ylab('Count')
+#	plot <- change_plot_attributes_fancy(plot, "", 0:2, c( 'Number of activities', 'Number of first time invited users','Number of new activations/adoptions'),
+#			"2009 - 2010", "Count")
 	save_ggplot(plot, 'raw_stat_v2/overall_activities.pdf', 24,
-			opts(axis.text.x = element_text(angle = 90, hjust = 0), legend.position=c(.25, .9)))
+			opts(axis.text.x = element_text(angle = 90, hjust = 0), legend.position=c(.45, .9)), 10)
 #	activities$am_pm <- activities$hour < 12
 #	activities$am_pm[activities$am_pm == TRUE] <- 'AM'
 #	activities$am_pm[activities$am_pm == FALSE] <- 'PM'
@@ -58,7 +64,6 @@ temporal_analysis <- function (daily_born = 'raw_stat_v2/daily_born.csv',
 				one_partition$pdf_val = one_partition$hourly_act / max(one_partition$cum_count)
 				one_partition
 			})
-	print('1')
 	print(head(activities.df, 50))
 	activities.df$activity_type <- factor(activities.df$activity_type)
 	plot <- ggplot(activities.df, aes(x = (day_hour), y = (hourly_act))) + 
@@ -81,13 +86,14 @@ burstiness_analysis <- function(file='iheart_cascade/top_size.csv_all_evolution.
 	evolution.df$burstiness <- as.numeric(levels(evolution.df$burstiness))[evolution.df$burstiness]
 	evolution.df <- evolution.df[order(evolution.df$burstiness), ]
 	evolution.df$cum_sum <- cumsum(evolution.df$count)
-	evolution.df$cdf <- evolution.df$cum_sum/max(evolution.df$cum_su)
+	evolution.df$cdf <- evolution.df$cum_sum/max(evolution.df$cum_sum)
 	plot <- ggplot(evolution.df, aes(x = burstiness, y = count)) + geom_point(size= 0.8) + xlab('Burstiness') + ylab('Count')+
 			geom_smooth(se=FALSE)
 #			scale_x_log10() + scale_y_log10()
 	save_ggplot(plot, 'iheart_cascade/burstiness_count.pdf')
 	plot <- ggplot(evolution.df,
-			aes(x = burstiness, y = cdf)) + geom_point(size= 0.8) + xlab('Burstiness') + ylab('Empirical CDF')
+			aes(x = burstiness, y = cdf)) + geom_line() + xlab('Burstiness') + ylab('Empirical CDF') +
+			scale_y_continuous(breaks=c(0,.2,.4,.6,.8,1.0))
 #			scale_x_log10() + scale_y_log10()
 	save_ggplot(plot, 'iheart_cascade/burstiness_cdf.pdf')
 	evolution.life <- as.data.frame(table(evolution$lifetime))
@@ -95,29 +101,33 @@ burstiness_analysis <- function(file='iheart_cascade/top_size.csv_all_evolution.
 	evolution.life$life_time <- as.numeric(levels(evolution.life$life_time))[evolution.life$life_time]
 	evolution.life <- evolution.life[order(evolution.life$life_time), ]
 	evolution.life$cum_sum <- cumsum(evolution.life$count)
-	evolution.life$cdf <- evolution.life$cum_sum/max(evolution.life$cum_su)
-	plot <- ggplot(evolution.life, aes(x = life_time, y = cdf)) +
-			geom_point() + xlab('Life time') + ylab('Empirical CDF') +
+	evolution.life$cdf <- evolution.life$cum_sum/max(evolution.life$cum_sum)
+	evolution.life$pdf <- evolution.life$count/max(evolution.life$cum_sum)
+	plot <- ggplot(evolution.life, aes(x = life_time, y = pdf)) +
+			geom_point() + xlab('Life time') + ylab('Empirical PDF') + scale_y_log10()+
 			scale_x_log10(breaks=c(1, 7, 2*7, 4*7, 3*4*7, 12*4*7),
 					labels=c('1d', '1w','2w', '4w', '3m', '1y'))	
-	save_ggplot(plot, 'iheart_cascade/lifetime_cdf.pdf')
-	evolution.df <- ddply(evolution, c('lifetime'), summarise, avg_size = mean (size))
-	plot <- ggplot(evolution.df, aes(x = lifetime, y = avg_size)) + geom_point() +
-			xlab('Life time') + ylab('Avg. size') +
-			scale_y_log10(breaks=c(1, 10, 100, 1000, 10000),
-					labels=c('1', '10','100', '1000', '10000')) +
-			scale_x_log10(breaks=c(1, 7, 2*7, 4*7, 3*4*7, 12*4*7),
+	save_ggplot(plot, 'iheart_cascade/lifetime_pdf.pdf')
+	evolution.df <- ddply(evolution, c('size'), summarise, avg_life = mean (lifetime))
+	plot <- ggplot(evolution.df, aes(x = size, y = avg_life)) + geom_point() +
+			xlab('Size') + ylab('Avg. lifetime') +
+			scale_x_log10() + #breaks=c(1, 10, 100, 1000, 10000), labels=c('1', '10','100', '1000', '10000')
+			scale_y_log10(breaks=c(1, 7, 2*7, 4*7, 3*4*7, 12*4*7),
 					labels=c('1d', '1w','2w', '4w', '3m', '1y'))
-	save_ggplot(plot, 'iheart_cascade/lifetime_vs_size.pdf')
-	
+	save_ggplot(plot, 'iheart_cascade/size_vs_life.pdf')
 	evolution.df <- evolution[evolution$first_day != evolution$last_day, c(2,7)]
 	evolution.df <- ddply(evolution.df, c('burstiness'), summarise, avg_size = mean (size))
 	plot <- ggplot(evolution.df, aes(x = burstiness, y = avg_size)) + geom_point() +
 			xlab('Burstiness') + ylab('Avg. size') + scale_y_log10()
 	save_ggplot(plot, 'iheart_cascade/burstiness_vs_size.pdf')
+	evolution.df <- evolution[evolution$first_day != evolution$last_day, c(2,7)]
+#	evolution.df <- ddply(evolution.df, c('size'), summarise, avg_burst = mean (burstiness))
+	plot <- ggplot(evolution.df, aes(x = size, y = burstiness)) + geom_point(size = 0.5) +
+			xlab('Size') + ylab('Burstiness') + scale_x_log10()
+	save_ggplot(plot, 'iheart_cascade/size_vs_burstiness.pdf')
 	evolution.related <- as.data.frame(evolution[,c(2,3,4,7)])
 	evolution.related$lifetime <- evolution$last_day - evolution$first_day + 1
-	return(evolution.related)
+	return(evolution.df)
 }
 
 analyze_inter_adoption_time <- function(file = 'iheart_cascade/inter_adoption_time_stat.txt'){
@@ -136,10 +146,11 @@ analyze_inter_adoption_time <- function(file = 'iheart_cascade/inter_adoption_ti
 	inter_adoption_binned <- inter_adoption_binned[order(inter_adoption_binned$upper_bounds), ]
 	inter_adoption_binned$cum_count <- cumsum(inter_adoption_binned$count)
 	inter_adoption_binned$cdf <- inter_adoption_binned$cum_count / max(inter_adoption_binned$cum_count) 
-	plot <- ggplot(inter_adoption_binned, aes(x=upper_bounds, y=cdf))+ geom_point(size=0.8) +
+	plot <- ggplot(inter_adoption_binned, aes(x=upper_bounds, y=cdf))+ geom_line() +
 			scale_x_log10(breaks=c(10, 60, 600, 3600, 10*3600, 86400, 10*86400, 100*86400),
 			labels=c('10s', '1m', '10m', '1h', '10h', '1d', '10d', '100d'))+
-			xlab('Inter adoption time') + ylab('Empirical CDF')
+			xlab('Inter-adoption time') + ylab('Empirical CDF')+
+			scale_y_continuous(breaks=c(0,.2,.4,.6,.8,1.0))
 	save_ggplot(plot,'iheart_cascade/inter_adoption_time.pdf', 20)
 	return(inter_adoption_binned)
 }
@@ -170,9 +181,33 @@ analyze_size_vs_inter_adoption_time <-  function(file = 'iheart_cascade/size_vs_
 			scale_x_log10()
 	plot <- change_plot_attributes_fancy(plot, "", 0:3, c('Average', '25 percentile', 'Median', '75 percentile' ),
 			"Size", "Inter-adoption time")
-	save_ggplot(plot, 'iheart_cascade/size_vs_inter_adoption_time.pdf', 24, opts(legend.position=c(.3, .2)))	
+	save_ggplot(plot, 'iheart_cascade/size_vs_inter_adoption_time.pdf', 24, opts(legend.position=c(.3, .15)))
+	return(size_vs_adoption_time.df)
 }
 
+analyze_depth_vs_inter_adoption_time <-  function(file = 'iheart_gift/depth_vs_inter_adoption_time.txt'){
+	depth_vs_adoption_time <- as.data.frame(read.csv(file, header=FALSE))
+	colnames(depth_vs_adoption_time) <- c('depth', 'ia_time')
+	depth_vs_adoption_time.df <- ddply(depth_vs_adoption_time, c('depth'), .drop=TRUE,
+			.fun = function(one_partition){
+				stats = boxplot.stats(one_partition$ia_time)$stats
+				c(ymin=stats[1],
+				lower=stats[2],
+				middle=stats[3],
+				upper=stats[4],
+				ymax=stats[5])
+			})
+	print(head(depth_vs_adoption_time.df))
+	depth_vs_adoption_time.df$depth <- factor(depth_vs_adoption_time.df$depth)
+	plot <- ggplot(depth_vs_adoption_time.df, aes(x=depth, lower=lower, upper=upper, middle=middle, ymin=ymin, ymax=ymax)) + 
+			geom_boxplot(stat="identity") +
+			scale_y_discrete(breaks=(c(86400, 10*86400, 30*86400, 50*86400, 100*86400, 200*86400, 300*86400)),
+					labels=c('1d', '10d', '30d', '50d', '100d', '200d', '300d')) +
+			scale_x_discrete(breaks=factor(seq(0,60,5)), labels=seq(0,60,5)) +
+			xlab('Generation of adoption') + ylab('Inter-adoptime time') 
+	save_ggplot(plot, 'iheart_cascade/depth_vs_inter_adoption_time.pdf', width = 10)
+	return(depth_vs_adoption_time.df)
+}
 
 analyze_inter_generation_time <-  function(file = 'iheart_cascade/inter_generation_time_stat.txt'){
 	inter_generation_time <- as.data.frame(read.csv(file, header=FALSE))
@@ -200,8 +235,8 @@ analyze_inter_generation_time <-  function(file = 'iheart_cascade/inter_generati
 #			xlab('Depth') + ylab('Elapsed time (Hr.)') + geom_bar(stat = "identity")
 			scale_x_discrete(breaks=factor(seq(0,60,5)), labels=seq(0,60,5))
 	plot <- change_plot_attributes_fancy(plot, "", 0:3, c('Average', '25 percentile', 'Median', '75 percentile' ),
-					"Depth", "Elapsed time")
-	save_ggplot(plot, 'iheart_cascade/inter_generation_time.pdf', 24, opts(legend.position=c(.5, .9)))	
+					"From n-1 to n generation", "IG(n-1, n)")
+	save_ggplot(plot, 'iheart_cascade/inter_generation_time.pdf', 24, opts(legend.position=c(.4, .95)), 10)	
 }
 
 #act<-temporal_analysis('raw_stat_v2/daily_born.csv', 'raw_stat_v2/daily_activation.csv',

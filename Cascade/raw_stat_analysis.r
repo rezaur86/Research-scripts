@@ -35,7 +35,13 @@ lifespan_analysis <- function(adoption_delay_file_name='raw_stat_wo_burst/delay_
 	plot <- change_plot_attributes_fancy(plot, "", 0:1, c('Adoption delay', 'Active lifespan'), "Days", "Empirical CDF")
 	save_ggplot(plot, 'raw_stat_v2/adoption_times_cdf.pdf', 24,
 			opts(axis.text.x = element_text(angle = 0, hjust = 0), legend.position=c(.65, .65)))
-
+	adoptions_temp.df$life_type <- as.numeric(adoptions_temp.df$life_type)
+	plot <- ggplot(adoptions_temp.df[adoptions_temp.df$life_type == 1, ], aes(x = time, y = cdf_val)) + geom_line() +
+			xlab('Adoption delay') + ylab('Empirical CDF')
+	save_ggplot(plot, 'raw_stat_v2/adoption_delay.pdf')
+	plot <- ggplot(adoptions_temp.df[adoptions_temp.df$life_type == 2, ], aes(x = time, y = cdf_val)) + geom_line() +
+			xlab('Active lifetime') + ylab('Empirical CDF')
+	save_ggplot(plot, 'raw_stat_v2/active_lifetime.pdf')
 	lifespan_indeg <- adoption_times[,c(1,3,5)]
 	colnames(lifespan_indeg) <- c('time', 'avg', 'life_type')
 	lifespan_indeg$degree_type <- 0

@@ -54,17 +54,17 @@ invitation_elapsed_time_analysis(invitation_elapsed_time_file='raw_stat_v2/invit
 
 #####################################################################################################
 print('Cascade tree size distribution')
-size_distribution(file_name='iheart_cascade/size.csv')
+size <- size_distribution(file_name='iheart_cascade/size.csv')
 #Outputs
 #iheart_cascade/size.pdf
 
 print('Cascade tree depth distribution')
-depth_distribution(file_name='iheart_cascade/depth.csv')
+depth <- depth_distribution(file_name='iheart_cascade/depth.csv')
 #Outputs
 #iheart_cascade/depth.pdf
 
 print('Cascade width distribution')
-width_distribution(file_name='iheart_cascade/top_size.csv_all__max_width.csv')
+width <- width_distribution(file_name='iheart_cascade/top_size.csv_all__max_width.csv')
 #Outputs
 #iheart_cascade/width.pdf
 
@@ -98,6 +98,7 @@ evolution<-burstiness_analysis(file='iheart_cascade/top_size.csv_all_evolution.c
 #iheart_cascade/burstiness_count.pdf
 #iheart_cascade/burstiness_cdf.pdf
 #iheart_cascade/lifetime_cdf.pdf
+#iheart_cascade/size_vs_life.pdf
 #iheart_cascade/burstiness_vs_size.pdf
 
 print('Analyze inter-adoption time of all the users')

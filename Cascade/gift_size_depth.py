@@ -202,6 +202,7 @@ result_size = {}
 result_depth = {}
 inter_adoption_time_per_root = {}
 size_vs_inter_adoption_time = {}
+depth_vs_inter_adoption_time = {}
 generation_time = {}
 width = {}
 cascade_gift_ids = {}
@@ -214,6 +215,8 @@ size_vs_root_file = open(sys.argv[2]+"size_vs_root.csv", "w")
 children_of_parent = {} # To hold children of all parents
 children_of_parent_file = open(sys.argv[2]+"children_of_parent.txt", "w")
 size_vs_inter_adoption_time_file = open(sys.argv[2]+"size_vs_inter_adoption_time.txt", "w")
+depth_vs_inter_adoption_time_file = open(sys.argv[2]+"depth_vs_inter_adoption_time.txt", "w")
+size_vs_inter_generation_time_file = open(sys.argv[2]+"size_vs_inter_generation_time.csv", "w")
 inter_adoption_time_stat_file = open(sys.argv[2]+"inter_adoption_time_stat.txt", "w")
 inter_generation_time_stat_file = open(sys.argv[2]+"inter_generation_time_stat.txt", "w")
 cascade_gift_popularity_stat_file = open(sys.argv[2]+"cascade_gift_popularity_stat.txt", "w")
@@ -291,6 +294,7 @@ for line in f:
     cascade_root = process(newNode)
     ########################### Inter-adoption times per cascade root ##########################
     cascade_root_id = cascade_root[0]
+    root_distance = cascade_root[1]    
     if is_leaf == False:
         if cascade_root_id == -1:
             inter_adoption_time_per_root[node_id] = []
@@ -298,9 +302,12 @@ for line in f:
             for (pID,receiving_time,hid) in newNode.parent_list:
                 inter_adoption_time = newNode.getActTime() - graph[pID].getActTime() + 1
             inter_adoption_time_per_root[cascade_root_id].append(inter_adoption_time)
+            if root_distance in depth_vs_inter_adoption_time:
+                depth_vs_inter_adoption_time[root_distance].append(inter_adoption_time)
+            else:
+                depth_vs_inter_adoption_time[root_distance] = []
     ########################### Inter-adoption times per cascade root ##########################
     ########################################### Width ##########################################
-    root_distance = cascade_root[1]
     if cascade_root_id != -1:
         if cascade_root_id in width:
             if root_distance in width[cascade_root_id]:
@@ -480,23 +487,36 @@ for each_size in size_vs_inter_adoption_time:
                                                     np.median(size_vs_inter_adoption_time[each_size]),
                                                     np.percentile(size_vs_inter_adoption_time[each_size], 75)))
 size_vs_inter_adoption_time_file.close()
+
+for each_depth in depth_vs_inter_adoption_time:
+    for each_time in depth_vs_inter_adoption_time[each_depth]:
+        depth_vs_inter_adoption_time_file.write('%s,%s\n'%(each_depth, each_time))
+depth_vs_inter_adoption_time_file.close()
+
 for each_time in inter_adoption_time_stat:
     inter_adoption_time_stat_file.write('%s\n'%(each_time))
 inter_adoption_time_stat_file.close()
 
 inter_generation_time_stat = {}
+avg_inter_generation_time_per_root = {}
 for each_root in generation_time:
+    temp_inter_generation_time_per_root = []
     for each_gen in generation_time[each_root]:
         if each_gen > 0:
             inter_generation_time = generation_time[each_root][each_gen] - generation_time[each_root][each_gen-1] + 1
+            temp_inter_generation_time_per_root.append(inter_generation_time)
             if each_gen in inter_generation_time_stat:
                 inter_generation_time_stat[each_gen].append(inter_generation_time)
             else:
                 inter_generation_time_stat[each_gen] = [inter_generation_time]
+    if len(temp_inter_generation_time_per_root) > 0:
+        size_vs_inter_generation_time_file.write('%s,%s\n'%(graph[each_root].getSize(),
+                                                            round(np.average(temp_inter_generation_time_per_root), 3)))
 for each_gen in inter_generation_time_stat:
     inter_generation_time_stat_file.write('%s,%s,%s,%s,%s\n'%(each_gen,
                                                     round(np.average(inter_generation_time_stat[each_gen]),1),
                                                     np.percentile(inter_generation_time_stat[each_gen], 25),
                                                     np.median(inter_generation_time_stat[each_gen]),
                                                     np.percentile(inter_generation_time_stat[each_gen], 75)))
-inter_generation_time_stat_file.close()   
+inter_generation_time_stat_file.close()
+size_vs_inter_generation_time_file.close()

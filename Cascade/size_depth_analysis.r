@@ -277,6 +277,7 @@ size_distribution <- function(file_name='iheart_cascade/size.csv'){
 	plot <- ggplot(cascade_size, aes(x = size, y = pdf)) + geom_point(size=0.8) + xlab('Size') + ylab('Empirical PDF') +
 			scale_x_log10() + scale_y_log10()
 	save_ggplot(plot, 'iheart_cascade/size.pdf')
+	return(cascade_size)
 }
 depth_distribution <- function(file_name='iheart_cascade/depth.csv'){
 	cascade_depth <- as.data.frame(read.csv(file_name, header=FALSE))
@@ -286,8 +287,9 @@ depth_distribution <- function(file_name='iheart_cascade/depth.csv'){
 	plot <- ggplot(cascade_depth, aes(x = depth, y = pdf)) + geom_point() + xlab('Depth') + ylab('Empirical PDF') +
 			scale_y_log10()
 	save_ggplot(plot, 'iheart_cascade/depth.pdf')
+	return(cascade_depth)
 }
-width_distribution <- function(file_name='top_size.csv_all__max_width.csv'){
+width_distribution <- function(file_name='iheart_cascade/top_size.csv_all__max_width.csv'){
 	cascade_width <- as.data.frame(read.csv(file_name, header=FALSE))
 	colnames(cascade_width) <- c('width', 'count')
 	cascade_width$cum_count <- cumsum(cascade_width$count)
@@ -295,6 +297,7 @@ width_distribution <- function(file_name='top_size.csv_all__max_width.csv'){
 	plot <- ggplot(cascade_width, aes(x = width, y = pdf)) + geom_point(size=0.8) + xlab('Width') + ylab('Empirical PDF') +
 			scale_x_log10() + scale_y_log10()
 	save_ggplot(plot, 'iheart_cascade/width.pdf')
+	return(cascade_width)
 }
 
 size_vs_properties <- function(file='iheart_cascade/top_size.csv_all_evolution.csv'){
@@ -302,10 +305,10 @@ size_vs_properties <- function(file='iheart_cascade/top_size.csv_all_evolution.c
 	colnames(evolution) <- c('root', 'size', 'depth', 'width', 'first_day', 'last_day', 'burstiness')
 	size_vs_prop <- ddply(evolution, c('size'), summarise, avg_depth = mean(depth), avg_width = mean(width))
 	plot <- ggplot(size_vs_prop, aes(x = size, y = avg_depth)) + geom_point() + xlab('Size') + ylab('Avg. depth') +
-			scale_x_log10() + geom_smooth(method=lm, se=FALSE)
+			scale_x_log10() #+ geom_smooth(method=lm, se=FALSE)
 	save_ggplot(plot, 'iheart_cascade/size_vs_depth.pdf')
 	plot <- ggplot(size_vs_prop, aes(x = size, y = avg_width)) + geom_point() + xlab('Size') + ylab('Avg. width') +
-			scale_x_log10() + geom_smooth(method=lm, se=FALSE)
+			scale_x_log10() + scale_y_log10() #+ geom_smooth(method=lm, se=FALSE)
 	save_ggplot(plot, 'iheart_cascade/size_vs_width.pdf')
 	return(size_vs_prop)
 }
