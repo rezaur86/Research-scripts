@@ -63,6 +63,70 @@ lifespan_analysis <- function(adoption_delay_file_name='raw_stat_wo_burst/delay_
 			opts(axis.text.x = element_text(angle = 0, hjust = .4), legend.position=c(.4, .9)))
 }
 
+sent_AR_analysis <- function (raw_sent_AR_stat = 'raw_stat_wo_burst/raw_sent_AR_stat.csv',
+		raw_sent_AR_children_stat = 'raw_stat_wo_burst/raw_sent_AR_children_stat.csv'){
+	raw_sent_AR <- as.data.frame(read.csv(raw_sent_AR_stat, header=FALSE))
+	raw_sent_AR[,3] <- 0
+	raw_sent_AR_children <- as.data.frame(read.csv(raw_sent_AR_children_stat, header=FALSE))
+	raw_sent_AR_children[,3] <- 1
+	raw_degree <- rbind(raw_sent_AR, raw_sent_AR_children)
+	colnames(raw_degree) <- c('degree', 'count', 'degree_type')
+	raw_degree <- raw_degree[raw_degree$degree > 0, ]
+	raw_degree.df <- ddply(raw_degree, c('degree_type'), function(one_partition){
+				one_partition = one_partition[order(one_partition$degree),]
+				one_partition$cum_count = cumsum(one_partition$count)
+				one_partition$cdf_val = one_partition$cum_count / max(one_partition$cum_count)
+				one_partition$pdf_val = one_partition$count / max(one_partition$cum_count)
+				one_partition
+			})
+	raw_degree.df$degree_type <- factor(raw_degree.df$degree_type)
+	plot <- ggplot(raw_degree.df[raw_degree.df$degree > 0, ], aes(x = degree, y = pdf_val)) +
+			geom_point(aes(group = degree_type, colour = degree_type, shape = degree_type), size=1) +
+			scale_x_log10(limits = c(1, 10^4))
+	plot <- change_plot_attributes(plot, "", 0:1, c('K = Number of sent invitations', 'K = Number of distinct invitees'),
+			"K", "Empirical PDF")
+	save_ggplot(plot, 'raw_stat_v2/sent_AR.pdf')
+	plot <- ggplot(raw_degree.df[raw_degree.df$degree > 0, ], aes(x = degree, y = cdf_val)) +
+			geom_point(aes(group = degree_type, colour = degree_type, shape = degree_type), size=1) +
+			scale_x_log10(limits = c(1, 10^4))
+	plot <- change_plot_attributes(plot, "", 0:1, c('K = Number of sent invitations', 'K = Number of distinct invitees'),
+			"K", "Empirical PDF")
+	save_ggplot(plot, 'raw_stat_v2/sent_AR_cdf.pdf', 24,
+			opts(legend.position=c(.62, .3)))
+}
+
+recved_AR_analysis <- function (raw_rec_AR_stat='raw_stat_wo_burst/raw_rec_AR_stat.csv',
+		raw_rec_AR_parent_stat = 'raw_stat_wo_burst/raw_rec_AR_parent_stat.csv'){
+	raw_rec_AR <- as.data.frame(read.csv(raw_rec_AR_stat, header=FALSE))
+	raw_rec_AR[,3] <- 0
+	raw_rec_AR_parent <- as.data.frame(read.csv(raw_rec_AR_parent_stat, header=FALSE))
+	raw_rec_AR_parent[,3] <- 1
+	raw_degree <- rbind(raw_rec_AR, raw_rec_AR_parent)
+	colnames(raw_degree) <- c('degree', 'count', 'degree_type')
+	raw_degree <- raw_degree[raw_degree$degree > 0, ]
+	raw_degree.df <- ddply(raw_degree, c('degree_type'), function(one_partition){
+				one_partition = one_partition[order(one_partition$degree),]
+				one_partition$cum_count = cumsum(one_partition$count)
+				one_partition$cdf_val = one_partition$cum_count / max(one_partition$cum_count)
+				one_partition$pdf_val = one_partition$count / max(one_partition$cum_count)
+				one_partition
+			})
+	raw_degree.df$degree_type <- factor(raw_degree.df$degree_type)
+	plot <- ggplot(raw_degree.df[raw_degree.df$degree > 0, ], aes(x = degree, y = pdf_val)) +
+			geom_point(aes(group = degree_type, colour = degree_type, shape = degree_type), size=1) +
+			scale_x_log10(limits = c(1, 10^4))
+	plot <- change_plot_attributes(plot, "", 0:1, c('K = Number of received invitations', 'K = Number of distinct inviters'),
+			"K", "Empirical PDF")
+	save_ggplot(plot, 'raw_stat_v2/recved_AR.pdf')
+	plot <- ggplot(raw_degree.df[raw_degree.df$degree > 0, ], aes(x = degree, y = cdf_val)) +
+			geom_point(aes(group = degree_type, colour = degree_type, shape = degree_type), size=1) +
+			scale_x_log10(limits = c(1, 10^4))
+	plot <- change_plot_attributes(plot, "", 0:1, c('K = Number of received invitations', 'K = Number of distinct inviters'),
+			"K", "Empirical PDF")
+	save_ggplot(plot, 'raw_stat_v2/recved_AR_cdf.pdf', 24,
+			opts(legend.position=c(.62, .3)))
+}
+
 raw_outdeg_analysis <- function (raw_sent_AR_stat = 'raw_stat_wo_burst/raw_sent_AR_stat.csv',
 		raw_sent_AR_children_stat = 'raw_stat_wo_burst/raw_sent_AR_children_stat.csv',
 		raw_rec_AR_stat='raw_stat_wo_burst/raw_rec_AR_stat.csv',
@@ -158,6 +222,14 @@ success_ratio_analysis <- function (success_ratio_file='raw_stat_v2/act_proporti
 	plot <- ggplot(influence, aes(x = (proportion), y = (cdf_val))) + 
 			geom_line() + xlab('Success Ratio (%)') + ylab('Empirical CDF')
 	save_ggplot(plot, 'raw_stat_v2/success_ratio.pdf')
+}
+
+success_ratio_vs_act_life <- function (success_ratio_file='raw_stat_v2/act_life_vs_avg_succ_ratio.csv'){
+	success_life <- as.data.frame(read.csv(success_ratio_file, header=FALSE))
+	colnames(success_life) <- c('day', 'proportion')
+	plot <- ggplot(success_life, aes(x = (proportion), y = (day))) + 
+			geom_point() + xlab('Avg. success Ratio (%)') + ylab('Active lifetime (Days)')
+	save_ggplot(plot, 'raw_stat_v2/success_ratio_vs_act_life.pdf')
 }
 
 sender_success_ratio_analysis <- function (success_ratio_file='raw_stat_v2/parent_children_act.csv'){

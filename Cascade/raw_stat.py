@@ -65,7 +65,6 @@ invitation_burstiness_stat = {}
 invitation_elapsed_time = {}
 delay_recv_AR_parent_stat = {}
 delay_recv_AR_stat = {}
-delayed_users = {}
 act_lifespan_sent_AR_stat = {}
 act_lifespan_sent_AR_children_stat = {}
 count = 0
@@ -153,10 +152,6 @@ for line in f:
     else:
         act_lifespan_sent_AR_stat[act_lifespan_bin] = [sent_ARs]
         act_lifespan_sent_AR_children_stat[act_lifespan_bin] = [children_count[node_id] if node_id in children_count else 0]
-    if(delay_bin in delayed_users):
-        delayed_users[delay_bin].append(node_id)
-    else:
-        delayed_users[delay_bin] = [node_id]    
     if indeg_until_active == -1:
         if indeg in critical_indeg:
             critical_indeg[indeg] += 1
