@@ -42,9 +42,9 @@ temporal_analysis <- function (daily_born = 'raw_stat_v2/daily_born.csv',
 			scale_x_datetime(breaks = date_breaks("1 months"),
 					labels = date_format("%b"))+
 			scale_linetype_manual(values=c(1,1,6), name='', breaks=0:2,
-					labels=c( 'Number of activities','Number of first time invited users','Number of new activations/adoptions')) +
+					labels=c( 'Number of activities','Number of first-time-invited users','Number of new activations/adoptions')) +
 			scale_colour_manual(values=c("black", "gray55", "black"), name='', breaks=0:2,
-					labels=c( 'Number of activities','Number of first time invited users','Number of new activations/adoptions'))+
+					labels=c( 'Number of activities','Number of first-time-invited users','Number of new activations/adoptions'))+
 			xlab('2009 - 2010') + ylab('Count')
 #	plot <- change_plot_attributes_fancy(plot, "", 0:2, c( 'Number of activities', 'Number of first time invited users','Number of new activations/adoptions'),
 #			"2009 - 2010", "Count")
@@ -179,9 +179,9 @@ analyze_size_vs_inter_adoption_time <-  function(file = 'iheart_cascade/size_vs_
 			scale_y_log10(breaks=(c(3600, 86400, 10*86400, 30*86400, 50*86400, 100*86400, 200*86400, 300*86400)),
 					labels=c('1h', '1d', '10d', '30d', '50d', '100d', '200d', '300d')) +
 			scale_x_log10()
-	plot <- change_plot_attributes_fancy(plot, "", 0:3, c('Average', '25 percentile', 'Median', '75 percentile' ),
+	plot <- change_plot_attributes(plot, "", c(0,3,1,2), c('Average', '75 percentile', '25 percentile', 'Median'),
 			"Size", "Inter-adoption time")
-	save_ggplot(plot, 'iheart_cascade/size_vs_inter_adoption_time.pdf', 24, opts(legend.position=c(.3, .15)))
+	save_ggplot(plot, 'iheart_cascade/size_vs_inter_adoption_time.pdf', 24, opts(legend.position=c(.3, .12)))
 	return(size_vs_adoption_time.df)
 }
 

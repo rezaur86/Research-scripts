@@ -1,6 +1,7 @@
 source('~/scripts/Cascade/raw_stat_analysis.r')
 source('~/scripts/Cascade/size_depth_analysis.r')
 source('~/scripts/Cascade/temporal_dyn.r')
+source('~/scripts/Cascade/case_study.r')
 
 #####################################################################################################
 print('Lifespan vs indeg,outdegree')

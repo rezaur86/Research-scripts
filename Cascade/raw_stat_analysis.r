@@ -37,34 +37,35 @@ lifespan_analysis <- function(adoption_delay_file_name='raw_stat_wo_burst/delay_
 			opts(axis.text.x = element_text(angle = 0, hjust = 0), legend.position=c(.65, .65)))
 	adoptions_temp.df$life_type <- as.numeric(adoptions_temp.df$life_type)
 	plot <- ggplot(adoptions_temp.df[adoptions_temp.df$life_type == 1, ], aes(x = time, y = cdf_val)) + geom_line() +
-			xlab('Adoption delay') + ylab('Empirical CDF')
+			xlab('Adoption delay (Days)') + ylab('Empirical CDF')
 	save_ggplot(plot, 'raw_stat_v2/adoption_delay.pdf')
 	plot <- ggplot(adoptions_temp.df[adoptions_temp.df$life_type == 2, ], aes(x = time, y = cdf_val)) + geom_line() +
-			xlab('Active lifetime') + ylab('Empirical CDF')
+			xlab('Active lifetime (Days)') + ylab('Empirical CDF')
 	save_ggplot(plot, 'raw_stat_v2/active_lifetime.pdf')
-	lifespan_indeg <- adoption_times[,c(1,3,5)]
-	colnames(lifespan_indeg) <- c('time', 'avg', 'life_type')
-	lifespan_indeg$degree_type <- 0
-	lifespan_odeg <- adoption_times[,c(1,4,5)]
-	colnames(lifespan_odeg) <- c('time', 'avg', 'life_type')
-	lifespan_odeg$degree_type <- 1
-	lifespan_indeg_odeg <- rbind(lifespan_indeg, lifespan_odeg)
-	print(summary(lifespan_indeg_odeg))
-	lifespan_indeg_odeg$degree_type <- do.call(paste, c(as.data.frame(cbind(
-									lifespan_indeg_odeg$degree_type, lifespan_indeg_odeg$life_type)), sep=""))
-	lifespan_indeg_odeg$degree_type <- factor(lifespan_indeg_odeg$degree_type)
-	plot <- ggplot(lifespan_indeg_odeg[lifespan_indeg_odeg$time < Inf, ], aes(x = time, y = avg)) +
-			geom_line(aes(group = degree_type, colour = degree_type, shape = degree_type), size=1) +
-			scale_y_log10()
-	plot <- change_plot_attributes_fancy(plot, "", c('00','10','01','11'),
-			c('Adoption delay vs. received ARs', 'Adoption delay vs. distinct inviter',
-			'Active lifespan vs. sent ARs', 'Active lifespan vs. distinct invitee'), "Days", "Avg. count")
-	save_ggplot(plot, 'raw_stat_v2/lifespan_AR.pdf', 24,
-			opts(axis.text.x = element_text(angle = 0, hjust = .4), legend.position=c(.4, .9)))
+#	lifespan_indeg <- adoption_times[,c(1,3,5)]
+#	colnames(lifespan_indeg) <- c('time', 'avg', 'life_type')
+#	lifespan_indeg$degree_type <- 0
+#	lifespan_odeg <- adoption_times[,c(1,4,5)]
+#	colnames(lifespan_odeg) <- c('time', 'avg', 'life_type')
+#	lifespan_odeg$degree_type <- 1
+#	lifespan_indeg_odeg <- rbind(lifespan_indeg, lifespan_odeg)
+#	print(summary(lifespan_indeg_odeg))
+#	lifespan_indeg_odeg$degree_type <- do.call(paste, c(as.data.frame(cbind(
+#									lifespan_indeg_odeg$degree_type, lifespan_indeg_odeg$life_type)), sep=""))
+#	lifespan_indeg_odeg$degree_type <- factor(lifespan_indeg_odeg$degree_type)
+#	plot <- ggplot(lifespan_indeg_odeg[lifespan_indeg_odeg$time < Inf, ], aes(x = time, y = avg)) +
+#			geom_line(aes(group = degree_type, colour = degree_type, shape = degree_type), size=1) +
+#			scale_y_log10()
+#	plot <- change_plot_attributes_fancy(plot, "", c('00','10','01','11'),
+#			c('Adoption delay vs. received ARs', 'Adoption delay vs. distinct inviter',
+#			'Active lifespan vs. sent ARs', 'Active lifespan vs. distinct invitee'), "Days", "Avg. count")
+#	save_ggplot(plot, 'raw_stat_v2/lifespan_AR.pdf', 24,
+#			opts(axis.text.x = element_text(angle = 0, hjust = .4), legend.position=c(.4, .9)))
 }
 
 sent_AR_analysis <- function (raw_sent_AR_stat = 'raw_stat_wo_burst/raw_sent_AR_stat.csv',
-		raw_sent_AR_children_stat = 'raw_stat_wo_burst/raw_sent_AR_children_stat.csv'){
+		raw_sent_AR_children_stat = 'raw_stat_wo_burst/raw_sent_AR_children_stat.csv',
+		act_lifespan_file_name='raw_stat_wo_burst/act_lifespan_sent_AR_stat.csv'){
 	raw_sent_AR <- as.data.frame(read.csv(raw_sent_AR_stat, header=FALSE))
 	raw_sent_AR[,3] <- 0
 	raw_sent_AR_children <- as.data.frame(read.csv(raw_sent_AR_children_stat, header=FALSE))
@@ -90,13 +91,32 @@ sent_AR_analysis <- function (raw_sent_AR_stat = 'raw_stat_wo_burst/raw_sent_AR_
 			geom_point(aes(group = degree_type, colour = degree_type, shape = degree_type), size=1) +
 			scale_x_log10(limits = c(1, 10^4))
 	plot <- change_plot_attributes(plot, "", 0:1, c('K = Number of sent invitations', 'K = Number of distinct invitees'),
-			"K", "Empirical PDF")
+			"K", "Empirical CDF")
 	save_ggplot(plot, 'raw_stat_v2/sent_AR_cdf.pdf', 24,
 			opts(legend.position=c(.62, .3)))
+	act_lifespan <- as.data.frame(read.csv(act_lifespan_file_name, header=FALSE))
+	colnames(act_lifespan) <- c('time', 'count', 'avg_invitations', 'avg_invitees')
+	act_lifespan <- act_lifespan[act_lifespan$time < 24855,]
+	act_lifespan.invitations <- act_lifespan[,c(1,3)]
+	colnames(act_lifespan.invitations) <- c('time', 'sent')
+	act_lifespan.invitations$degree_type <- 0
+	act_lifespan.invitees <- act_lifespan[,c(1,4)]
+	colnames(act_lifespan.invitees) <- c('time', 'sent')
+	act_lifespan.invitees$degree_type <- 1
+	act_lifespan.df <- rbind(act_lifespan.invitations, act_lifespan.invitees)
+	act_lifespan.df$degree_type <- factor(act_lifespan.df$degree_type)
+	plot <- ggplot(act_lifespan.df, aes(x = time, y = sent)) +
+			geom_point(aes(group = degree_type, colour = degree_type, shape = degree_type), size=1) +
+			scale_y_log10()
+	plot <- change_plot_attributes(plot, "", 0:1, c('K = Avg. number of sent invitations', 'K = Avg. number of distinct invitees'),
+			"Active lifetime (Days)", "K")
+	save_ggplot(plot, 'raw_stat_v2/act_sent_AR.pdf', 24,
+			opts(legend.position=c(.43, .8)))
 }
 
 recved_AR_analysis <- function (raw_rec_AR_stat='raw_stat_wo_burst/raw_rec_AR_stat.csv',
-		raw_rec_AR_parent_stat = 'raw_stat_wo_burst/raw_rec_AR_parent_stat.csv'){
+		raw_rec_AR_parent_stat = 'raw_stat_wo_burst/raw_rec_AR_parent_stat.csv',
+		adoption_delay_file_name='raw_stat_wo_burst/delay_recv_AR_stat.csv'){
 	raw_rec_AR <- as.data.frame(read.csv(raw_rec_AR_stat, header=FALSE))
 	raw_rec_AR[,3] <- 0
 	raw_rec_AR_parent <- as.data.frame(read.csv(raw_rec_AR_parent_stat, header=FALSE))
@@ -122,9 +142,27 @@ recved_AR_analysis <- function (raw_rec_AR_stat='raw_stat_wo_burst/raw_rec_AR_st
 			geom_point(aes(group = degree_type, colour = degree_type, shape = degree_type), size=1) +
 			scale_x_log10(limits = c(1, 10^4))
 	plot <- change_plot_attributes(plot, "", 0:1, c('K = Number of received invitations', 'K = Number of distinct inviters'),
-			"K", "Empirical PDF")
+			"K", "Empirical CDF")
 	save_ggplot(plot, 'raw_stat_v2/recved_AR_cdf.pdf', 24,
 			opts(legend.position=c(.62, .3)))
+	adoption_delay <- as.data.frame(read.csv(adoption_delay_file_name, header=FALSE))
+	colnames(adoption_delay) <- c('time', 'count', 'avg_invitations', 'avg_inviters')
+	adoption_delay <- adoption_delay[adoption_delay$time < 24855,]
+	adoption_delay.invitations <- adoption_delay[,c(1,3)]
+	colnames(adoption_delay.invitations) <- c('time', 'received')
+	adoption_delay.invitations$degree_type <- 0
+	adoption_delay.inviters <- adoption_delay[,c(1,4)]
+	colnames(adoption_delay.inviters) <- c('time', 'received')
+	adoption_delay.inviters$degree_type <- 1
+	adoption_delay.df <- rbind(adoption_delay.invitations, adoption_delay.inviters)
+	adoption_delay.df$degree_type <- factor(adoption_delay.df$degree_type)
+	plot <- ggplot(adoption_delay.df, aes(x = time, y = received)) +
+			geom_point(aes(group = degree_type, colour = degree_type, shape = degree_type), size=1) +
+			scale_y_log10()
+	plot <- change_plot_attributes(plot, "", 0:1, c('K = Avg. number of received invitations', 'K = Avg. number of distinct inviters'),
+			"Adoption delay (Days)", "K")
+	save_ggplot(plot, 'raw_stat_v2/delay_recved_AR.pdf', 24,
+			opts(legend.position=c(.43, .8)))	
 }
 
 raw_outdeg_analysis <- function (raw_sent_AR_stat = 'raw_stat_wo_burst/raw_sent_AR_stat.csv',
@@ -207,20 +245,21 @@ influence_threshold_analysis <- function (parent_count_file_name = 'raw_stat_v2/
 			geom_point(aes(group = indeg_type, colour = indeg_type, shape = indeg_type), size=1)+
 			scale_x_log10(limits = c(1, 10^3)) #+ scale_y_log10()
 #			geom_smooth(aes(group = indeg_type, colour = indeg_type, shape = indeg_type), se=FALSE)
-	plot <- change_plot_attributes_fancy(plot, "Requests from", 0:1, c('Distinct Parent', 'Distinct AR'),
-			"Number of Request", "Prob of activation")
+	plot <- change_plot_attributes(plot, "", 0:1, c('K = Number of distinct inviters', 'K = Number of invitations'),
+			"K", "Activation probability")
 	save_ggplot(plot, 'raw_stat_v2/adop_prob.pdf', 24,
-			opts(axis.title.x = theme_text(vjust=-0.5), legend.position=c(.3, .7)))
+			opts(axis.title.x = theme_text(vjust=-0.5), legend.position=c(.4, .7)))
 }
 
 success_ratio_analysis <- function (success_ratio_file='raw_stat_v2/act_proportion_count.csv'){
 	influence <- as.data.frame(read.csv(success_ratio_file, header=FALSE))
 	colnames(influence) <- c('proportion', 'count')
+	influence$proportion <- influence$proportion / 100
 	influence <- influence[order(influence$proportion),]
 	influence$cum_count <- cumsum(influence$count)
 	influence$cdf_val <- influence$cum_count / max(influence$cum_count)
 	plot <- ggplot(influence, aes(x = (proportion), y = (cdf_val))) + 
-			geom_line() + xlab('Success Ratio (%)') + ylab('Empirical CDF')
+			geom_line() + xlab('Success ratio') + ylab('Empirical CDF')
 	save_ggplot(plot, 'raw_stat_v2/success_ratio.pdf')
 }
 
@@ -236,10 +275,20 @@ sender_success_ratio_analysis <- function (success_ratio_file='raw_stat_v2/paren
 	sender_success <- as.data.frame(read.csv(success_ratio_file, header=FALSE))
 	colnames(sender_success) <- c('active_children', 'children')
 	sender_success$ratio <- round(sender_success$active_children/sender_success$children, 3)
+	sender_success.ratio <- as.data.frame(table(sender_success$ratio))
+	colnames(sender_success.ratio) <- c('proportion', 'count')
+	sender_success.ratio$proportion <- as.numeric(levels(sender_success.ratio$proportion))[sender_success.ratio$proportion]
+	print(summary(sender_success.ratio))
+	sender_success.ratio <- sender_success.ratio[order(sender_success.ratio$proportion),]
+	sender_success.ratio$cum_count <- cumsum(sender_success.ratio$count)
+	sender_success.ratio$cdf_val <- sender_success.ratio$cum_count / max(sender_success.ratio$cum_count)
+	plot <- ggplot(sender_success.ratio, aes(x = (proportion), y = (cdf_val))) + 
+			geom_line() + xlab(expression(paste('Success ratio (',tau,')'))) + ylab('Empirical CDF')
+	save_ggplot(plot, 'raw_stat_v2/success_ratio.pdf')
 	sender_success.avg_ratio <- ddply(sender_success, c('children'), summarise, avg_success_ratio = mean (ratio))
-	plot <- ggplot(sender_success.avg_ratio, aes(x = (avg_success_ratio*100), y = (children))) + 
-			geom_point() + geom_smooth(method=lm,   # Add linear regression lines
-					se=FALSE) + xlab('Average Success Ratio (%)') + ylab('Number of sent ARs')
+	plot <- ggplot(sender_success.avg_ratio, aes(x = (avg_success_ratio), y = (children))) + 
+			geom_point() + #geom_smooth(method=lm, se=FALSE) +  # Add linear regression lines
+			xlab(expression(paste('Average Success ratio (',tau,')'))) + ylab('Number of sent invitations')
 	save_ggplot(plot, 'raw_stat_v2/success_avg_vs_ARs.pdf')
 #	sender_success.avg_ar <- ddply(sender_success, c('ratio'), summarise, avg_children = mean (children))
 #	plot <- ggplot(sender_success.avg_ar, aes(x = (ratio*100), y = (avg_children))) + 

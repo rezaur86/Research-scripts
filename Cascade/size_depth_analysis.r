@@ -272,6 +272,7 @@ analyze_coverage <- function(dir){
 size_distribution <- function(file_name='iheart_cascade/size.csv'){
 	cascade_size <- as.data.frame(read.csv(file_name, header=FALSE))
 	colnames(cascade_size) <- c('size', 'count')
+	cascade_size <- cascade_size[cascade_size$size > 1, ]
 	cascade_size$cum_count <- cumsum(cascade_size$count)
 	cascade_size$pdf <- cascade_size$count / max(cascade_size$cum_count)
 	plot <- ggplot(cascade_size, aes(x = size, y = pdf)) + geom_point(size=0.8) + xlab('Size') + ylab('Empirical PDF') +
@@ -282,9 +283,10 @@ size_distribution <- function(file_name='iheart_cascade/size.csv'){
 depth_distribution <- function(file_name='iheart_cascade/depth.csv'){
 	cascade_depth <- as.data.frame(read.csv(file_name, header=FALSE))
 	colnames(cascade_depth) <- c('depth', 'count')
+	cascade_depth <- cascade_depth[cascade_depth$depth > 0, ]
 	cascade_depth$cum_count <- cumsum(cascade_depth$count)
 	cascade_depth$pdf <- cascade_depth$count / max(cascade_depth$cum_count)
-	plot <- ggplot(cascade_depth, aes(x = depth, y = pdf)) + geom_point() + xlab('Depth') + ylab('Empirical PDF') +
+	plot <- ggplot(cascade_depth, aes(x = depth, y = pdf)) + geom_point() + xlab('Max depth') + ylab('Empirical PDF') +
 			scale_y_log10()
 	save_ggplot(plot, 'iheart_cascade/depth.pdf')
 	return(cascade_depth)
@@ -294,7 +296,7 @@ width_distribution <- function(file_name='iheart_cascade/top_size.csv_all__max_w
 	colnames(cascade_width) <- c('width', 'count')
 	cascade_width$cum_count <- cumsum(cascade_width$count)
 	cascade_width$pdf <- cascade_width$count / max(cascade_width$cum_count)
-	plot <- ggplot(cascade_width, aes(x = width, y = pdf)) + geom_point(size=0.8) + xlab('Width') + ylab('Empirical PDF') +
+	plot <- ggplot(cascade_width, aes(x = width, y = pdf)) + geom_point(size=0.8) + xlab('Max width') + ylab('Empirical PDF') +
 			scale_x_log10() + scale_y_log10()
 	save_ggplot(plot, 'iheart_cascade/width.pdf')
 	return(cascade_width)
@@ -316,9 +318,10 @@ size_vs_properties <- function(file='iheart_cascade/top_size.csv_all_evolution.c
 size_vs_root_contribution <- function(file='iheart_gift/size_vs_root.csv'){
 	size_vs_root <- unique(as.data.frame(read.csv(file, header=FALSE)))
 	colnames(size_vs_root) <- c('root', 'size', 'depth' ,'width', 'major_gift',
-			'root_act_lifespan', 'root_outdeg', 'root_contribution' , 'root_success_ratio')
+			'root_act_lifespan', 'root_outdeg', 'root_contribution' , 'root_success_ratio', 'rn_contr')
 	size_vs_root <- size_vs_root[size_vs_root$size > 1, ]
 	size_vs_root$contribution_ratio <- round(size_vs_root$root_contribution/ size_vs_root$size, 3)
+	size_vs_root$rn_contr_ratio <- round(size_vs_root$rn_contr/ size_vs_root$size, 3)
 	contr.df <- as.data.frame(table(size_vs_root$contribution_ratio))
 	colnames(contr.df) <- c('ratio','count')
 	contr.df$ratio <- as.numeric(levels(contr.df$ratio))[contr.df$ratio]
@@ -330,6 +333,10 @@ size_vs_root_contribution <- function(file='iheart_gift/size_vs_root.csv'){
 	plot <- ggplot(size_vs_root.df, aes(x = contribution_ratio, y = avg_size)) + geom_point() +
 			xlab('Contribution ratio of seeds') + ylab('Avg. size') + scale_y_log10()
 	save_ggplot(plot, 'iheart_cascade/seed_contribution_vs_size.pdf')
+	size_vs_root.df <- ddply(size_vs_root, c('rn_contr_ratio'), summarise, avg_size = mean(size))
+	plot <- ggplot(size_vs_root.df, aes(x = rn_contr_ratio, y = avg_size)) + geom_point() +
+			xlab('Contribution ratio of seeds\' neighbors') + ylab('Avg. size') + scale_y_log10()
+	save_ggplot(plot, 'iheart_cascade/seed_rn_contr_vs_size.pdf')
 	size_vs_root.df <- ddply(size_vs_root, c('root_outdeg'), summarise, avg_size = mean(size))
 	plot <- ggplot(size_vs_root.df, aes(x = root_outdeg, y = avg_size)) + geom_point() +
 			xlab('Number of ARs sent by Seeds') + ylab('Avg. size') + scale_y_log10() + scale_x_log10()
@@ -385,7 +392,7 @@ cascade_lm_model <- function(file='iheart_gift/size_vs_root.csv',
 		growth_file = 'iheart_gift/top_size.csv_all_weekly_evolution.csv'){
 	size_vs_root <- as.data.frame(read.csv(file, header=FALSE))
 	colnames(size_vs_root) <- c('root', 'size', 'depth' ,'width', 'major_gift',
-			'root_act_lifespan', 'root_outdeg', 'root_contribution' , 'root_success_ratio')
+			'root_act_lifespan', 'root_outdeg', 'root_contribution' , 'root_success_ratio', 'rn_contr')
 	size_vs_root <- size_vs_root[size_vs_root$size > 1, ]
 	evolution <- as.data.frame(read.csv(evolution_file, header=FALSE))
 	colnames(evolution) <- c('root', 'size', 'depth', 'width', 'first_day', 'last_day', 'burstiness')
@@ -452,7 +459,7 @@ cascade_logit_model <- function(file='iheart_gift/size_vs_root.csv',
 		growth_file = 'iheart_gift/top_size.csv_all_weekly_evolution.csv'){
 	size_vs_root <- as.data.frame(read.csv(file, header=FALSE))
 	colnames(size_vs_root) <- c('root', 'size', 'depth' ,'width', 'major_gift',
-			'root_act_lifespan', 'root_outdeg', 'root_contribution' , 'root_success_ratio')
+			'root_act_lifespan', 'root_outdeg', 'root_contribution' , 'root_success_ratio', 'rn_contr')
 	size_vs_root <- size_vs_root[size_vs_root$size > 1, c(1,2)]
 #	evolution <- as.data.frame(read.csv(evolution_file, header=FALSE))
 #	colnames(evolution) <- c('root', 'size', 'depth', 'width', 'first_day', 'last_day', 'burstiness')
@@ -480,10 +487,27 @@ cascade_logit_model <- function(file='iheart_gift/size_vs_root.csv',
 	growth$week_2[is.na(growth$week_2)] <- 0
 	growth$week_3[is.na(growth$week_3)] <- 0
 	growth$week_4[is.na(growth$week_4)] <- 0
+	
 	growth$evol_1 <- growth$week_1
 	growth$evol_2 <- growth$week_1 + growth$week_2
 	growth$evol_3 <- growth$week_1 + growth$week_2 + growth$week_3
 	growth$evol_4 <- growth$week_1 + growth$week_2 + growth$week_3 + growth$week_4
+	
+	growth$root_contr_1 <- growth$root_contr_1/growth$evol_1
+	growth$root_contr_2 <- growth$root_contr_2/growth$evol_2
+	growth$root_contr_3 <- growth$root_contr_3/growth$evol_3
+	growth$root_contr_4 <- growth$root_contr_4/growth$evol_4
+	
+	growth$rn_contr_1 <- growth$rn_contr_1/growth$evol_1
+	growth$rn_contr_2 <- growth$rn_contr_2/growth$evol_2
+	growth$rn_contr_3 <- growth$rn_contr_3/growth$evol_3
+	growth$rn_contr_4 <- growth$rn_contr_4/growth$evol_4
+	
+	growth$speed_1 <- growth$evol_1/1
+	growth$speed_2 <- growth$evol_2/2
+	growth$speed_3 <- growth$evol_3/3
+	growth$speed_4 <- growth$evol_4/4
+	
 	cascade <- merge(size_vs_root, growth, by="root")	
 #	cascade$speed_1 <- cascade$week_1
 #	cascade$accelerate_1 <- (cascade$week_1 - 0)
@@ -504,7 +528,7 @@ cascade_logit_model <- function(file='iheart_gift/size_vs_root.csv',
 	splitted_data <- split(cascade, sample(1:2, nrow(cascade), replace=TRUE, prob=c(1,2)))
 	training <- splitted_data[[2]]
 	test <- splitted_data[[1]]
-	model <- multinom(cat~ root_contr_3 + rn_contr_3 + burst_3 + week_1 + week_2 + week_3 + depth_3 + width_3, data = training)
+	model <- multinom(cat ~ root_contr_4 + rn_contr_4 + burst_4 + speed_4 + depth_4 + width_4, data = training)
 #	model_summary <- summary(model)
 #	z <- model_summary$coefficients/model_summary$standard.errors
 	p <- 0 # (1 - pnorm(abs(z), 0, 1)) * 2
@@ -565,7 +589,7 @@ size_feature_correlation <- function(file='iheart_gift/size_vs_root.csv',
 		growth_file = 'iheart_gift/top_size.csv_all_weekly_evolution.csv'){
 	size_vs_root <- as.data.frame(read.csv(file, header=FALSE))
 	colnames(size_vs_root) <- c('root', 'size', 'depth' ,'width', 'major_gift',
-			'root_act_lifespan', 'root_outdeg', 'root_contribution' , 'root_success_ratio')
+			'root_act_lifespan', 'root_outdeg', 'root_contribution' , 'root_success_ratio', 'rn_contr')
 	size_vs_root <- size_vs_root[size_vs_root$size > 1, c(1,2)]
 	growth <- as.data.frame(read.csv(growth_file, header=FALSE))
 	colnames(growth) <- c('root', 'root_contr_1', 'rn_contr_1', 'burst_1', 'depth_1','width_1', 'week_1',

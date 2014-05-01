@@ -202,7 +202,7 @@ result_size = {}
 result_depth = {}
 inter_adoption_time_per_root = {}
 size_vs_inter_adoption_time = {}
-depth_vs_inter_adoption_time = {}
+size_depth_vs_inter_adoption_time = {}
 generation_time = {}
 width = {}
 cascade_gift_ids = {}
@@ -215,7 +215,7 @@ size_vs_root_file = open(sys.argv[2]+"size_vs_root.csv", "w")
 children_of_parent = {} # To hold children of all parents
 children_of_parent_file = open(sys.argv[2]+"children_of_parent.txt", "w")
 size_vs_inter_adoption_time_file = open(sys.argv[2]+"size_vs_inter_adoption_time.txt", "w")
-depth_vs_inter_adoption_time_file = open(sys.argv[2]+"depth_vs_inter_adoption_time.txt", "w")
+size_depth_vs_inter_adoption_time_file = open(sys.argv[2]+"size_depth_vs_inter_adoption_time.txt", "w")
 size_vs_inter_generation_time_file = open(sys.argv[2]+"size_vs_inter_generation_time.csv", "w")
 inter_adoption_time_stat_file = open(sys.argv[2]+"inter_adoption_time_stat.txt", "w")
 inter_generation_time_stat_file = open(sys.argv[2]+"inter_generation_time_stat.txt", "w")
@@ -302,10 +302,10 @@ for line in f:
             for (pID,receiving_time,hid) in newNode.parent_list:
                 inter_adoption_time = newNode.getActTime() - graph[pID].getActTime() + 1
             inter_adoption_time_per_root[cascade_root_id].append(inter_adoption_time)
-            if root_distance in depth_vs_inter_adoption_time:
-                depth_vs_inter_adoption_time[root_distance].append(inter_adoption_time)
+            if (cascade_root_id, root_distance) in size_depth_vs_inter_adoption_time:
+                size_depth_vs_inter_adoption_time[(cascade_root_id, root_distance)].append(inter_adoption_time)
             else:
-                depth_vs_inter_adoption_time[root_distance] = []
+                size_depth_vs_inter_adoption_time[(cascade_root_id, root_distance)] = []
     ########################### Inter-adoption times per cascade root ##########################
     ########################################### Width ##########################################
     if cascade_root_id != -1:
@@ -459,14 +459,19 @@ for tuple in temp:
     users = tuple[1]
     for each_user in users:
         top_n_size_file.write('%s,%s,%s\n'%(size,each_user,63072000))
-        size_vs_root_file.write('%s,%s,%s,%s,%s,%s,%s,%s,%s\n'%(
+        root_2nd_hop_contr = 0
+        if each_user in width:
+            if 2 in width[each_user]:
+                root_2nd_hop_contr = width[each_user][2]
+        size_vs_root_file.write('%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n'%(
             each_user, size, graph[each_user].getDepth(),
             max_width[each_user],
             cascade_gift_popularity[each_user] if each_user in cascade_gift_popularity else -1,
             graph[each_user].getLifespan(),
             graph[each_user].getOutDeg(),#root's raw out degree
             width[each_user][1] if each_user in width else 0, #root's out degree in the tree
-            round(graph[each_user].getAlpha(),3)))
+            round(graph[each_user].getAlpha(),3),
+            root_2nd_hop_contr))
 top_n_size_file.close()
 size_vs_root_file.close()
 temp = sorted(top_n_depth_users.iteritems(), key=operator.itemgetter(0), reverse=True)
@@ -488,10 +493,10 @@ for each_size in size_vs_inter_adoption_time:
                                                     np.percentile(size_vs_inter_adoption_time[each_size], 75)))
 size_vs_inter_adoption_time_file.close()
 
-for each_depth in depth_vs_inter_adoption_time:
-    for each_time in depth_vs_inter_adoption_time[each_depth]:
-        depth_vs_inter_adoption_time_file.write('%s,%s\n'%(each_depth, each_time))
-depth_vs_inter_adoption_time_file.close()
+for (each_root, each_depth) in size_depth_vs_inter_adoption_time:
+    for each_time in size_depth_vs_inter_adoption_time[(each_root, each_depth)]:
+        size_depth_vs_inter_adoption_time_file.write('%s,%s,%s\n'%(graph[each_root].getSize(), each_depth, each_time))
+size_depth_vs_inter_adoption_time_file.close()
 
 for each_time in inter_adoption_time_stat:
     inter_adoption_time_stat_file.write('%s\n'%(each_time))
