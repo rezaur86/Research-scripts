@@ -31,16 +31,16 @@ plotROC <- function(truth, predicted){
 	dev.off()
 }
 
-multinomial_ROC_AUC <- function(class, probs){
+multinomial_ROC_AUC <- function(class, probs, fig_n){
 	class_count <- length(unique(class))
 	data_length <- length(class)
 	ROCs <- c()
 	AUCs <- rep('', class_count)
+	aucs <- c()
 	classes <- c('Small','Medium','Large')
 	for (each_class in seq(1, class_count, by=1)){
 		temp_true_Y <- rep(1, data_length)
 		temp_probs <- rep(1, data_length)
-		print(each_class)
 		for (i in seq(1, data_length, by=1)){
 			if (class[i] == each_class){
 				temp_probs[i] <- probs[i, each_class]
@@ -56,22 +56,99 @@ multinomial_ROC_AUC <- function(class, probs){
 		stack_y = unlist(aList$stack_y),
 		cat = each_class)))
 		AUCs[each_class] <- paste(classes[each_class], ": AUC =", round(unlist(aList$auc),3))
+		aucs <- c(aucs, round(unlist(aList$auc),3))
 	}
 	ROCs$cat <- factor(ROCs$cat)
-	print(summary(ROCs))
 	plot <- ggplot(ROCs, aes(x = stack_x, y = stack_y)) +
 			geom_line(aes(group = cat, colour = cat, linetype = cat))+
 			scale_linetype_manual(values=c(1,1,6,2), name='', breaks=1:class_count, labels=AUCs) +
 			scale_colour_manual(values=c("black", "gray55", "black", "gray55"), name='', breaks=1:class_count, labels=AUCs)+
 			xlab('False positive rate') + ylab('True positive rate')
-	save_ggplot(plot, 'ROC.pdf', 24, opts(legend.position=c(.65, .65)))
-	return(ROCs)
+	save_ggplot(plot, paste(c('ROC_', fig_n, '.pdf'), collapse = ''), 24, opts(legend.position=c(.65, .65)))
+	return(aucs)
 }
 
-cascade_logit_model <- function(file='iheart_gift/size_vs_root.csv',
+cascade_logit_model <- function(cascade, week_n){
+	##### creating smiliar size partitions
+#	large_cascades <- cascade[cascade$cat == 3,]
+#	large_size_count <- nrow(large_cascades)
+#	medium_cascades <- cascade[cascade$cat == 2,]
+#	medium_size_count <- nrow(medium_cascades)
+#	small_cascades <- cascade[cascade$cat == 1,]
+#	small_size_count <- nrow(small_cascades)
+#	medium_to_large <- medium_size_count/large_size_count
+#	small_to_large <- small_size_count/large_size_count
+#	splitted_data <- split(large_cascades, sample(1:2, large_size_count, replace=TRUE, prob=c(1,2)))
+#	training_large <- splitted_data[[2]]
+#	large_training_size <- nrow(training_large)
+#	test_large <- splitted_data[[1]]
+#	large_test_size <- nrow(test_large)
+#	medium_test_size <- large_test_size*medium_to_large
+#	medium_train_test_size <- large_training_size + medium_test_size
+#	splitted_data <- split(medium_cascades[sample(medium_size_count,size=medium_train_test_size),],
+#			sample(1:2, medium_train_test_size, replace=TRUE,
+#					prob=c(medium_test_size,large_training_size)))
+#	training_medium <- splitted_data[[2]]
+#	test_medium <- splitted_data[[1]]
+#	small_test_size <- large_test_size*small_to_large
+#	small_train_test_size <- large_training_size + small_test_size
+#	splitted_data <- split(small_cascades[sample(small_size_count,size=small_train_test_size,replace=TRUE),],
+#			sample(1:2, small_train_test_size, replace=TRUE,
+#					prob=c(small_test_size,large_training_size)))
+#	training_small <- splitted_data[[2]]
+#	test_small <- splitted_data[[1]]
+#	training <- rbind(training_large, training_medium, training_small)
+#	test <- rbind(test_large, test_medium, test_small)
+#	return(list(training=training, test=test))
+	##### EDN of creating similar train size############
+	splitted_data <- split(cascade, sample(1:2, nrow(cascade), replace=TRUE, prob=c(1,2)))
+	training <- splitted_data[[2]]
+	test <- splitted_data[[1]]
+	xnames <- c(paste(c("root_contr_", week_n), collapse= ""), 
+					paste(c("rn_contr_", week_n), collapse= ""), 
+					paste(c("burst_", week_n), collapse= ""),
+					paste(c("speed_", week_n), collapse= ""), 
+					paste(c("depth_", week_n), collapse= ""), 
+					paste(c("width_", week_n), collapse= ""))
+	model.formula <- as.formula(paste("cat~", paste(xnames, collapse= "+")))
+#	model <- multinom(cat ~ root_contr_4 + rn_contr_4 + burst_4 + speed_4 + depth_4 + width_4, data = training)
+	model <- multinom(model.formula, data = training)
+#	model_summary <- summary(model)
+#	z <- model_summary$coefficients/model_summary$standard.errors
+	p <- 0 # (1 - pnorm(abs(z), 0, 1)) * 2
+	test$cat.pred <- predict(model, newdata = test)
+	test$cat.pred_prob <- predict(model, newdata = test, "probs")
+	roc <- multiclass.roc(test$cat, apply(test$cat.pred_prob, 1, function(row) which.max(row)))
+	print(roc)
+	test$cat <- as.numeric(test$cat)
+	true_pos <- c()
+	false_pos <- c()
+	false_pos_rate <- c()
+	prec <- c()
+	recall <- c()
+	for (i in seq(1, 3, by=1)){
+		true_pos <- c(true_pos, length(which(test$cat.pred == test$cat & test$cat == i)))
+		false_pos <- c(false_pos, length(which(test$cat.pred != test$cat & test$cat.pred == i)))
+		prec <- c(prec, (true_pos[i] / (length(which(test$cat.pred == i)))))
+		recall <- c(recall, (true_pos[i] / (length(which(test$cat == i))))) #true positive rate (TPR)
+		TN <- (nrow(test) + true_pos[i]) - (length(which(test$cat.pred == i)) + length(which(test$cat == i)))
+		false_pos_rate <- c(false_pos_rate, false_pos[i]/ (false_pos[i] + TN))
+	}
+	print(prec)
+	print(recall)
+	print(false_pos_rate)
+	print(2*prec*recall/ (prec+recall))
+	print(true_pos/(true_pos+false_pos))
+	aucs <- multinomial_ROC_AUC(test$cat, test$cat.pred_prob, week_n)
+	return(list(training = training, test = test, prec=prec, recall=recall, p=p, true_pos = true_pos, false_pos = false_pos, FP_rate = false_pos_rate,
+					model = model, aucs=aucs))
+}
+
+build_all_models <- function(file='iheart_gift/size_vs_root.csv',
 		evolution_file='iheart_gift/top_size.csv_all_evolution.csv',
 		growth_file = 'iheart_gift/top_size.csv_all_weekly_evolution.csv',
-		class_bin = c(1, 70, 903, 10000000)){
+		class_bin = c(1, 70, 903, 10000000),
+		week_n = c(TRUE, TRUE, TRUE, TRUE)){
 	size_vs_root <- as.data.frame(read.csv(file, header=FALSE))
 	colnames(size_vs_root) <- c('root', 'size', 'depth' ,'width', 'major_gift',
 			'root_act_lifespan', 'root_outdeg', 'root_contribution' , 'root_success_ratio', 'rn_contr')
@@ -130,83 +207,43 @@ cascade_logit_model <- function(file='iheart_gift/size_vs_root.csv',
 	categories <- levels(cascade$bin)
 	cascade$cat <- factor(cascade$bin, levels = categories, labels = c(1,2,3))
 	cascade$cat <- relevel(cascade$cat, ref = 1)
-#	return(cascade)
-	##### creating smiliar size partitions
-#	large_cascades <- cascade[cascade$cat == 3,]
-#	large_size_count <- nrow(large_cascades)
-#	medium_cascades <- cascade[cascade$cat == 2,]
-#	medium_size_count <- nrow(medium_cascades)
-#	small_cascades <- cascade[cascade$cat == 1,]
-#	small_size_count <- nrow(small_cascades)
-#	medium_to_large <- medium_size_count/large_size_count
-#	small_to_large <- small_size_count/large_size_count
-#	splitted_data <- split(large_cascades, sample(1:2, large_size_count, replace=TRUE, prob=c(1,2)))
-#	training_large <- splitted_data[[2]]
-#	large_training_size <- nrow(training_large)
-#	test_large <- splitted_data[[1]]
-#	large_test_size <- nrow(test_large)
-#	medium_test_size <- large_test_size*medium_to_large
-#	medium_train_test_size <- large_training_size + medium_test_size
-#	splitted_data <- split(medium_cascades[sample(medium_size_count,size=medium_train_test_size),],
-#			sample(1:2, medium_train_test_size, replace=TRUE,
-#					prob=c(medium_test_size,large_training_size)))
-#	training_medium <- splitted_data[[2]]
-#	test_medium <- splitted_data[[1]]
-#	small_test_size <- large_test_size*small_to_large
-#	small_train_test_size <- large_training_size + small_test_size
-#	splitted_data <- split(small_cascades[sample(small_size_count,size=small_train_test_size,replace=TRUE),],
-#			sample(1:2, small_train_test_size, replace=TRUE,
-#					prob=c(small_test_size,large_training_size)))
-#	training_small <- splitted_data[[2]]
-#	test_small <- splitted_data[[1]]
-#	training <- rbind(training_large, training_medium, training_small)
-#	test <- rbind(test_large, test_medium, test_small)
-#	return(list(training=training, test=test))
-	##### EDN of creating similar train size############
-	splitted_data <- split(cascade, sample(1:2, nrow(cascade), replace=TRUE, prob=c(1,2)))
-	training <- splitted_data[[2]]
-	test <- splitted_data[[1]]
-	xnames <- paste("root_contr_", week_n, "rn_contr_", week_n, "burst_", week_n, "speed_", week_n, "depth_", week_n, "width_")
-	model.formula <- as.formula(paste("cat ~ ", paste(xnames, collapse= "+")))
-#	model <- multinom(cat ~ root_contr_4 + rn_contr_4 + burst_4 + speed_4 + depth_4 + width_4, data = training)
-	model <- multinom(model.formula, data = training)
-#	model_summary <- summary(model)
-#	z <- model_summary$coefficients/model_summary$standard.errors
-	p <- 0 # (1 - pnorm(abs(z), 0, 1)) * 2
-	test$cat.pred <- predict(model, newdata = test)
-	test$cat.pred_prob <- predict(model, newdata = test, "probs")
-	roc <- multiclass.roc(test$cat, apply(test$cat.pred_prob, 1, function(row) which.max(row)))
-	print(roc)
-	test$cat <- as.numeric(test$cat)
-	true_pos <- c()
-	false_pos <- c()
-	false_pos_rate <- c()
-	prec <- c()
-	recall <- c()
-	for (i in seq(1, 3, by=1)){
-		true_pos <- c(true_pos, length(which(test$cat.pred == test$cat & test$cat == i)))
-		false_pos <- c(false_pos, length(which(test$cat.pred != test$cat & test$cat.pred == i)))
-		prec <- c(prec, (true_pos[i] / (length(which(test$cat.pred == i)))))
-		recall <- c(recall, (true_pos[i] / (length(which(test$cat == i))))) #true positive rate (TPR)
-		TN <- (nrow(test) + true_pos[i]) - (length(which(test$cat.pred == i)) + length(which(test$cat == i)))
-		false_pos_rate <- c(false_pos_rate, false_pos[i]/ (false_pos[i] + TN))
-	}
-	print(prec)
-	print(recall)
-	print(false_pos_rate)
-	print(2*prec*recall/ (prec+recall))
-	print(true_pos/(true_pos+false_pos))
-	rocs <- multinomial_ROC_AUC(test$cat, test$cat.pred_prob)
-	return(list(training = training, test = test, prec=prec, recall=recall, p=p, true_pos = true_pos, false_pos = false_pos, FP_rate = false_pos_rate,
-					model = model, rocs=rocs))
+	if (week_n[1])
+		model_1 <- cascade_logit_model(cascade, 1)
+	if (week_n[2])
+		model_2 <- cascade_logit_model(cascade, 2)
+	if (week_n[3])
+		model_3 <- cascade_logit_model(cascade, 3)
+	if (week_n[4])
+		model_4 <- cascade_logit_model(cascade, 4)
+#	print(model_1$recall)
+#	print(model_1$FP_rate)
+#	print(model_1$prec)
+#	print(model_1$aucs)
+	models <- as.data.frame(c('Small', '','', '', 'Medium', '','','', 'Large', '','',''))
+	colnames(models) <- c('Class')
+	models$measures <- c('Precision','TPR','FPR','AUC', 'Precision','TPR','FPR','AUC', 'Precision','TPR','FPR','AUC')
+	if (week_n[1])
+		models$week_1 <- c(model_1$prec[1], model_1$recall[1], model_1$FP_rate[1], model_1$aucs[1],
+				model_1$prec[2], model_1$recall[2], model_1$FP_rate[2], model_1$aucs[2],
+				model_1$prec[3], model_1$recall[3], model_1$FP_rate[3], model_1$aucs[3])
+	if (week_n[2])
+		models$week_2 <- c(model_2$prec[1], model_2$recall[1], model_2$FP_rate[1], model_2$aucs[1],
+				model_2$prec[2], model_2$recall[2], model_2$FP_rate[2], model_2$aucs[2],
+				model_2$prec[3], model_2$recall[3], model_2$FP_rate[3], model_2$aucs[3])
+	if (week_n[3])
+		models$week_3 <- c(model_3$prec[1], model_3$recall[1], model_3$FP_rate[1], model_3$aucs[1],
+				model_3$prec[2], model_3$recall[2], model_3$FP_rate[2], model_3$aucs[2],
+				model_3$prec[3], model_3$recall[3], model_3$FP_rate[3], model_3$aucs[3])
+	if (week_n[4])
+		models$week_4 <- c(model_4$prec[1], model_4$recall[1], model_4$FP_rate[1], model_4$aucs[1],
+				model_4$prec[2], model_4$recall[2], model_4$FP_rate[2], model_4$aucs[2],
+				model_4$prec[3], model_4$recall[3], model_4$FP_rate[3], model_4$aucs[3])
+	print(xtable(models,digits=c(3)), include.rownames=FALSE)
+	return (models)
 }
 
-build_all_models <- function(){
-	model
-}
-
-#hugged_model <- cascade_logit_model('hugged_cascade/size_vs_root.csv', 'hugged_cascade/top_size.csv_all_evolution.csv', 
-#	'hugged_cascade/top_size.csv_all_weekly_evolution.csv',  c(1, 99, 1169, 10000000))
+hugged_model <- build_all_models('hugged_cascade/size_vs_root.csv', 'hugged_cascade/top_size.csv_all_evolution.csv', 
+	'hugged_cascade/top_size.csv_all_weekly_evolution.csv',  c(1, 99, 1169, 10000000), c(FALSE, TRUE, FALSE, TRUE))
 
 size_feature_correlation <- function(file='iheart_gift/size_vs_root.csv',
 		evolution_file='iheart_gift/top_size.csv_all_evolution.csv',
