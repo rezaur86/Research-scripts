@@ -275,9 +275,19 @@ size_distribution <- function(file_name='iheart_cascade/size.csv'){
 	cascade_size <- cascade_size[cascade_size$size > 1, ]
 	cascade_size$cum_count <- cumsum(cascade_size$count)
 	cascade_size$pdf <- cascade_size$count / max(cascade_size$cum_count)
+	cascade_size$cdf <- cascade_size$cum_count / max(cascade_size$cum_count)
 	plot <- ggplot(cascade_size, aes(x = size, y = pdf)) + geom_point(size=0.8) + xlab('Size') + ylab('Empirical PDF') +
 			scale_x_log10() + scale_y_log10()
 	save_ggplot(plot, 'iheart_cascade/size.pdf')
+	s <- c(min(cascade_size[cascade_size$cdf <= 0.01,]$size))
+	s <- c(s, min(cascade_size[cascade_size$cdf <= 0.03,]$size))
+	s <- c(s, min(cascade_size[cascade_size$cdf <= 0.05,]$size))
+	s <- c(s, min(cascade_size[cascade_size$cdf <= 0.1,]$size))
+	s <- c(s, min(cascade_size[cascade_size$cdf <= 0.2,]$size))
+	plot <- ggplot(cascade_size, aes(x = size, y = cdf)) + geom_point(size=0.8) + xlab('Size') + ylab('Empirical CDF') +
+			scale_x_log10(breaks = s) + scale_y_log10(breaks=c(0.01, 0.03, 0.05, 0.1, 1))
+	print(s)
+	save_ggplot(plot, 'iheart_cascade/size_cdf.pdf')
 	return(cascade_size)
 }
 depth_distribution <- function(file_name='iheart_cascade/depth.csv'){
@@ -534,7 +544,8 @@ cascade_logit_model <- function(file='iheart_gift/size_vs_root.csv',
 	p <- 0 # (1 - pnorm(abs(z), 0, 1)) * 2
 	test$cat.pred <- predict(model, newdata = test)
 	test$cat.pred_prob <- predict(model, newdata = test, "probs")
-	print(multiclass.roc(test$cat, apply(test$cat.pred_prob, 1, function(row) which.max(row))))
+	roc <- multiclass.roc(test$cat, apply(test$cat.pred_prob, 1, function(row) which.max(row)))
+	print(roc)
 	test$cat <- as.numeric(test$cat)
 	true_pos <- c()
 	false_pos <- c()
@@ -580,7 +591,8 @@ cascade_logit_model <- function(file='iheart_gift/size_vs_root.csv',
 			scale_x_log10()+ scale_y_log10() #+ theme(legend.position=c(.8, .7)) + xlim(0,log10(plot_x_lim*100))
 	plot <- change_plot_attributes(plot, "", 0:1, c('Actual','Simulated'), "Cascade Size", "Empirical PDF")
 	save_ggplot(plot,file='iheart_gift/model_size_pdf.pdf')
-	return(list(training = training, test = test, prec=prec, recall=recall, p=p, true_pos = true_pos, false_pos = false_pos))
+	return(list(training = training, test = test, prec=prec, recall=recall, p=p, true_pos = true_pos, false_pos = false_pos,
+					model = model, roc=roc))
 }
 
 

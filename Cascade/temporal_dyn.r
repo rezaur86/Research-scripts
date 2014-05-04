@@ -42,9 +42,9 @@ temporal_analysis <- function (daily_born = 'raw_stat_v2/daily_born.csv',
 			scale_x_datetime(breaks = date_breaks("1 months"),
 					labels = date_format("%b"))+
 			scale_linetype_manual(values=c(1,1,6), name='', breaks=0:2,
-					labels=c( 'Number of activities','Number of first-time-invited users','Number of new activations/adoptions')) +
+					labels=c( 'Total number of gifting activities','Number of first-time-invited users','Number of new activations/adoptions')) +
 			scale_colour_manual(values=c("black", "gray55", "black"), name='', breaks=0:2,
-					labels=c( 'Number of activities','Number of first-time-invited users','Number of new activations/adoptions'))+
+					labels=c( 'Total number of gifting activities','Number of first-time-invited users','Number of new activations/adoptions'))+
 			xlab('2009 - 2010') + ylab('Count')
 #	plot <- change_plot_attributes_fancy(plot, "", 0:2, c( 'Number of activities', 'Number of first time invited users','Number of new activations/adoptions'),
 #			"2009 - 2010", "Count")
@@ -195,7 +195,8 @@ analyze_depth_vs_inter_adoption_time <-  function(file = 'iheart_gift/depth_vs_i
 				lower=stats[2],
 				middle=stats[3],
 				upper=stats[4],
-				ymax=stats[5])
+				ymax=stats[5],
+				mean = mean(one_partition$ia_time))
 			})
 	print(head(depth_vs_adoption_time.df))
 	depth_vs_adoption_time.df$depth <- factor(depth_vs_adoption_time.df$depth)
@@ -203,9 +204,36 @@ analyze_depth_vs_inter_adoption_time <-  function(file = 'iheart_gift/depth_vs_i
 			geom_boxplot(stat="identity") +
 			scale_y_discrete(breaks=(c(86400, 10*86400, 30*86400, 50*86400, 100*86400, 200*86400, 300*86400)),
 					labels=c('1d', '10d', '30d', '50d', '100d', '200d', '300d')) +
-			scale_x_discrete(breaks=factor(seq(0,60,5)), labels=seq(0,60,5)) +
+			scale_x_discrete(breaks=seq(0,60,5), labels=seq(0,60,5)) +
 			xlab('Generation of adoption') + ylab('Inter-adoptime time') 
 	save_ggplot(plot, 'iheart_cascade/depth_vs_inter_adoption_time.pdf', width = 10)
+	inter_generation_time <- depth_vs_adoption_time.df
+	inter_generation_time$depth <- as.numeric(inter_generation_time$depth)
+	inter_generation_time.mean <- inter_generation_time[,c('depth', 'mean')]
+	inter_generation_time.mean[,3] <- 0
+	colnames(inter_generation_time.mean) <- c('depth', 'elapsed_time', 'centrality')
+	inter_generation_time.p_25 <- inter_generation_time[,c('depth', 'lower')]
+	inter_generation_time.p_25[,3] <- 1
+	colnames(inter_generation_time.p_25) <- c('depth', 'elapsed_time', 'centrality')
+	inter_generation_time.median <- inter_generation_time[,c('depth', 'middle')]
+	inter_generation_time.median[,3] <- 2
+	colnames(inter_generation_time.median) <- c('depth', 'elapsed_time', 'centrality')
+	inter_generation_time.p_75 <- inter_generation_time[,c('depth', 'upper')]
+	inter_generation_time.p_75[,3] <- 3
+	colnames(inter_generation_time.p_75) <- c('depth', 'elapsed_time', 'centrality')
+	inter_generation_time.df = rbind(inter_generation_time.p_25, inter_generation_time.mean, 
+			inter_generation_time.median, inter_generation_time.p_75)
+	inter_generation_time.df$centrality <- factor(inter_generation_time.df$centrality)
+#	inter_generation_time.df$depth <- factor(inter_generation_time.df$depth)
+	plot <- ggplot(inter_generation_time.df, aes(x = depth, y = elapsed_time)) +
+			geom_point(aes(group = centrality, colour = centrality, shape = centrality)) +
+			geom_line(aes(group = centrality, colour = centrality, shape = centrality)) +
+			scale_y_discrete(breaks=(c(86400, 10*86400, 30*86400, 60*86400, 90*86400, 180*86400, 365*86400)),
+					labels=c('1d', '10d', '1m', '2m', '3m', '6m', '1y'))+
+			scale_x_continuous(breaks=seq(0,55,5), labels=seq(0,55,5))#, limits=c(1,55))
+	plot <- change_plot_attributes(plot, "", 0:3, c('Average', '25 percentile', 'Median', '75 percentile' ),
+			"From n-1 to n generation", "Inter-adoption time")
+	save_ggplot(plot, 'iheart_cascade/inter_adoption_time.pdf', 24, opts(legend.position=c(.7, .9)), 10)	
 	return(depth_vs_adoption_time.df)
 }
 
@@ -230,13 +258,14 @@ analyze_inter_generation_time <-  function(file = 'iheart_cascade/inter_generati
 	plot <- ggplot(inter_generation_time.df, aes(x = depth, y = elapsed_time)) +
 			geom_point(aes(group = centrality, colour = centrality, shape = centrality)) +
 			geom_line(aes(group = centrality, colour = centrality, shape = centrality)) +
-			scale_y_log10(breaks=(c(3600, 86400, 10*86400, 30*86400, 50*86400, 100*86400, 200*86400, 300*86400)),
-					labels=c('1h', '1d', '10d', '30d', '50d', '100d', '200d', '300d')) +
-#			xlab('Depth') + ylab('Elapsed time (Hr.)') + geom_bar(stat = "identity")
-			scale_x_discrete(breaks=factor(seq(0,60,5)), labels=seq(0,60,5))
-	plot <- change_plot_attributes_fancy(plot, "", 0:3, c('Average', '25 percentile', 'Median', '75 percentile' ),
-					"From n-1 to n generation", "IG(n-1, n)")
-	save_ggplot(plot, 'iheart_cascade/inter_generation_time.pdf', 24, opts(legend.position=c(.4, .95)), 10)	
+			scale_y_discrete(breaks=(c(86400, 10*86400, 30*86400, 60*86400, 90*86400, 180*86400, 365*86400)),
+					labels=c('1d', '10d', '1m', '2m', '3m', '6m', '1y'))+
+#			scale_y_log10(breaks=(c(3600, 86400, 10*86400, 30*86400, 50*86400, 100*86400, 200*86400, 300*86400)),
+#					labels=c('1h', '1d', '10d', '30d', '50d', '100d', '200d', '300d')) +
+			scale_x_continuous(breaks=seq(0,55,5), labels=seq(0,55,5))#, limits=c(0,55))
+	plot <- change_plot_attributes(plot, "", 0:3, c('Average', '25 percentile', 'Median', '75 percentile' ),
+					"From n-1 to n generation", "Inter-generation time")
+	save_ggplot(plot, 'iheart_cascade/inter_generation_time.pdf', 24, opts(legend.position=c(.7, .9)), 10)	
 }
 
 #act<-temporal_analysis('raw_stat_v2/daily_born.csv', 'raw_stat_v2/daily_activation.csv',

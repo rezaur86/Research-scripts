@@ -7,19 +7,11 @@ case_evolution_analysis <- function(file='iheart_cascade/top_size.csv_all_evolut
 	colnames(evolution) <- c('root', 'size', 'depth', 'width', 'first_day', 'last_day', 'burstiness')
 	evolution$lifetime <- evolution$last_day-evolution$first_day+1
 #	evolution.df <- evolution[evolution$first_day != evolution$last_day & evolution$size > 1000,]
-	size_bin <- unique(c(1, 100, 1000, 10000000))
+	size_bin <- unique(c(1, 70, 903, 10000000))
 	size_cat <- c('Small', 'Medium', 'Large')
 	evolution <- transform(evolution, bin = cut(evolution$size, breaks=size_bin))
 	categories <- levels(evolution$bin)
-	evolution$cat <- factor(evolution$bin, levels = categories, labels = c('(2,100]', '(100,1000]', '1000+'))
-#	evolution.df <- evolution[evolution$first_day != evolution$last_day & evolution$size > 1000,]
-#	plot <- ggplot(evolution.df, aes(x = size, y = burstiness)) + geom_point(size = 0.8) +
-#			xlab('Size') + ylab('Burstiness') + scale_x_log10() + 
-#			scale_y_continuous(breaks=seq(-1,1, by=0.2), labels=seq(-1,1, by=0.2))
-#	save_ggplot(plot, 'iheart_cascade/case_size_vs_burstiness.pdf')
-#	plot <- ggplot(evolution.df, aes(x = size, y = lifetime)) + geom_point(size = 0.8) +
-#			xlab('Size') + ylab('Lifetime (Days)') + scale_x_log10() 
-#	save_ggplot(plot, 'iheart_cascade/case_size_vs_lifetime.pdf')
+	evolution$cat <- factor(evolution$bin, levels = categories, labels = size_cat) #c('(2,100]', '(100,1000]', '1000+'))
 	evolution.depth <- ddply(evolution, c('cat'), .drop=TRUE,
 			.fun = function(one_partition){
 				stats = boxplot.stats(one_partition$depth)$stats
@@ -121,19 +113,11 @@ case_size_vs_root <- function(file='iheart_gift/size_vs_root.csv'){
 	colnames(size_vs_root) <- c('root', 'size', 'depth' ,'width', 'major_gift',
 			'root_act_lifespan', 'root_outdeg', 'root_contribution' , 'root_success_ratio', 'rn_contr')
 	size_vs_root <- size_vs_root[size_vs_root$size > 1, ]
-	size_bin <- unique(c(1, 100, 1000, 10000000))
+	size_bin <- unique(c(1, 70, 903, 10000000))
 	size_cat <- c('Small', 'Medium', 'Large')
 	size_vs_root <- transform(size_vs_root, bin = cut(size_vs_root$size, breaks=size_bin))
 	categories <- levels(size_vs_root$bin)
-	size_vs_root$cat <- factor(size_vs_root$bin, levels = categories, labels = c('(2,100]', '(100,1000]', '1000+'))
-#	size_vs_root <- size_vs_root[size_vs_root$size > 1000, ]
-#	size_vs_root$contribution_ratio <- round(size_vs_root$root_contribution/ size_vs_root$size, 3)
-#	plot <- ggplot(size_vs_root, aes(x = size, y = contribution_ratio)) + geom_point(size = 0.8) +
-#			ylab('Contribution ratio of seeds') + xlab('Size') + scale_x_log10()
-#	save_ggplot(plot, 'iheart_cascade/case_seed_contr_vs_size.pdf')
-#	plot <- ggplot(size_vs_root, aes(x = size, y = root_success_ratio)) + geom_point(size = 0.8) +
-#			ylab('Success ratio of seeds') + xlab('Size') + scale_x_log10()
-#	save_ggplot(plot, 'iheart_cascade/case_seed_success_vs_size.pdf')
+	size_vs_root$cat <- factor(size_vs_root$bin, levels = categories, labels = size_cat) # c('(2,100]', '(100,1000]', '1000+'))
 	size_vs_root$root_contribution <- size_vs_root$root_contribution/ size_vs_root$size
 	size_vs_root.root_contribution <- ddply(size_vs_root, c('cat'), .drop=TRUE,
 			.fun = function(one_partition){

@@ -245,10 +245,10 @@ influence_threshold_analysis <- function (parent_count_file_name = 'raw_stat_v2/
 			geom_point(aes(group = indeg_type, colour = indeg_type, shape = indeg_type), size=1)+
 			scale_x_log10(limits = c(1, 10^3)) #+ scale_y_log10()
 #			geom_smooth(aes(group = indeg_type, colour = indeg_type, shape = indeg_type), se=FALSE)
-	plot <- change_plot_attributes(plot, "", 0:1, c('K = Number of distinct inviters', 'K = Number of invitations'),
+	plot <- change_plot_attributes(plot, "", 0:1, c('P(m); m = Number of distinct inviters', 'P(n); n = Number of invitations'),
 			"K", "Activation probability")
 	save_ggplot(plot, 'raw_stat_v2/adop_prob.pdf', 24,
-			opts(axis.title.x = theme_text(vjust=-0.5), legend.position=c(.4, .7)))
+			opts(axis.title.x = theme_text(vjust=-0.5), legend.position=c(.42, .8)))
 }
 
 success_ratio_analysis <- function (success_ratio_file='raw_stat_v2/act_proportion_count.csv'){
