@@ -61,7 +61,7 @@ multinomial_ROC_AUC <- function(class, probs, fig_n){
 	ROCs$cat <- factor(ROCs$cat)
 	plot <- ggplot(ROCs, aes(x = stack_x, y = stack_y)) +
 			geom_line(aes(group = cat, colour = cat, linetype = cat))+
-			scale_linetype_manual(values=c(1,1,6,2), name='', breaks=1:class_count, labels=AUCs) +
+			scale_linetype_manual(values=c(1,1,5,2), name='', breaks=1:class_count, labels=AUCs) +
 			scale_colour_manual(values=c("black", "gray55", "black", "gray55"), name='', breaks=1:class_count, labels=AUCs)+
 			xlab('False positive rate') + ylab('True positive rate')
 	save_ggplot(plot, paste(c('ROC_', fig_n, '.pdf'), collapse = ''), 24, opts(legend.position=c(.65, .65)))

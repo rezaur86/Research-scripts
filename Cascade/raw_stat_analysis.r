@@ -246,22 +246,22 @@ influence_threshold_analysis <- function (parent_count_file_name = 'raw_stat_v2/
 			scale_x_log10(limits = c(1, 10^3)) #+ scale_y_log10()
 #			geom_smooth(aes(group = indeg_type, colour = indeg_type, shape = indeg_type), se=FALSE)
 	plot <- change_plot_attributes(plot, "", 0:1, c('P(m); m = Number of distinct inviters', 'P(n); n = Number of invitations'),
-			"K", "Activation probability")
-	save_ggplot(plot, 'raw_stat_v2/adop_prob.pdf', 24,
-			opts(axis.title.x = theme_text(vjust=-0.5), legend.position=c(.42, .8)))
+			"n or m", "Activation probability")
+	save_ggplot(plot, 'raw_stat_v2/adop_prob.pdf', 24, opts(legend.position=c(.42, .8)))
+	return(influence.df)
 }
 
-success_ratio_analysis <- function (success_ratio_file='raw_stat_v2/act_proportion_count.csv'){
-	influence <- as.data.frame(read.csv(success_ratio_file, header=FALSE))
-	colnames(influence) <- c('proportion', 'count')
-	influence$proportion <- influence$proportion / 100
-	influence <- influence[order(influence$proportion),]
-	influence$cum_count <- cumsum(influence$count)
-	influence$cdf_val <- influence$cum_count / max(influence$cum_count)
-	plot <- ggplot(influence, aes(x = (proportion), y = (cdf_val))) + 
-			geom_line() + xlab('Success ratio') + ylab('Empirical CDF')
-	save_ggplot(plot, 'raw_stat_v2/success_ratio.pdf')
-}
+#success_ratio_analysis <- function (success_ratio_file='raw_stat_v2/act_proportion_count.csv'){
+#	influence <- as.data.frame(read.csv(success_ratio_file, header=FALSE))
+#	colnames(influence) <- c('proportion', 'count')
+#	influence$proportion <- influence$proportion / 100
+#	influence <- influence[order(influence$proportion),]
+#	influence$cum_count <- cumsum(influence$count)
+#	influence$cdf_val <- influence$cum_count / max(influence$cum_count)
+#	plot <- ggplot(influence, aes(x = (proportion), y = (cdf_val))) + 
+#			geom_line() + xlab(expression(paste('Success ratio (',tau,')'))) + ylab('Empirical CDF')
+#	save_ggplot(plot, 'raw_stat_v2/success_ratio.pdf')
+#}
 
 success_ratio_vs_act_life <- function (success_ratio_file='raw_stat_v2/act_life_vs_avg_succ_ratio.csv'){
 	success_life <- as.data.frame(read.csv(success_ratio_file, header=FALSE))
@@ -288,7 +288,7 @@ sender_success_ratio_analysis <- function (success_ratio_file='raw_stat_v2/paren
 	sender_success.avg_ratio <- ddply(sender_success, c('children'), summarise, avg_success_ratio = mean (ratio))
 	plot <- ggplot(sender_success.avg_ratio, aes(x = (avg_success_ratio), y = (children))) + 
 			geom_point() + #geom_smooth(method=lm, se=FALSE) +  # Add linear regression lines
-			xlab(expression(paste('Average Success ratio (',tau,')'))) + ylab('Number of sent invitations')
+			xlab(expression(paste('Average success ratio (',tau,')'))) + ylab('Number of sent invitations')
 	save_ggplot(plot, 'raw_stat_v2/success_avg_vs_ARs.pdf')
 #	sender_success.avg_ar <- ddply(sender_success, c('ratio'), summarise, avg_children = mean (children))
 #	plot <- ggplot(sender_success.avg_ar, aes(x = (ratio*100), y = (avg_children))) + 
