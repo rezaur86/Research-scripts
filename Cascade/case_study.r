@@ -24,7 +24,7 @@ case_evolution_analysis <- function(file='iheart_cascade/top_size.csv_all_evolut
 			})
 	evolution.depth$cat <- factor(evolution.depth$cat)
 	plot <- ggplot(evolution.depth, aes(x=cat, lower=lower, upper=upper, middle=middle, ymin=ymin, ymax=ymax)) + 
-			geom_boxplot(stat="identity") + geom_point(data = evolution.depth, aes(x=cat, y=mean))+
+			geom_boxplot(stat="identity") + geom_point(data = evolution.depth, aes(x=cat, y=mean), shape = 8, size = 3)+
 			xlab('Cascade size range') + ylab('Max depth') 
 	save_ggplot(plot, 'iheart_cascade/case_depth.pdf')
 	
@@ -40,7 +40,7 @@ case_evolution_analysis <- function(file='iheart_cascade/top_size.csv_all_evolut
 			})
 	evolution.width$cat <- factor(evolution.width$cat)
 	plot <- ggplot(evolution.width, aes(x=cat, lower=lower, upper=upper, middle=middle, ymin=ymin, ymax=ymax)) + 
-			geom_boxplot(stat="identity") + geom_point(data = evolution.width, aes(x=cat, y=mean))+
+			geom_boxplot(stat="identity") + geom_point(data = evolution.width, aes(x=cat, y=mean), shape = 8, size = 3)+
 			xlab('Cascade size range') + ylab('Max width') 
 	save_ggplot(plot, 'iheart_cascade/case_width.pdf')
 	
@@ -56,7 +56,7 @@ case_evolution_analysis <- function(file='iheart_cascade/top_size.csv_all_evolut
 			})
 	evolution.lifetime$cat <- factor(evolution.lifetime$cat)
 	plot <- ggplot(evolution.lifetime, aes(x=cat, lower=lower, upper=upper, middle=middle, ymin=ymin, ymax=ymax)) + 
-			geom_boxplot(stat="identity") + geom_point(data = evolution.lifetime, aes(x=cat, y=mean))+
+			geom_boxplot(stat="identity") + geom_point(data = evolution.lifetime, aes(x=cat, y=mean), shape = 8, size = 3)+
 			xlab('Cascade size range') + ylab('Cascade lifetime (Days)') 
 	save_ggplot(plot, 'iheart_cascade/case_lifetime.pdf')
 	
@@ -72,11 +72,11 @@ case_evolution_analysis <- function(file='iheart_cascade/top_size.csv_all_evolut
 			})
 	evolution.burstiness$cat <- factor(evolution.burstiness$cat)
 	plot <- ggplot(evolution.burstiness, aes(x=cat, lower=lower, upper=upper, middle=middle, ymin=ymin, ymax=ymax)) + 
-			geom_boxplot(stat="identity") + geom_point(data = evolution.burstiness, aes(x=cat, y=mean))+
+			geom_boxplot(stat="identity") + geom_point(data = evolution.burstiness, aes(x=cat, y=mean), shape = 8, size = 3)+
 			xlab('Cascade size range') + ylab('Burstiness') 
 	save_ggplot(plot, 'iheart_cascade/case_burstiness.pdf')
-	
-	return(evolution)
+	return (list(d=evolution.depth, w=evolution.width, l=evolution.lifetime, b=evolution.burstiness))	
+#	return(evolution)
 }
 
 case_size_vs_inter_adoption_time <-  function(file = 'iheart_cascade/size_vs_inter_adoption_time.txt'){
@@ -131,8 +131,9 @@ case_size_vs_root <- function(file='iheart_gift/size_vs_root.csv'){
 			})
 	size_vs_root.root_contribution$cat <- factor(size_vs_root.root_contribution$cat)
 	plot <- ggplot(size_vs_root.root_contribution, aes(x=cat, lower=lower, upper=upper, middle=middle, ymin=ymin, ymax=ymax)) + 
-			geom_boxplot(stat="identity") + geom_point(data = size_vs_root.root_contribution, aes(x=cat, y=mean))+
-			xlab('Cascade size range') + ylab('Contribution ratio of seeds') 
+			geom_boxplot(stat="identity") + geom_point(data = size_vs_root.root_contribution, aes(x=cat, y=mean), shape = 8, size = 3)+
+			xlab('Cascade size range') + ylab('Contribution ratio of seeds')+
+			scale_y_continuous(breaks=c(0,.2,.4,.6,.8,1.0))
 	save_ggplot(plot, 'iheart_cascade/case_root_contribution.pdf')
 	
 	size_vs_root$rn_contr <- size_vs_root$rn_contr/ size_vs_root$size
@@ -148,8 +149,9 @@ case_size_vs_root <- function(file='iheart_gift/size_vs_root.csv'){
 			})
 	size_vs_root.rn_contr$cat <- factor(size_vs_root.rn_contr$cat)
 	plot <- ggplot(size_vs_root.rn_contr, aes(x=cat, lower=lower, upper=upper, middle=middle, ymin=ymin, ymax=ymax)) + 
-			geom_boxplot(stat="identity") + geom_point(data = size_vs_root.rn_contr, aes(x=cat, y=mean))+
-			xlab('Cascade size range') + ylab('Contribution ratio of first generation users') 
+			geom_boxplot(stat="identity") + geom_point(data = size_vs_root.rn_contr, aes(x=cat, y=mean), shape = 8, size = 3)+
+			xlab('Cascade size range') + ylab('Contribution ratio of first generation users') +
+			scale_y_continuous(breaks=c(0,.2,.4,.6,.8,1.0))
 	save_ggplot(plot, 'iheart_cascade/case_rn_contr.pdf')
 	
 	size_vs_root.root_success_ratio <- ddply(size_vs_root, c('cat'), .drop=TRUE,
@@ -164,9 +166,38 @@ case_size_vs_root <- function(file='iheart_gift/size_vs_root.csv'){
 			})
 	size_vs_root.root_success_ratio$cat <- factor(size_vs_root.root_success_ratio$cat)
 	plot <- ggplot(size_vs_root.root_success_ratio, aes(x=cat, lower=lower, upper=upper, middle=middle, ymin=ymin, ymax=ymax)) + 
-			geom_boxplot(stat="identity") + geom_point(data = size_vs_root.root_success_ratio, aes(x=cat, y=mean))+
-			xlab('Cascade size range') + ylab('Success ratio of the seeds') 
+			geom_boxplot(stat="identity") + geom_point(data = size_vs_root.root_success_ratio, aes(x=cat, y=mean), shape = 8, size = 3)+
+			xlab('Cascade size range') + ylab('Success ratio of seeds') 
 	save_ggplot(plot, 'iheart_cascade/case_root_success_ratio.pdf')
 	
-	return(size_vs_root)
+#	return(size_vs_root)
+	return (list(r=size_vs_root.root_contribution, f=size_vs_root.rn_contr, s=size_vs_root.root_success_ratio))	
+}
+
+case_size_vs_inter_adoption_time <-  function(file = 'iheart_gift/size_depth_vs_inter_adoption_time.txt'){
+	size_depth_vs_ia <- as.data.frame(read.csv(file, header=FALSE))
+	colnames(size_depth_vs_ia) <- c('size', 'depth', 'ia_time')
+	size_depth_vs_ia <- size_depth_vs_ia[size_depth_vs_ia$size > 1 & size_depth_vs_ia$depth == 1, ]
+	size_depth_vs_ia$ia_time <- round(size_depth_vs_ia$ia_time/86400, 0)
+	size_bin <- unique(c(1, 70, 903, 10000000))
+	size_cat <- c('Small', 'Medium', 'Large')
+	size_depth_vs_ia <- transform(size_depth_vs_ia, bin = cut(size_depth_vs_ia$size, breaks=size_bin))
+	categories <- levels(size_depth_vs_ia$bin)
+	size_depth_vs_ia$cat <- factor(size_depth_vs_ia$bin, levels = categories, labels = size_cat)
+	size_depth_vs_ia.df <- ddply(size_depth_vs_ia, c('cat'), .drop=TRUE,
+			.fun = function(one_partition){
+				stats = boxplot.stats(one_partition$ia_time)$stats
+				c(ymin=stats[1],
+						lower=stats[2],
+						middle=stats[3],
+						upper=stats[4],
+						ymax=stats[5],
+						mean = mean(one_partition$ia_time))
+			})
+	print(head(size_depth_vs_ia.df))
+	size_depth_vs_ia.df$cat <- factor(size_depth_vs_ia.df$cat)
+	plot <- ggplot(size_depth_vs_ia.df, aes(x=cat, lower=lower, upper=upper, middle=middle, ymin=ymin, ymax=ymax)) + 
+			geom_boxplot(stat="identity") + geom_point(data = size_depth_vs_ia.df, aes(x=cat, y=mean))+
+			xlab('Cascade size range') + ylab('Inter-adoption time at first generation (Days)') 
+	save_ggplot(plot, 'iheart_cascade/case_ia_time.pdf')
 }

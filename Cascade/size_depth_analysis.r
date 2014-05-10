@@ -316,10 +316,10 @@ size_vs_properties <- function(file='iheart_cascade/top_size.csv_all_evolution.c
 	evolution <- as.data.frame(read.csv(file, header=FALSE))
 	colnames(evolution) <- c('root', 'size', 'depth', 'width', 'first_day', 'last_day', 'burstiness')
 	size_vs_prop <- ddply(evolution, c('size'), summarise, avg_depth = mean(depth), avg_width = mean(width))
-	plot <- ggplot(size_vs_prop, aes(x = size, y = avg_depth)) + geom_point() + xlab('Size') + ylab('Avg. depth') +
+	plot <- ggplot(size_vs_prop, aes(x = size, y = avg_depth)) + geom_point() + xlab('Cascade size') + ylab('Average max depth') +
 			scale_x_log10() #+ geom_smooth(method=lm, se=FALSE)
 	save_ggplot(plot, 'iheart_cascade/size_vs_depth.pdf')
-	plot <- ggplot(size_vs_prop, aes(x = size, y = avg_width)) + geom_point() + xlab('Size') + ylab('Avg. width') +
+	plot <- ggplot(size_vs_prop, aes(x = size, y = avg_width)) + geom_point() + xlab('Cascade size') + ylab('Average max width') +
 			scale_x_log10() + scale_y_log10() #+ geom_smooth(method=lm, se=FALSE)
 	save_ggplot(plot, 'iheart_cascade/size_vs_width.pdf')
 	return(size_vs_prop)
@@ -345,16 +345,15 @@ size_vs_root_contribution <- function(file='iheart_gift/size_vs_root.csv'){
 	save_ggplot(plot, 'iheart_cascade/seed_contribution_vs_size.pdf')
 	size_vs_root.df <- ddply(size_vs_root, c('size'), summarise, avg_contribution_ratio = mean(contribution_ratio))
 	plot <- ggplot(size_vs_root.df, aes(x = size, y = avg_contribution_ratio)) + geom_point() +
-			xlab('Size') + ylab('Avg. contribution ratio of seeds') + scale_x_log10()
+			xlab('Cascade size') + ylab('Average contribution ratio of seeds') + scale_x_log10()
 	save_ggplot(plot, 'iheart_cascade/size_vs_avg_seed_contr.pdf')
-	
 	size_vs_root.df <- ddply(size_vs_root, c('rn_contr_ratio'), summarise, avg_size = mean(size))
 	plot <- ggplot(size_vs_root.df, aes(x = rn_contr_ratio, y = avg_size)) + geom_point() +
 			xlab('Contribution ratio of seeds\' neighbors') + ylab('Avg. size') + scale_y_log10()
 	save_ggplot(plot, 'iheart_cascade/seed_rn_contr_vs_size.pdf')
 	size_vs_root.df <- ddply(size_vs_root, c('size'), summarise, avg_rn_contr_ratio = mean(rn_contr_ratio))
 	plot <- ggplot(size_vs_root.df, aes(x = size, y = avg_rn_contr_ratio)) + geom_point() +
-			xlab('Size') + ylab('Avg. first generation contribution ratio') + scale_x_log10()
+			xlab('Cascade size') + ylab('Average first generation contribution ratio') + scale_x_log10()
 	save_ggplot(plot, 'iheart_cascade/size_vs_avg_seed_rn_contr.pdf')
 	
 	size_vs_root.df <- ddply(size_vs_root, c('root_outdeg'), summarise, avg_size = mean(size))
@@ -368,7 +367,7 @@ size_vs_root_contribution <- function(file='iheart_gift/size_vs_root.csv'){
 	save_ggplot(plot, 'iheart_cascade/seed_success_ratio_vs_size.pdf')
 	size_vs_root.df <- ddply(size_vs_root, c('size'), summarise, avg_root_success_ratio = mean(root_success_ratio))
 	plot <- ggplot(size_vs_root.df, aes(x = size, y = avg_root_success_ratio)) + geom_point(size = 0.8) +
-			xlab('Size') + ylab('Avg. success ratio of seeds') + scale_x_log10()
+			xlab('Cascade size') + ylab('Average success ratio of seeds') + scale_x_log10()
 	save_ggplot(plot, 'iheart_cascade/size_vs_avg_seed_success_ratio.pdf')
 	
 	size_vs_root.df <- ddply(size_vs_root, c('major_gift'), summarise, avg_size = mean(size))

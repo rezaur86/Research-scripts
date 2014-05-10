@@ -40,7 +40,7 @@ lifespan_analysis <- function(adoption_delay_file_name='raw_stat_wo_burst/delay_
 			xlab('Adoption delay (Days)') + ylab('Empirical CDF')
 	save_ggplot(plot, 'raw_stat_v2/adoption_delay.pdf')
 	plot <- ggplot(adoptions_temp.df[adoptions_temp.df$life_type == 2, ], aes(x = time, y = cdf_val)) + geom_line() +
-			xlab('Active lifetime (Days)') + ylab('Empirical CDF')
+			xlab('Active lifespan (Days)') + ylab('Empirical CDF')
 	save_ggplot(plot, 'raw_stat_v2/active_lifetime.pdf')
 #	lifespan_indeg <- adoption_times[,c(1,3,5)]
 #	colnames(lifespan_indeg) <- c('time', 'avg', 'life_type')
@@ -82,14 +82,14 @@ sent_AR_analysis <- function (raw_sent_AR_stat = 'raw_stat_wo_burst/raw_sent_AR_
 			})
 	raw_degree.df$degree_type <- factor(raw_degree.df$degree_type)
 	plot <- ggplot(raw_degree.df[raw_degree.df$degree > 0, ], aes(x = degree, y = pdf_val)) +
-			geom_point(aes(group = degree_type, colour = degree_type, shape = degree_type), size=1) +
+			geom_point(aes(group = degree_type, colour = degree_type, shape = degree_type), size=3) +
 			scale_x_log10(limits = c(1, 10^4))
 	plot <- change_plot_attributes(plot, "", 0:1, c('K = Number of sent invitations', 'K = Number of distinct invitees'),
 			"K", "Empirical PDF")
 	save_ggplot(plot, 'raw_stat_v2/sent_AR.pdf')
 	plot <- ggplot(raw_degree.df[raw_degree.df$degree > 0, ], aes(x = degree, y = cdf_val)) +
-			geom_point(aes(group = degree_type, colour = degree_type, shape = degree_type), size=1) +
-			scale_x_log10(limits = c(1, 10^4))
+			geom_point(aes(group = degree_type, colour = degree_type, shape = degree_type), size=3) +
+			scale_x_log10(limits = c(1, 10^4), breaks=c(10, 100, 1000))
 	plot <- change_plot_attributes(plot, "", 0:1, c('K = Number of sent invitations', 'K = Number of distinct invitees'),
 			"K", "Empirical CDF")
 	save_ggplot(plot, 'raw_stat_v2/sent_AR_cdf.pdf', 24,
@@ -106,10 +106,10 @@ sent_AR_analysis <- function (raw_sent_AR_stat = 'raw_stat_wo_burst/raw_sent_AR_
 	act_lifespan.df <- rbind(act_lifespan.invitations, act_lifespan.invitees)
 	act_lifespan.df$degree_type <- factor(act_lifespan.df$degree_type)
 	plot <- ggplot(act_lifespan.df, aes(x = time, y = sent)) +
-			geom_point(aes(group = degree_type, colour = degree_type, shape = degree_type), size=1) +
+			geom_point(aes(group = degree_type, colour = degree_type, shape = degree_type), size=3) +
 			scale_y_log10()
 	plot <- change_plot_attributes(plot, "", 0:1, c('K = Avg. number of sent invitations', 'K = Avg. number of distinct invitees'),
-			"Active lifetime (Days)", "K")
+			"Active lifespan (Days)", "K")
 	save_ggplot(plot, 'raw_stat_v2/act_sent_AR.pdf', 24,
 			opts(legend.position=c(.43, .8)))
 }
@@ -133,14 +133,14 @@ recved_AR_analysis <- function (raw_rec_AR_stat='raw_stat_wo_burst/raw_rec_AR_st
 			})
 	raw_degree.df$degree_type <- factor(raw_degree.df$degree_type)
 	plot <- ggplot(raw_degree.df[raw_degree.df$degree > 0, ], aes(x = degree, y = pdf_val)) +
-			geom_point(aes(group = degree_type, colour = degree_type, shape = degree_type), size=1) +
+			geom_point(aes(group = degree_type, colour = degree_type, shape = degree_type), size=3) +
 			scale_x_log10(limits = c(1, 10^4))
 	plot <- change_plot_attributes(plot, "", 0:1, c('K = Number of received invitations', 'K = Number of distinct inviters'),
 			"K", "Empirical PDF")
 	save_ggplot(plot, 'raw_stat_v2/recved_AR.pdf')
 	plot <- ggplot(raw_degree.df[raw_degree.df$degree > 0, ], aes(x = degree, y = cdf_val)) +
-			geom_point(aes(group = degree_type, colour = degree_type, shape = degree_type), size=1) +
-			scale_x_log10(limits = c(1, 10^4))
+			geom_point(aes(group = degree_type, colour = degree_type, shape = degree_type), size=3) +
+			scale_x_log10(limits = c(1, 10^4), breaks=c(10, 100, 1000))
 	plot <- change_plot_attributes(plot, "", 0:1, c('K = Number of received invitations', 'K = Number of distinct inviters'),
 			"K", "Empirical CDF")
 	save_ggplot(plot, 'raw_stat_v2/recved_AR_cdf.pdf', 24,
@@ -157,7 +157,7 @@ recved_AR_analysis <- function (raw_rec_AR_stat='raw_stat_wo_burst/raw_rec_AR_st
 	adoption_delay.df <- rbind(adoption_delay.invitations, adoption_delay.inviters)
 	adoption_delay.df$degree_type <- factor(adoption_delay.df$degree_type)
 	plot <- ggplot(adoption_delay.df, aes(x = time, y = received)) +
-			geom_point(aes(group = degree_type, colour = degree_type, shape = degree_type), size=1) +
+			geom_point(aes(group = degree_type, colour = degree_type, shape = degree_type), size=3) +
 			scale_y_log10()
 	plot <- change_plot_attributes(plot, "", 0:1, c('K = Avg. number of received invitations', 'K = Avg. number of distinct inviters'),
 			"Adoption delay (Days)", "K")
@@ -222,10 +222,10 @@ raw_indeg_analysis <- function (raw_indeg_file_name){
 influence_threshold_analysis <- function (parent_count_file_name = 'raw_stat_v2/parent_count_before_act.csv',
 		indeg_before_act_file= 'raw_stat_v2/indeg_before_act.csv'){
 	influence <- as.data.frame(read.csv(parent_count_file_name, header=FALSE))
-	influence[,4] <- 0
+	influence[,4] <- 1
 	colnames(influence) <- c('indeg', 'act_count', 'total_count', 'indeg_type')
 	influence_ar <- as.data.frame(read.csv(indeg_before_act_file, header=FALSE))
-	influence_ar[,4] <- 1
+	influence_ar[,4] <- 0
 	colnames(influence_ar) <- c('indeg', 'act_count', 'total_count', 'indeg_type')
 	influence <- rbind(influence, influence_ar)
 	influence.df <- ddply(influence, c('indeg_type'), function(one_partition){
@@ -242,11 +242,11 @@ influence_threshold_analysis <- function (parent_count_file_name = 'raw_stat_v2/
 #			scale_x_log10(breaks=c(1,2,4,8,16,32,64,128,256,1000)) +
 #			scale_y_continuous(breaks=c(.4,.5,.6,.7,.8,.9,1.0), labels=c('40%','50%','60%','70%','80%','90%','100%'), limits=c(.4,1.0))
 	plot <- ggplot(influence.df, aes(x = (indeg), y = (prob))) + 
-			geom_point(aes(group = indeg_type, colour = indeg_type, shape = indeg_type), size=1)+
-			scale_x_log10(limits = c(1, 10^3)) #+ scale_y_log10()
+			geom_point(aes(group = indeg_type, colour = indeg_type, shape = indeg_type), size=3)+
+			scale_x_log10(limits = c(1, 10^3), breaks=c(10, 100, 1000)) #+ scale_y_log10()
 #			geom_smooth(aes(group = indeg_type, colour = indeg_type, shape = indeg_type), se=FALSE)
-	plot <- change_plot_attributes(plot, "", 0:1, c('P(m); m = Number of distinct inviters', 'P(n); n = Number of invitations'),
-			"n or m", "Activation probability")
+	plot <- change_plot_attributes(plot, "", 0:1, c('P(n); n = Number of invitations', 'P(m); m = Number of distinct inviters'),
+			"n or m", "Adoption probability")
 	save_ggplot(plot, 'raw_stat_v2/adop_prob.pdf', 24, opts(legend.position=c(.42, .8)))
 	return(influence.df)
 }

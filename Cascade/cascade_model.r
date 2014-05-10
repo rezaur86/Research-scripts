@@ -207,6 +207,8 @@ build_all_models <- function(file='iheart_gift/size_vs_root.csv',
 	categories <- levels(cascade$bin)
 	cascade$cat <- factor(cascade$bin, levels = categories, labels = c(1,2,3))
 	cascade$cat <- relevel(cascade$cat, ref = 1)
+	print('Size of dataset:')
+	print(nrow(cascade))
 	if (week_n[1])
 		model_1 <- cascade_logit_model(cascade, 1)
 	if (week_n[2])
@@ -243,7 +245,7 @@ build_all_models <- function(file='iheart_gift/size_vs_root.csv',
 }
 
 hugged_model <- build_all_models('hugged_cascade/size_vs_root.csv', 'hugged_cascade/top_size.csv_all_evolution.csv', 
-	'hugged_cascade/top_size.csv_all_weekly_evolution.csv',  c(1, 99, 1169, 10000000), c(FALSE, TRUE, FALSE, TRUE))
+	'hugged_cascade/top_size.csv_all_weekly_evolution.csv',  c(1, 99, 1169, 10000000), c(TRUE, TRUE, TRUE, TRUE))
 
 size_feature_correlation <- function(file='iheart_gift/size_vs_root.csv',
 		evolution_file='iheart_gift/top_size.csv_all_evolution.csv',
