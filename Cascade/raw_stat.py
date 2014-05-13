@@ -6,6 +6,7 @@ from random import choice
 import numpy as np
 
 NEVER = 2**31 - 1
+# MAX_USERS = 189989307
 
 def reg_children(parent_list, is_leaf):
     l = len(parent_list)
@@ -29,30 +30,35 @@ def reg_children(parent_list, is_leaf):
                 active_children[parent] = 1
             else:
                 active_children[parent] += 1
-    first_invitation_hour = min(invitations)
-    last_invitation_hour = max(invitations)
-    elapsed_hour = last_invitation_hour - first_invitation_hour + 1
-    if elapsed_hour in invitation_elapsed_time:
-        invitation_elapsed_time[elapsed_hour] += 1
-    else:
-        invitation_elapsed_time[elapsed_hour] = 1
-    if elapsed_hour == 1:
-        return
-    temp_invitations = []
-    for i in range(first_invitation_hour, last_invitation_hour+1):
-        temp_invitations.append(invitations[i] if i in invitations else 0)
-    sd = np.sqrt(np.var(temp_invitations))
-    avg = np.average(temp_invitations)
-    burstiness = round(((sd - avg) / (sd + avg)), 3)
-    if burstiness in invitation_burstiness_stat:
-        invitation_burstiness_stat[burstiness].append(elapsed_hour)
-    else:
-        invitation_burstiness_stat[burstiness] = [elapsed_hour]
+    if BURSTINESS_ON == 1:
+        first_invitation_hour = min(invitations)
+        last_invitation_hour = max(invitations)
+        elapsed_hour = last_invitation_hour - first_invitation_hour + 1
+        if elapsed_hour in invitation_elapsed_time:
+            invitation_elapsed_time[elapsed_hour] += 1
+        else:
+            invitation_elapsed_time[elapsed_hour] = 1
+        if elapsed_hour == 1:
+            return
+        temp_invitations = []
+        for i in range(first_invitation_hour, last_invitation_hour+1):
+            temp_invitations.append(invitations[i] if i in invitations else 0)
+        sd = np.sqrt(np.var(temp_invitations))
+        avg = np.average(temp_invitations)
+        burstiness = round(((sd - avg) / (sd + avg)), 3)
+        if burstiness in invitation_burstiness_stat:
+            invitation_burstiness_stat[burstiness].append(elapsed_hour)
+        else:
+            invitation_burstiness_stat[burstiness] = [elapsed_hour]
 
     
 CLR_THRESHOLD = 500000
 f = open(sys.argv[1], "r")
 lifespan_bin_size = int(sys.argv[4])
+try:
+    BURSTINESS_ON = int(sys.argv[5])
+except:
+    BURSTINESS_ON = 1
 lifespan_stat = {}
 raw_outdeg = {}
 parent_count = {}
@@ -61,8 +67,9 @@ parent_count[0] = 0
 critical_parent_count[0] = 0
 children_count = {}
 active_children = {}
-invitation_burstiness_stat = {}
-invitation_elapsed_time = {}
+if BURSTINESS_ON == 1:
+    invitation_burstiness_stat = {}
+    invitation_elapsed_time = {}
 delay_recv_AR_parent_stat = {}
 delay_recv_AR_stat = {}
 act_lifespan_sent_AR_stat = {}
@@ -118,6 +125,16 @@ for line in f:
         lifespan_stat[lifespan_bin] = 1
 f.close()
 
+MAX_USERS = count
+print 'Starting array initialization'
+sent_AR_users =  array.array('l',(-1,)*MAX_USERS)
+recved_AR_users = array.array('l',(-1,)*MAX_USERS)
+succ_ratio_users = array.array('f',(-1,)*MAX_USERS)
+active_child_users = array.array('l',(-1,)*MAX_USERS)
+act_lifespan_users = array.array('i',(-1,)*MAX_USERS)
+adopt_delay_users = array.array('i',(-1,)*MAX_USERS)
+print 'Ending array initialization'
+
 f = open(sys.argv[2], "r")
 count = 0
 indeg_before_act = {}
@@ -135,6 +152,9 @@ for line in f:
     sent_ARs = int(element[6].strip())
     delay_bin = ((adoption_delay - 1) if adoption_delay > 0 else NEVER)/lifespan_bin_size
     act_lifespan_bin = (act_lifespan if act_lifespan > 0 else NEVER)/lifespan_bin_size
+    adopt_delay_users[node_id] = delay_bin
+    act_lifespan_users[node_id] = act_lifespan_bin
+    sent_AR_users[node_id] = sent_ARs
     count = count+1
     if (count % (CLR_THRESHOLD/10)) == 0:
         print count
@@ -153,6 +173,7 @@ for line in f:
         act_lifespan_sent_AR_stat[act_lifespan_bin] = [sent_ARs]
         act_lifespan_sent_AR_children_stat[act_lifespan_bin] = [children_count[node_id] if node_id in children_count else 0]
     if indeg_until_active == -1:
+        recved_AR_users[node_id] = indeg
         if indeg in critical_indeg:
             critical_indeg[indeg] += 1
         else:
@@ -162,6 +183,7 @@ for line in f:
         else:
             delay_recv_AR_stat[delay_bin] = [indeg]
         continue
+    recved_AR_users[node_id] = indeg_until_active
     if indeg_until_active in indeg_before_act:
         indeg_before_act[indeg_until_active] += 1
     else:
@@ -188,8 +210,9 @@ indeg_before_act_file = open(sys.argv[3]+"indeg_before_act.csv", "w")
 act_proportion_count_file = open(sys.argv[3]+"act_proportion_count.csv", "w")
 parent_children_act_file = open(sys.argv[3]+"parent_children_act.csv", "w")
 parent_proportion_file = open(sys.argv[3]+"parent_proportion.csv", "w")
-invitation_burstiness_stat_file = open(sys.argv[3]+"invitation_burstiness_stat.csv", "w")
-invitation_elapsed_time_stat_file = open(sys.argv[3]+"invitation_elapsed_time_stat.csv", "w")
+if BURSTINESS_ON == 1:
+    invitation_burstiness_stat_file = open(sys.argv[3]+"invitation_burstiness_stat.csv", "w")
+    invitation_elapsed_time_stat_file = open(sys.argv[3]+"invitation_elapsed_time_stat.csv", "w")
 
 temp = sorted(lifespan_stat.iteritems(), key=operator.itemgetter(0), reverse=True)
 for tuple in temp:
@@ -211,14 +234,15 @@ temp = sorted(critical_indeg.iteritems(), key=operator.itemgetter(0), reverse=Tr
 for tuple in temp:
     indeg_before_act_file.write('%s,%s,%s\n'%(tuple[0], indeg_before_act[tuple[0]] if tuple[0] in indeg_before_act else 0, tuple[1]))
     raw_rec_AR_stat_file.write('%s,%s\n'%(tuple[0], tuple[1]))
-temp = sorted(invitation_burstiness_stat.iteritems(), key=operator.itemgetter(0), reverse=True)
-for tuple in temp:
-    invitation_burstiness_stat_file.write('%s,%s,%s,%s\n'%(tuple[0], len(tuple[1]),
-                                                           round(np.average(tuple[1]),3),
-                                                           round(np.median(tuple[1]),3)))
-temp = sorted(invitation_elapsed_time.iteritems(), key=operator.itemgetter(0), reverse=True)
-for tuple in temp:
-    invitation_elapsed_time_stat_file.write('%s,%s\n'%(tuple[0],tuple[1]))
+if BURSTINESS_ON == 1:
+    temp = sorted(invitation_burstiness_stat.iteritems(), key=operator.itemgetter(0), reverse=True)
+    for tuple in temp:
+        invitation_burstiness_stat_file.write('%s,%s,%s,%s\n'%(tuple[0], len(tuple[1]),
+                                                               round(np.average(tuple[1]),3),
+                                                               round(np.median(tuple[1]),3)))
+    temp = sorted(invitation_elapsed_time.iteritems(), key=operator.itemgetter(0), reverse=True)
+    for tuple in temp:
+        invitation_elapsed_time_stat_file.write('%s,%s\n'%(tuple[0],tuple[1]))
 
 alpha_account = {}
 raw_sent_AR_children = {}
@@ -233,6 +257,8 @@ for each_parent in children_count:
     parent_children_act_file.write('%s,%s\n'%(active_children[each_parent] if each_parent in active_children else 0,
                                             children_count[each_parent]))
     parent_proportion_file.write('%s,%s\n'%(each_parent, alpha))
+    succ_ratio_users[each_parent] = alpha
+    active_child_users[each_parent] = active_children[each_parent] if each_parent in active_children else 0
     if children_count[each_parent] in raw_sent_AR_children:
         raw_sent_AR_children[children_count[each_parent]] += 1
     else:
@@ -259,6 +285,13 @@ for time in act_lifespan_sent_AR_stat:
                                             round(np.average(act_lifespan_sent_AR_children_stat[time]), 3)))
 act_lifespan_sent_AR_stat_file.close()
 
+user_features_file = open(sys.argv[3]+"user_features.csv", "w")
+for i in range(MAX_USERS):
+    user_features_file.write('%s,%s,%s,%s,%s,%s\n'%(sent_AR_users[i], recved_AR_users[i],
+                                                    act_lifespan_users[i], adopt_delay_users[i],
+                                                    round(succ_ratio_users[i],3), active_child_users[i]))
+user_features_file.close()
+
 lifespan_stat_file.close()
 raw_outdeg_stat_file.close()
 raw_indeg_stat_file.close()
@@ -271,5 +304,6 @@ indeg_before_act_file.close()
 act_proportion_count_file.close()
 parent_children_act_file.close()
 parent_proportion_file.close()
-invitation_burstiness_stat_file.close()
-invitation_elapsed_time_stat_file.close()
+if BURSTINESS_ON == 1:
+    invitation_burstiness_stat_file.close()
+    invitation_elapsed_time_stat_file.close()
