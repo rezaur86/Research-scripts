@@ -27,9 +27,20 @@ change_plot_attributes <- function(plot, group_title, group_ids, group_labels, x
 	plot <- plot + #scale_colour_grey(name=group_title, breaks=group_ids, labels=group_labels) +
 			scale_colour_manual(values=c("gray60", "black",  "gray40", "gray20", "gray55","gray55",
 							rep("black", 2), rep("gray55", 3), rep("black", 3)),
-					name=group_title, breaks=group_ids, labels=group_labels)+
+					name =group_title, breaks=group_ids, labels=group_labels)+
 			scale_shape_manual(values=c(2,8,0,1,4,5,6,7,9,10,12),
-					name =group_title,  breaks=group_ids, labels=group_labels)
+					name =group_title, breaks=group_ids, labels=group_labels)
+	plot <- plot + xlab(xlabel) + ylab(ylabel)
+	return(plot)
+}
+
+change_line_attributes <- function(plot, group_title, group_ids, group_labels, xlabel, ylabel){
+	plot <- plot +
+			scale_linetype_manual(values=c(1,1,5,3,6,4),
+					name =group_title, breaks=group_ids, labels=group_labels)+
+			scale_colour_manual(values=c("gray60", "black",  "gray40", "gray20", "gray55","gray55",
+						rep("black", 2), rep("gray55", 3), rep("black", 3)),
+					name =group_title, breaks=group_ids, labels=group_labels)
 	plot <- plot + xlab(xlabel) + ylab(ylabel)
 	return(plot)
 }
