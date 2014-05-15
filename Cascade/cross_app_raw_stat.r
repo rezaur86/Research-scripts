@@ -324,6 +324,43 @@ apps_success_ratio_analysis <- function (iheart_success_ratio_file='raw_stat_v2/
 			opts(legend.position=c(.8, .2)))
 }
 
+apps_act_child_analysis <- function(comb_act_child_file = '/home/rezaur/output_cascade/raw_stat_apps/comb_act_child.csv'){
+	comb_act_child <<- as.data.frame(read.csv(comb_act_child_file, header=FALSE))
+	colnames(comb_act_child) <<-  c('seq', 'hugged', 'iheart', 'ismile')
+	hug <- as.data.frame(table(comb_act_child[comb_act_child$hugged > -1,]$hugged))
+	colnames(hug) <- c('ac', 'count')
+	hug$ac <- as.numeric(levels(hug$ac))[hug$ac]
+	hug$app_type <- 0
+	ihe <- as.data.frame(table(comb_act_child[comb_act_child$iheart > -1,]$iheart))
+	colnames(ihe) <- c('ac', 'count')
+	ihe$ac <- as.numeric(levels(ihe$ac))[ihe$ac]
+	ihe$app_type <- 1
+	ism <- as.data.frame(table(comb_act_child[comb_act_child$ismile > -1,]$ismile))
+	colnames(ism) <- c('ac', 'count')
+	ism$ac <- as.numeric(levels(ism$ac))[ism$ac]
+	ism$app_type <- 2
+	comb <- rbind(hug, ihe, ism)
+	comb.df <- ddply(comb, c('app_type'), function(one_partition){
+				one_partition = one_partition[order(one_partition$ac),]
+				one_partition$cum_count = cumsum(one_partition$count)
+				one_partition$cdf_val = one_partition$cum_count / max(one_partition$cum_count)
+				one_partition$pdf_val = one_partition$count / max(one_partition$cum_count)
+				one_partition
+			})
+	comb.df$app_type <- factor(comb.df$app_type)
+	print(summary(comb.df))
+	plot <- ggplot(comb.df[comb.df$ac > 0, ], aes(x = (ac), y = (cdf_val))) + 
+			geom_line(aes(group = app_type, colour = app_type, linetype = app_type), size=1)+
+			scale_linetype_manual(values=c(1,1,6), name='', breaks=0:2,
+					labels=c('Hugged', 'iHeart', 'iSmile')) +
+			scale_colour_manual(values=c("black", "gray55", "black"), name='', breaks=0:2,
+					labels=c('Hugged', 'iHeart', 'iSmile')) +
+			scale_x_log10(limits = c(1, 10^3), breaks=c(10, 100, 1000))+
+			xlab('Active users') + ylab('Empirical CDF')
+	save_ggplot(plot, 'raw_stat_apps/act_users_cdf.pdf', 24,
+			opts(legend.position=c(.8, .2)))
+}
+
 pairwise_feature_analysis <- function(roles, x_label, y_label, figure_name){
 	roles.box <- ddply(roles, c('rank.x'), .drop=TRUE,
 			.fun = function(one_partition){
