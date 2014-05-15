@@ -54,10 +54,25 @@ w = csv.writer(open("all_user_seq.txt", "w"))
 for user_id, (hugged_user_seq, ismile_user_seq, iheart_user_seq) in users.items():
     if user_id not in deleted_keys:
         w.writerow([user_id, hugged_user_seq, ismile_user_seq, iheart_user_seq])
-        
+
+print(common_in_3_count)
+print(common_user_count)
+
 print(1.0*common_user_count[IHE][HUG]/common_user_count[HUG][HUG]) #P(IHE|HUG)
 print(1.0*common_user_count[HUG][IHE]/common_user_count[IHE][IHE]) #P(HUG|IHE)
 print(1.0*common_user_count[ISM][HUG]/common_user_count[HUG][HUG]) #P(ISM|HUG)
 print(1.0*common_user_count[HUG][ISM]/common_user_count[ISM][ISM]) #P(HUG|ISM)
 print(1.0*common_user_count[ISM][IHE]/common_user_count[IHE][IHE]) #P(ISM|IHE)
 print(1.0*common_user_count[IHE][ISM]/common_user_count[ISM][ISM]) #P(IHE|ISM)
+
+w = csv.writer(open("common_users.csv", "w"))
+w.writerows(common_user_count)
+
+# 16476594
+# [[34525693, 26461451, 17559491], [26461451, 199302275, 78044885], [17559491, 78044885, 92749770]]
+# 0.766427802043
+# 0.132770441281
+# 0.508591992636
+# 0.189321127158
+# 0.391590537539
+# 0.841456372345

@@ -80,9 +80,9 @@ for user_id, hug_seq, ism_seq, ihe_seq in csv.reader(open(all_users_file)):
     adopt_delay_combined_file.write('%s,%s,%s,%s\n'%(user_seq, adopt_delay_users_hug[hug_seq] if hug_seq != -1 else -1,
                                                      adopt_delay_users_ihe[ihe_seq] if ihe_seq != -1 else -1,
                                                      adopt_delay_users_ism[ism_seq] if ism_seq != -1 else -1))
-    succ_ratio_combined_file.write('%s,%s,%s,%s\n'%(user_seq, succ_ratio_users_hug[hug_seq] if hug_seq != -1 else -1,
-                                                    succ_ratio_users_ihe[ihe_seq] if ihe_seq != -1 else -1,
-                                                    succ_ratio_users_ism[ism_seq] if ism_seq != -1 else -1))
+    succ_ratio_combined_file.write('%s,%s,%s,%s\n'%(user_seq, round(succ_ratio_users_hug[hug_seq], 3) if hug_seq != -1 else -1,
+                                                    round(succ_ratio_users_ihe[ihe_seq], 3) if ihe_seq != -1 else -1,
+                                                    round(succ_ratio_users_ism[ism_seq], 3) if ism_seq != -1 else -1))
     act_child_combined_file.write('%s,%s,%s,%s\n'%(user_seq, act_child_users_hug[hug_seq] if hug_seq != -1 else -1,
                                                     act_child_users_ihe[ihe_seq] if ihe_seq != -1 else -1,
                                                     act_child_users_ism[ism_seq] if ism_seq != -1 else -1))
