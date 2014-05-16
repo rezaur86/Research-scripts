@@ -161,7 +161,6 @@ apps_sent_AR_analysis <- function (iheart_sent_AR_stat = 'raw_stat_wo_burst/raw_
 			"Sent invitations", "Empirical CDF")
 	save_ggplot(plot, 'raw_stat_apps/sent_AR_cdf.pdf', 24,
 			opts(legend.position=c(.62, .3)))
-	
 	hugged_act_lifespan <- as.data.frame(read.csv(hugged_act_lifespan_file, header=FALSE))
 	colnames(hugged_act_lifespan) <- c('time', 'count', 'avg_invitations', 'avg_invitees')
 	hugged_act_lifespan <- hugged_act_lifespan[hugged_act_lifespan$time < 24855,]
@@ -200,6 +199,7 @@ apps_sent_AR_analysis <- function (iheart_sent_AR_stat = 'raw_stat_wo_burst/raw_
 			xlab("Active lifespan (Days)") + ylab("Empirical CDF")
 	save_ggplot(plot, 'raw_stat_apps/active_lifetime.pdf', 24,
 			opts(legend.position=c(.8, .2)))
+	return(act_lifespan.df)
 }
 
 
@@ -379,6 +379,113 @@ pairwise_feature_analysis <- function(roles, x_label, y_label, figure_name){
 	save_ggplot(plot, paste(c('raw_stat_apps/', figure_name, '.pdf'), collapse = ''))
 }
 
+class_distance_across_apps <- function(df, figure_name){
+	hug <- as.data.frame(df[order(-df$hugged, na.last = NA),]$seq)
+	colnames(hug) <- c('seq')
+	hugged_users <- nrow(hug)
+	ihe <- as.data.frame(df[order(-df$iheart, na.last = NA),]$seq)
+	colnames(ihe) <- c('seq')
+	iheart_users <- nrow(ihe)
+	ism <- as.data.frame(df[order(-df$ismile, na.last = NA),]$seq)
+	colnames(ism) <- c('seq')
+	ismile_users <- nrow(ism)
+	hug$rank <- c(rep(1, ceiling(hugged_users/4)), rep(2, ceiling(hugged_users/4)),
+			rep(3, ceiling(hugged_users/4)), rep(4, (hugged_users - 3*ceiling(hugged_users/4))))
+	
+	ihe$rank <- c(rep(1, ceiling(iheart_users/4)), rep(2, ceiling(iheart_users/4)),
+			rep(3, ceiling(iheart_users/4)), rep(4, (iheart_users - 3*ceiling(iheart_users/4))))
+	
+	ism$rank <- c(rep(1, ceiling(ismile_users/4)), rep(2, ceiling(ismile_users/4)),
+			rep(3, ceiling(ismile_users/4)), rep(4, (ismile_users - 3*ceiling(ismile_users/4))))
+	
+	hug_ihe <- merge(hug, ihe, by="seq")
+	hug_ihe$distance <- abs (hug_ihe$rank.x - hug_ihe$rank.y)
+	hug_ihe$comp_type <- 'Hugged vs.\niHeart'
+	
+	hug_ism <- merge(hug, ism, by="seq")
+	hug_ism$distance <- abs (hug_ism$rank.x - hug_ism$rank.y)
+	hug_ism$comp_type <- 'Hugged vs.\niSmile'
+	
+	ihe_ism <- merge(ihe, ism, by="seq")
+	ihe_ism$distance <- abs (ihe_ism$rank.x - ihe_ism$rank.y)
+	ihe_ism$comp_type <- 'iHeart vs.\niSmile'
+	
+	roles <- rbind(hug_ihe, hug_ism, ihe_ism)
+	roles.box <- ddply(roles, c('comp_type', 'rank.x'), .drop=TRUE,
+			.fun = function(one_partition){
+				stats = boxplot.stats(one_partition$distance)$stats
+				c(ymin=stats[1],
+						lower=stats[2],
+						middle=stats[3],
+						upper=stats[4],
+						ymax=stats[5],
+						mean = mean(one_partition$distance))
+			})
+	roles.box$comp_type <- factor(roles.box$comp_type)
+	roles.box$rank.x <- factor(roles.box$rank.x)
+	print(roles.box)
+	plot <- ggplot(roles.box, aes(rank.x, mean, fill = comp_type, lower=lower, upper=upper, middle=middle, ymin=ymin, ymax=ymax)) + 
+			geom_boxplot(stat="identity", fatten = 4)+ scale_fill_grey(start = .5, end = .9, name = '') +
+			stat_summary(fun.y = "mean", geom = "point", shape= 8, size= 3, position=position_dodge(width=.9)) +
+			xlab('Class') + ylab('Distance')
+	save_ggplot(plot, paste(c('raw_stat_apps/cross_app_', figure_name, '.pdf'), collapse = ''), 24, opts(legend.position="bottom"))
+	
+	temp.box <- roles.box
+	sim_hug_ihe <- as.data.frame(hug_ihe$distance)
+	colnames(sim_hug_ihe) <- 'distance'
+	sim_hug_ihe$comp_type <- 'Hugged vs.\niHeart'
+	sim_hug_ism <- as.data.frame(hug_ism$distance)
+	colnames(sim_hug_ism) <- 'distance'
+	sim_hug_ism$comp_type <- 'Hugged vs.\niSmile'
+	sim_ihe_ism <- as.data.frame(ihe_ism$distance)
+	colnames(sim_ihe_ism) <- 'distance'
+	sim_ihe_ism$comp_type <- 'iHeart vs.\niSmile'
+	roles <- rbind(sim_hug_ihe, sim_hug_ism, sim_ihe_ism)
+	
+	roles.box <- ddply(roles, c('comp_type'), .drop=TRUE,
+			.fun = function(one_partition){
+				stats = boxplot.stats(one_partition$distance)$stats
+				c(ymin=stats[1],
+						lower=stats[2],
+						middle=stats[3],
+						upper=stats[4],
+						ymax=stats[5],
+						mean = mean(one_partition$distance))
+			})
+	roles.box$comp_type <- factor(roles.box$comp_type)
+	print(roles.box)
+	plot <- ggplot(roles.box, aes(x=comp_type, lower=lower, upper=upper, middle=middle, ymin=ymin, ymax=ymax)) + 
+			geom_boxplot(stat="identity", fatten = 4) + geom_point(data = roles.box, aes(x=comp_type, y=mean), shape = 8, size = 3)+
+			xlab('') + ylab('Distance') 
+	save_ggplot(plot, paste(c('raw_stat_apps/similarity_', figure_name, '.pdf'), collapse = ''))
+	return (list(class=temp.box, sim=roles.box))
+}
+
+read_combined_data <- function(){
+	comb_sent_AR_file <- '/home/rezaur/output_cascade/raw_stat_apps/comb_sent_ar.csv'
+	comb_sent_AR <<- as.data.frame(read.csv(comb_sent_AR_file, header=FALSE))
+	colnames(comb_sent_AR) <<-  c('seq', 'hugged', 'iheart', 'ismile')
+	comb_sent_AR[!(comb_sent_AR > 0)] <<- NA
+	print(comb_sent_AR_file)
+	comb_succ_ratio_file <- '/home/rezaur/output_cascade/raw_stat_apps/comb_succ_ratio.csv'
+	comb_succ <<- as.data.frame(read.csv(comb_succ_ratio_file, header=FALSE))
+	colnames(comb_succ) <<-  c('seq', 'hugged', 'iheart', 'ismile')
+	comb_succ[!(comb_succ >= 0)] <<- NA
+	print(comb_succ_ratio_file)
+	comb_act_child_file <- '/home/rezaur/output_cascade/raw_stat_apps/comb_act_child.csv'
+	comb_act_child <<- as.data.frame(read.csv(comb_act_child_file, header=FALSE))
+	colnames(comb_act_child) <<-  c('seq', 'hugged', 'iheart', 'ismile')
+	comb_act_child[!(comb_act_child >= 0)] <<- NA
+	print(comb_act_child_file)
+	comb_act_life_file = '/home/rezaur/output_cascade/raw_stat_apps/comb_act_life.csv'
+	comb_act_life <<- as.data.frame(read.csv(comb_act_life_file, header=FALSE))
+	colnames(comb_act_life) <<-  c('seq', 'hugged', 'iheart', 'ismile')
+	comb_act_life[!(comb_act_life$hugged > -1 & comb_act_life$hugged < 24855), ]$hugged <<- NA
+	comb_act_life[!(comb_act_life$iheart > -1 & comb_act_life$iheart < 24855), ]$iheart <<- NA
+	comb_act_life[!(comb_act_life$ismile > -1 & comb_act_life$ismile < 24855), ]$ismile <<- NA
+	print(comb_act_life_file)
+}
+
 comb_sent_AR_analysis <- function(comb_sent_AR_file = '/home/rezaur/output_cascade/raw_stat_apps/comb_sent_ar.csv'){
 	comb_sent_AR <<- as.data.frame(read.csv(comb_sent_AR_file, header=FALSE))
 	colnames(comb_sent_AR) <<-  c('seq', 'hugged', 'iheart', 'ismile')
@@ -405,26 +512,49 @@ comb_sent_AR_analysis <- function(comb_sent_AR_file = '/home/rezaur/output_casca
 	
 	hug_ihe <- merge(hug, ihe, by="seq")
 	hug_ihe$distance <- abs (hug_ihe$rank.x - hug_ihe$rank.y)
-	pairwise_feature_analysis(hug_ihe, 'Hugged', 'iHeart', 'inv_hug_ihe')
-	sim_hug_ihe <- as.data.frame(hug_ihe$distance)
-	colnames(sim_hug_ihe) <- 'distance'
-	sim_hug_ihe$comp_type <- 'Hugged vs.\niHeart'
+#	pairwise_feature_analysis(hug_ihe, 'Hugged', 'iHeart', 'inv_hug_ihe')
+	hug_ihe$comp_type <- 'Hugged vs.\niHeart'
 	
 	hug_ism <- merge(hug, ism, by="seq")
 	hug_ism$distance <- abs (hug_ism$rank.x - hug_ism$rank.y)
-	pairwise_feature_analysis(hug_ism, 'Hugged', 'iSmile', 'inv_hug_ism')
-	sim_hug_ism <- as.data.frame(hug_ism$distance)
-	colnames(sim_hug_ism) <- 'distance'
-	sim_hug_ism$comp_type <- 'Hugged vs.\niSmile'
+#	pairwise_feature_analysis(hug_ism, 'Hugged', 'iSmile', 'inv_hug_ism')
+	hug_ism$comp_type <- 'Hugged vs.\niSmile'
 	
 	ihe_ism <- merge(ihe, ism, by="seq")
 	ihe_ism$distance <- abs (ihe_ism$rank.x - ihe_ism$rank.y)
-	pairwise_feature_analysis(ihe_ism, 'iHeart', 'iSmile', 'inv_ihe_ism')
+#	pairwise_feature_analysis(ihe_ism, 'iHeart', 'iSmile', 'inv_ihe_ism')
+	ihe_ism$comp_type <- 'iHeart vs.\niSmile'
+
+	roles <- rbind(hug_ihe, hug_ism, ihe_ism)
+	roles.box <- ddply(roles, c('comp_type', 'rank.x'), .drop=TRUE,
+			.fun = function(one_partition){
+				stats = boxplot.stats(one_partition$distance)$stats
+				c(ymin=stats[1],
+						lower=stats[2],
+						middle=stats[3],
+						upper=stats[4],
+						ymax=stats[5],
+						mean = mean(one_partition$distance))
+			})
+	roles.box$comp_type <- factor(roles.box$comp_type)
+	roles.box$rank.x <- factor(roles.box$rank.x)
+	plot <- ggplot(roles.box, aes(rank.x, mean, fill = comp_type, lower=lower, upper=upper, middle=middle, ymin=ymin, ymax=ymax)) + 
+			geom_boxplot(stat="identity")+ scale_fill_grey(start = .5, end = .9, name = '') +
+			stat_summary(fun.y = "mean", geom = "point", shape= 8, size= 3, position=position_dodge(width=.9)) +
+			xlab('Class') + ylab('Distance')
+	save_ggplot(plot, 'raw_stat_apps/app_class_invitations.pdf', 24, opts(legend.position="bottom"))
+
+	sim_hug_ihe <- as.data.frame(hug_ihe$distance)
+	colnames(sim_hug_ihe) <- 'distance'
+	sim_hug_ihe$comp_type <- 'Hugged vs.\niHeart'
+	sim_hug_ism <- as.data.frame(hug_ism$distance)
+	colnames(sim_hug_ism) <- 'distance'
+	sim_hug_ism$comp_type <- 'Hugged vs.\niSmile'
 	sim_ihe_ism <- as.data.frame(ihe_ism$distance)
 	colnames(sim_ihe_ism) <- 'distance'
 	sim_ihe_ism$comp_type <- 'iHeart vs.\niSmile'
-
 	roles <- rbind(sim_hug_ihe, sim_hug_ism, sim_ihe_ism)
+	
 	roles.box <- ddply(roles, c('comp_type'), .drop=TRUE,
 			.fun = function(one_partition){
 				stats = boxplot.stats(one_partition$distance)$stats
@@ -469,26 +599,49 @@ comb_success_ratio_analysis <- function(comb_succ_ratio_file = '/home/rezaur/out
 	
 	hug_ihe <- merge(hug, ihe, by="seq")
 	hug_ihe$distance <- abs (hug_ihe$rank.x - hug_ihe$rank.y)
-	pairwise_feature_analysis(hug_ihe, 'Hugged', 'iHeart', 'succ_hug_ihe')
-	sim_hug_ihe <- as.data.frame(hug_ihe$distance)
-	colnames(sim_hug_ihe) <- 'distance'
-	sim_hug_ihe$comp_type <- 'Hugged vs.\niHeart'
+#	pairwise_feature_analysis(hug_ihe, 'Hugged', 'iHeart', 'inv_hug_ihe')
+	hug_ihe$comp_type <- 'Hugged vs.\niHeart'
 	
 	hug_ism <- merge(hug, ism, by="seq")
 	hug_ism$distance <- abs (hug_ism$rank.x - hug_ism$rank.y)
-	pairwise_feature_analysis(hug_ism, 'Hugged', 'iSmile', 'succ_hug_ism')
-	sim_hug_ism <- as.data.frame(hug_ism$distance)
-	colnames(sim_hug_ism) <- 'distance'
-	sim_hug_ism$comp_type <- 'Hugged vs.\niSmile'
+#	pairwise_feature_analysis(hug_ism, 'Hugged', 'iSmile', 'inv_hug_ism')
+	hug_ism$comp_type <- 'Hugged vs.\niSmile'
 	
 	ihe_ism <- merge(ihe, ism, by="seq")
 	ihe_ism$distance <- abs (ihe_ism$rank.x - ihe_ism$rank.y)
-	pairwise_feature_analysis(ihe_ism, 'iHeart', 'iSmile', 'succ_ihe_ism')
+#	pairwise_feature_analysis(ihe_ism, 'iHeart', 'iSmile', 'inv_ihe_ism')
+	ihe_ism$comp_type <- 'iHeart vs.\niSmile'
+	
+	roles <- rbind(hug_ihe, hug_ism, ihe_ism)
+	roles.box <- ddply(roles, c('comp_type', 'rank.x'), .drop=TRUE,
+			.fun = function(one_partition){
+				stats = boxplot.stats(one_partition$distance)$stats
+				c(ymin=stats[1],
+						lower=stats[2],
+						middle=stats[3],
+						upper=stats[4],
+						ymax=stats[5],
+						mean = mean(one_partition$distance))
+			})
+	roles.box$comp_type <- factor(roles.box$comp_type)
+	roles.box$rank.x <- factor(roles.box$rank.x)
+	plot <- ggplot(roles.box, aes(rank.x, mean, fill = comp_type, lower=lower, upper=upper, middle=middle, ymin=ymin, ymax=ymax)) + 
+			geom_boxplot(stat="identity")+ scale_fill_grey(start = .5, end = .9, name = '') +
+			stat_summary(fun.y = "mean", geom = "point", shape= 8, size= 3, position=position_dodge(width=.9)) +
+			xlab('Class') + ylab('Distance')
+	save_ggplot(plot, 'raw_stat_apps/app_class_invitations.pdf', 24, opts(legend.position="bottom"))
+	
+	sim_hug_ihe <- as.data.frame(hug_ihe$distance)
+	colnames(sim_hug_ihe) <- 'distance'
+	sim_hug_ihe$comp_type <- 'Hugged vs.\niHeart'
+	sim_hug_ism <- as.data.frame(hug_ism$distance)
+	colnames(sim_hug_ism) <- 'distance'
+	sim_hug_ism$comp_type <- 'Hugged vs.\niSmile'
 	sim_ihe_ism <- as.data.frame(ihe_ism$distance)
 	colnames(sim_ihe_ism) <- 'distance'
 	sim_ihe_ism$comp_type <- 'iHeart vs.\niSmile'
-	
 	roles <- rbind(sim_hug_ihe, sim_hug_ism, sim_ihe_ism)
+	
 	roles.box <- ddply(roles, c('comp_type'), .drop=TRUE,
 			.fun = function(one_partition){
 				stats = boxplot.stats(one_partition$distance)$stats
@@ -635,10 +788,10 @@ comb_act_life_analysis <- function(comb_act_life_file = '/home/rezaur/output_cas
 #	return(roles)
 }
 
-#comb_sent_AR_analysis()
-#comb_success_ratio_analysis()
-#comb_act_child_analysis()
-#comb_act_life_analysis()
+#class_inv <- class_distance_across_apps (comb_sent_AR, 'invitations')
+#class_succ <- class_distance_across_apps (comb_succ, 'succ_ratio')
+#class_act_users <- class_distance_across_apps (comb_act_child, 'act_users')
+#class_act_life <- class_distance_across_apps (comb_act_life, 'act_life')
 
 comb_app_user_features <- function (){
 #	comb_sent_AR[!(comb_sent_AR > 0)] <<- NA
@@ -659,10 +812,11 @@ comb_app_user_features <- function (){
 			comp8 = list(df1 = comb_act_child, df2 = comb_act_child),
 			comp9 = list(df1 = comb_act_child, df2 = comb_act_life),
 			comp10 = list(df1 = comb_act_life, df2 = comb_act_life))
-	feature_comp <- c('Invitation vs. Invitation', 'Invitation vs. Success ratio',
-			'Invitation vs. Active users', 'Invitation vs. Active life',
-			'Success ratio vs. Success ratio', 'Success ratio vs. Active users', 'Success ratio vs. Active life',
-			'Active users vs. Active users', 'Active users vs. Active life', 'Active life vs. Active life')
+	feature_comp <- c('Invitation vs. Invitation', 'Invitation vs. Activated users',
+			'Invitation vs. Success ratio', 'Invitation vs. Active lifespan',
+			'Activated users vs. Activated users', ' Active users vs. Success ratio', 'Active users vs. Active lifespan', 
+			'Success ratio vs. Success ratio',  'Success ratio vs. Active lifespan',
+			'Active lifespan vs. Active lifespan')
 	app_comp <- c('hug_ihe', 'hug_ism', 'ihe_ism')
 	spearman_corr <- as.data.frame(feature_comp)
 	colnames(spearman_corr) <- c('Correlation')
