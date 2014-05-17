@@ -64,6 +64,7 @@ apps_invitations <- function(){
 			scale_x_log10(breaks=c(10, 100, 1000))+
 			xlab('Application requests') + ylab('Empirical CDF')
 	save_ggplot(plot, 'raw_stat_apps/sent_AR_cdf.pdf', 24, opts(legend.position=c(.8, .2)))
+	return(comb.df)
 }
 
 apps_activated_users <- function(){
@@ -77,6 +78,7 @@ apps_activated_users <- function(){
 			scale_x_log10(breaks=c(10, 100))+
 			xlab('Activated users') + ylab('Empirical CDF')
 	save_ggplot(plot, 'raw_stat_apps/act_users_cdf.pdf', 24, opts(legend.position=c(.8, .2)))
+	return(comb.df)
 }
 
 apps_success_ratio <- function(){
@@ -89,6 +91,7 @@ apps_success_ratio <- function(){
 					labels=c('Hugged', 'iSmile', 'iHeart')) +
 			xlab(expression(paste('Success ratio (',tau,')'))) + ylab('Empirical CDF')
 	save_ggplot(plot, 'raw_stat_apps/success_ratio.pdf', 24, opts(legend.position=c(.8, .2)))
+	return(comb.df)
 }
 
 apps_active_lifespan <- function(){
@@ -101,40 +104,44 @@ apps_active_lifespan <- function(){
 					labels=c('Hugged', 'iSmile', 'iHeart')) +
 			xlab("Active lifetime (Days)") + ylab("Empirical CDF")
 	save_ggplot(plot, 'raw_stat_apps/active_lifetime.pdf', 24, opts(legend.position=c(.8, .2)))
+	return(comb.df)
 }
 
+#ar <- apps_invitations()
+#au <- apps_activated_users()
+#sr <- apps_success_ratio()
+#lt <- apps_active_lifespan()
+
 class_distance_across_apps <- function(df, figure_name){
-	hug <- as.data.frame(df[order(-df$hugged, na.last = NA),]$seq)
-	colnames(hug) <- c('seq')
+	hug <- as.data.frame(df[order(-df$hugged, na.last = NA),c('seq', 'hugged')])
 	hugged_users <- nrow(hug)
-	ihe <- as.data.frame(df[order(-df$iheart, na.last = NA),]$seq)
-	colnames(ihe) <- c('seq')
-	iheart_users <- nrow(ihe)
-	ism <- as.data.frame(df[order(-df$ismile, na.last = NA),]$seq)
-	colnames(ism) <- c('seq')
-	ismile_users <- nrow(ism)
 	hug$rank <- c(rep(1, ceiling(hugged_users/4)), rep(2, ceiling(hugged_users/4)),
 			rep(3, ceiling(hugged_users/4)), rep(4, (hugged_users - 3*ceiling(hugged_users/4))))
-	
+
+	ism <- as.data.frame(df[order(-df$ismile, na.last = NA),c('seq', 'ismile')])
+	ismile_users <- nrow(ism)
 	ism$rank <- c(rep(1, ceiling(ismile_users/4)), rep(2, ceiling(ismile_users/4)),
 			rep(3, ceiling(ismile_users/4)), rep(4, (ismile_users - 3*ceiling(ismile_users/4))))
 	
+	ihe <- as.data.frame(df[order(-df$iheart, na.last = NA),c('seq', 'iheart')])
+	iheart_users <- nrow(ihe)
 	ihe$rank <- c(rep(1, ceiling(iheart_users/4)), rep(2, ceiling(iheart_users/4)),
 			rep(3, ceiling(iheart_users/4)), rep(4, (iheart_users - 3*ceiling(iheart_users/4))))
 	
 	hug_ihe <- merge(hug, ihe, by="seq")
 	hug_ihe$distance <- (hug_ihe$rank.y - hug_ihe$rank.x)
-	hug_ihe$comp_type <- 'Hugged vs.\niHeart'
+	hug_ihe$comp_type <- 'Hugged\nvs.\niHeart'
 	
 	hug_ism <- merge(hug, ism, by="seq")
 	hug_ism$distance <- (hug_ism$rank.y - hug_ism$rank.x)
-	hug_ism$comp_type <- 'Hugged vs.\niSmile'
+	hug_ism$comp_type <- 'Hugged\nvs.\niSmile'
 	
 	ism_ihe <- merge(ism, ihe, by="seq")
 	ism_ihe$distance <- (ism_ihe$rank.y - ism_ihe$rank.x)
-	ism_ihe$comp_type <- 'iSmile vs.\niHeart'
+	ism_ihe$comp_type <- 'iSmile\nvs.\niHeart'
 	
 	roles <- rbind(hug_ihe, hug_ism, ism_ihe)
+	return(roles)
 	roles.box <- ddply(roles, c('comp_type', 'rank.x'), .drop=TRUE,
 			.fun = function(one_partition){
 				stats = boxplot.stats(one_partition$distance)$stats
@@ -180,13 +187,13 @@ class_distance_across_apps <- function(df, figure_name){
 	print(roles.box)
 	plot <- ggplot(roles.box, aes(x=comp_type, lower=lower, upper=upper, middle=middle, ymin=ymin, ymax=ymax)) + 
 			geom_boxplot(stat="identity", fatten = 4) + geom_point(data = roles.box, aes(x=comp_type, y=mean), shape = 8, size = 3)+
-			xlab('') + ylab('Distance') 
+			xlab('') + ylab('Role distance') 
 	save_ggplot(plot, paste(c('raw_stat_apps/similarity_', figure_name, '.pdf'), collapse = ''))
-	return (list(class=temp.box, sim=roles.box))
+	return (list(class=temp.box, sim=roles))
 }
 
 
-#class_inv <- class_distance_across_apps (comb_sent_AR, 'invitations')
+class_inv <- class_distance_across_apps (comb_sent_AR, 'invitations')
 #class_succ <- class_distance_across_apps (comb_succ, 'succ_ratio')
 #class_act_users <- class_distance_across_apps (comb_act_child, 'act_users')
 #class_act_life <- class_distance_across_apps (comb_act_life, 'act_life')
@@ -250,5 +257,5 @@ spearman_correlation <- function (df1, df2, app1, app2, filter = 1){
 
 #test <- spearman_correlation(comb_sent_AR, comb_sent_AR, 'hugged', 'iheart')
 
-spearman <- comb_app_user_features()
+#spearman <- comb_app_user_features()
 
