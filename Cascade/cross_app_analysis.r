@@ -1,6 +1,7 @@
 source('~/scripts/Cascade/tools.r')
 library(plyr)
 require(scales)
+require(grid)
 
 read_combined_data <- function(){
 	comb_sent_AR_file <- '/home/rezaur/output_cascade/raw_stat_apps/comb_sent_ar.csv'
@@ -113,35 +114,43 @@ apps_active_lifespan <- function(){
 #lt <- apps_active_lifespan()
 
 class_distance_across_apps <- function(df, figure_name){
-	hug <- as.data.frame(df[order(-df$hugged, na.last = NA),c('seq', 'hugged')])
-	hugged_users <- nrow(hug)
-	hug$rank <- c(rep(1, ceiling(hugged_users/4)), rep(2, ceiling(hugged_users/4)),
-			rep(3, ceiling(hugged_users/4)), rep(4, (hugged_users - 3*ceiling(hugged_users/4))))
-
-	ism <- as.data.frame(df[order(-df$ismile, na.last = NA),c('seq', 'ismile')])
-	ismile_users <- nrow(ism)
-	ism$rank <- c(rep(1, ceiling(ismile_users/4)), rep(2, ceiling(ismile_users/4)),
-			rep(3, ceiling(ismile_users/4)), rep(4, (ismile_users - 3*ceiling(ismile_users/4))))
+	hug <- as.data.frame(df[,c('seq', 'hugged')])
+	q <- quantile(hug$hugged, c(.5,.9,.99))
+	hug$rank <- 1
+	hug$rank [hug$hugged < q[3]] <- 2
+	hug$rank [hug$hugged < q[2]] <- 3
+	hug$rank [hug$hugged < q[1]] <- 4
+	hug <- as.data.frame(hug[,c('seq', 'rank')])
 	
-	ihe <- as.data.frame(df[order(-df$iheart, na.last = NA),c('seq', 'iheart')])
-	iheart_users <- nrow(ihe)
-	ihe$rank <- c(rep(1, ceiling(iheart_users/4)), rep(2, ceiling(iheart_users/4)),
-			rep(3, ceiling(iheart_users/4)), rep(4, (iheart_users - 3*ceiling(iheart_users/4))))
+	ism <- as.data.frame(df[,c('seq', 'ismile')])
+	q <- quantile(ism$ismile, c(.5,.9,.99))
+	ism$rank <- 1
+	ism$rank [ism$ismile < q[3]] <- 2
+	ism$rank [ism$ismile < q[2]] <- 3
+	ism$rank [ism$ismile < q[1]] <- 4
+	ism <- as.data.frame(ism[,c('seq', 'rank')])
+	
+	ihe <- as.data.frame(df[,c('seq', 'iheart')])
+	q <- quantile(ihe$iheart, c(.5,.9,.99))
+	ihe$rank <- 1
+	ihe$rank [ihe$iheart < q[3]] <- 2
+	ihe$rank [ihe$iheart < q[2]] <- 3
+	ihe$rank [ihe$iheart < q[1]] <- 4
+	ihe <- as.data.frame(ihe[,c('seq', 'rank')])
 	
 	hug_ihe <- merge(hug, ihe, by="seq")
 	hug_ihe$distance <- (hug_ihe$rank.y - hug_ihe$rank.x)
-	hug_ihe$comp_type <- 'Hugged\nvs.\niHeart'
+	hug_ihe$comp_type <- 'Hugged vs.   \n   iHeart'
 	
 	hug_ism <- merge(hug, ism, by="seq")
 	hug_ism$distance <- (hug_ism$rank.y - hug_ism$rank.x)
-	hug_ism$comp_type <- 'Hugged\nvs.\niSmile'
+	hug_ism$comp_type <- 'Hugged vs.   \n   iSmile'
 	
 	ism_ihe <- merge(ism, ihe, by="seq")
 	ism_ihe$distance <- (ism_ihe$rank.y - ism_ihe$rank.x)
-	ism_ihe$comp_type <- 'iSmile\nvs.\niHeart'
+	ism_ihe$comp_type <- 'iSmile vs.   \n  iHeart'
 	
 	roles <- rbind(hug_ihe, hug_ism, ism_ihe)
-	return(roles)
 	roles.box <- ddply(roles, c('comp_type', 'rank.x'), .drop=TRUE,
 			.fun = function(one_partition){
 				stats = boxplot.stats(one_partition$distance)$stats
@@ -158,8 +167,10 @@ class_distance_across_apps <- function(df, figure_name){
 	plot <- ggplot(roles.box, aes(rank.x, mean, fill = comp_type, lower=lower, upper=upper, middle=middle, ymin=ymin, ymax=ymax)) + 
 			geom_boxplot(stat="identity", fatten = 4)+ scale_fill_grey(start = .5, end = .9, name = '') +
 			stat_summary(fun.y = "mean", geom = "point", shape= 8, size= 3, position=position_dodge(width=.9)) +
+			scale_x_discrete(breaks=1:4, labels= c('1st', '2nd', '3rd', '4th'))+
 			xlab('Class') + ylab('Role distance')
-	save_ggplot(plot, paste(c('raw_stat_apps/cross_app_', figure_name, '.pdf'), collapse = ''), 24, opts(legend.position="bottom"))
+	save_ggplot(plot, paste(c('raw_stat_apps/cross_app_', figure_name, '.pdf'), collapse = ''), 24,
+			opts(legend.position="bottom"))
 	
 	temp.box <- roles.box
 	sim_hug_ihe <- as.data.frame(hug_ihe$distance)
@@ -194,9 +205,9 @@ class_distance_across_apps <- function(df, figure_name){
 
 
 class_inv <- class_distance_across_apps (comb_sent_AR, 'invitations')
-#class_succ <- class_distance_across_apps (comb_succ, 'succ_ratio')
-#class_act_users <- class_distance_across_apps (comb_act_child, 'act_users')
-#class_act_life <- class_distance_across_apps (comb_act_life, 'act_life')
+class_succ <- class_distance_across_apps (comb_succ, 'succ_ratio')
+class_act_users <- class_distance_across_apps (comb_act_child, 'act_users')
+class_act_life <- class_distance_across_apps (comb_act_life, 'act_life')
 
 comb_app_user_features <- function (){
 #	comb_sent_AR[!(comb_sent_AR > 0)] <<- NA
