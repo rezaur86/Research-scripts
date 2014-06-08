@@ -261,14 +261,16 @@ else:
     print "Second chance allowed"
 
 parent_alpha = array.array('f',(0,)*MAX_USERS)
-try:
-    parent_alpha_file = sys.argv[6]
-except:
-    parent_alpha_file = '/home/rezaur/output_cascade/raw_stat_v2/parent_proportion.csv'
-print 'reading preant alpha'
-for parent_id,alpha in csv.reader(open(parent_alpha_file)):
-    parent_alpha[int(parent_id)] = float(alpha)
-print parent_alpha_file
+if parent_type == 4:
+    try:
+        parent_alpha_file = sys.argv[6]
+    except:
+        parent_alpha_file = '/home/rezaur/output_cascade/raw_stat_v2/parent_proportion.csv'
+    print 'reading preant alpha'
+    for parent_id,alpha in csv.reader(open(parent_alpha_file)):
+        parent_alpha[int(parent_id)] = float(alpha)
+    print parent_alpha_file
+
 count = 0
 for line in f:
     element = line.split(' ')

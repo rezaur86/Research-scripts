@@ -98,6 +98,8 @@ if __name__ == '__main__':
                 else:
                     in_degree[recv] += 1 # Raising in degree even if multiple receiving at same node ??
                     if out_degree[recv] < 1:
+                        if potential_parents[recv] == NO_PARENT:
+                            potential_parents[recv] = []
                         sent_AR[sender] += 1
 #                         in_degree_until_active[recv]  += 1 # If increased here, then I don't know if it gets active or not
                         sender_is_already_parent = False
@@ -123,7 +125,9 @@ if __name__ == '__main__':
                     activation_time.append(NEVER)
                     user_last_act_time.append(NEVER)
                     out_degree.append(0)
+                    sent_AR.append(0)
                     in_degree.append(0)
+                    in_degree_until_active.append(0)
             if sender == -1:
                 if(recv > vertices_count - 1):
                     vertices_count += 1
@@ -132,7 +136,9 @@ if __name__ == '__main__':
                     activation_time.append(NEVER) # Not yet Activated
                     user_last_act_time.append(NEVER)
                     out_degree.append(0)
-                    in_degree.append(0)
+                    sent_AR.append(0)
+                    in_degree.append(1)
+                    in_degree_until_active.append(-1)
 
             if len(users_done) >= 10000 or activity_line==total_line:
                 for i in users_done:

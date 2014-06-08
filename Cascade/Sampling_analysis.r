@@ -16,16 +16,19 @@ load_size_depth <- function(directoryname){
 	cascade_depth <- as.data.frame(read.csv('depth.csv', header=FALSE))
 	colnames(cascade_depth) <- c('depth', 'count', 'threshold')
 	sub_cascade$depth <- cascade_depth#[cascade_depth$threshold == max(cascade_depth$threshold),]
+	cascade_width <- as.data.frame(read.csv('width.csv', header=FALSE))
+	colnames(cascade_width) <- c('width', 'count')
+	sub_cascade$width <- cascade_width
 	setwd(prev_dir)
 	return(sub_cascade)
 }
 
-#comp <- sampling_comp(c('fp_nt_u/','sample_RN/','sample_RDN/','sample_RE/','sample_RNE/','sample_RNN/'),c('Actual','RN','RDN','RE','RNE','RNN'))
 sampling_comp <- function(dir_vector, parent_type_vector){
 	plot_x_lim <- 100
 	cascade_comp <- c()
 	cascade_comp$size <- c()
 	cascade_comp$depth <- c()
+	cascade_comp$width <- c()
 	parent_type_idx <- 0
 	for (dir in dir_vector){
 		parent_based_cascade <- load_size_depth(dir)
@@ -33,11 +36,14 @@ sampling_comp <- function(dir_vector, parent_type_vector){
 		cascade_comp$size <- rbind(cascade_comp$size,parent_based_cascade$size)
 		parent_based_cascade$depth[,4] <- parent_type_idx
 		cascade_comp$depth <- rbind(cascade_comp$depth,parent_based_cascade$depth)
+		parent_based_cascade$width[,3] <- parent_type_idx
+		cascade_comp$width <- rbind(cascade_comp$width,parent_based_cascade$width)
 		parent_type_idx <- parent_type_idx + 1
 	}
 	colnames(cascade_comp$size) <- c('size', 'count', 'threshold', 'parent_type')
 	colnames(cascade_comp$depth) <- c('depth', 'count', 'threshold', 'parent_type')
-	##	Cascade size summary
+	colnames(cascade_comp$width) <- c('width', 'count', 'parent_type')
+##	Cascade size summary
 	size_freq <- data.frame(size = rep(cascade_comp$size$size, times = cascade_comp$size$count), parent_type=rep(cascade_comp$size$parent_type, times = cascade_comp$size$count))
 #	Cascade size box plot
 	size_freq$parent_type <- factor(size_freq$parent_type)
@@ -59,15 +65,6 @@ sampling_comp <- function(dir_vector, parent_type_vector){
 			scale_x_log10()+ scale_y_log10() #+ theme(legend.position=c(.8, .7)) + xlim(0,log10(plot_x_lim*100))
 	plot <- change_plot_attributes_fancy(plot, "Sampling Method", 0:(parent_type_idx-1), parent_type_vector, "Cascade Size", "Empirical PDF")
 	save_ggplot(plot,file='sample_comp/size_pdf_logx_logy.pdf')
-#	Cascade depth summary
-	depth_freq <- data.frame(depth = rep(cascade_comp$depth$depth, times = cascade_comp$depth$count), parent_type=rep(cascade_comp$depth$parent_type, times = cascade_comp$depth$count))
-	cascade_comp$depth_summary <- ddply(depth_freq, c('parent_type'), summarise, min=summary(depth)[1], quart_1=summary(depth)[2], median=summary(depth)[3], mean=summary(depth)[4],
-			quart_3=summary(depth)[5], max=summary(depth)[6], var=var(depth))
-#	Cascade depth box plot
-	depth_freq$parent_type <- factor(depth_freq$parent_type)
-	plot <- ggplot(depth_freq, aes(y=depth, x=parent_type))+ scale_y_log10()+ geom_boxplot() #+ geom_histogram(binwidth=1, position="dodge") 
-	plot <- change_plot_attributes_fancy(plot, "Sampling Method", 0:(parent_type_idx-1), parent_type_vector, "Parent type", "Cascade Depth")
-	save_ggplot(plot,file='sample_comp/depth_box.pdf')
 #	Cascade depth detail
 	cascade_comp$depth <- ddply(cascade_comp$depth, c('threshold','parent_type'), function(one_partition){
 				one_partition = one_partition[order(one_partition$depth),]
@@ -82,8 +79,26 @@ sampling_comp <- function(dir_vector, parent_type_vector){
 	plot <- change_plot_attributes_fancy(plot, "Sampling Method", 0:(parent_type_idx-1), parent_type_vector,  "Cascade Depth", "Empirical PDF")
 	save_ggplot(plot,file='sample_comp/depth_pdf_logy.pdf')
 	plot <- ggplot(cascade_comp$depth,aes(x = depth, y = (pdf_val))) + geom_point(aes(group = parent_type,colour = parent_type)) + scale_x_log10() + scale_y_log10()
-	plot <- change_plot_attributes_fancy(plot, "Sampling Method", 0:(parent_type_idx-1), parent_type_vector,  "Cascade Depth", "Proportion")
+	plot <- change_plot_attributes_fancy(plot, "Sampling Method", 0:(parent_type_idx-1), parent_type_vector,  "Cascade Depth", "Empirical PDF")
 	save_ggplot(plot,file='sample_comp/depth_pdf_log_log.pdf')
+
+#	Cascade width detail
+	cascade_comp$width <- ddply(cascade_comp$width, c('parent_type'), function(one_partition){
+				one_partition = one_partition[order(one_partition$width),]
+				one_partition$cum_count = cumsum(one_partition$count)
+				one_partition$cdf_val = one_partition$cum_count / max(one_partition$cum_count)
+				one_partition$pdf_val = one_partition$count / max(one_partition$cum_count)
+				one_partition
+			})
+	cascade_comp$width$parent_type <- factor(cascade_comp$width$parent_type)
+	plot <- ggplot(cascade_comp$width,aes(x = width, y = (pdf_val))) + geom_point(aes(group = parent_type,colour = parent_type, shape = parent_type)) + 
+			scale_y_log10() #+ theme(legend.position=c(.8, .7))
+	plot <- change_plot_attributes_fancy(plot, "Sampling Method", 0:(parent_type_idx-1), parent_type_vector,  "Cascade Width", "Empirical PDF")
+	save_ggplot(plot,file='sample_comp/width_pdf_logy.pdf')
+	plot <- ggplot(cascade_comp$width,aes(x = width, y = (pdf_val))) + geom_point(aes(group = parent_type,colour = parent_type)) + scale_x_log10() + scale_y_log10()
+	plot <- change_plot_attributes_fancy(plot, "Sampling Method", 0:(parent_type_idx-1), parent_type_vector,  "Cascade Width", "Empirical PDF")
+	save_ggplot(plot,file='sample_comp/width_pdf_log_log.pdf')
+	
 	size_null <- data.frame(size = rep(cascade_comp$size[cascade_comp$size$parent_type==0,]$size,
 					times = cascade_comp$size[cascade_comp$size$parent_type==0,]$count))
 	i <- 1
@@ -104,15 +119,28 @@ sampling_comp <- function(dir_vector, parent_type_vector){
 		print (ks.test(depth_sampled$depth, depth_null$depth))
 		i <- i + 1
 	}
+
+	width_null <- data.frame(width = rep(cascade_comp$width[cascade_comp$width$parent_type==0,]$width,
+					times = cascade_comp$width[cascade_comp$width$parent_type==0,]$count))
+	i <- 1
+	while (i < parent_type_idx){
+		width_sampled <- data.frame(width = rep(cascade_comp$width[cascade_comp$width$parent_type==i,]$width,
+						times = cascade_comp$width[cascade_comp$width$parent_type==i,]$count))
+		print_report('KS-Test for Cascade width with', parent_type_vector[i+1])
+		print (ks.test(as.numeric(width_sampled$width), as.numeric(width_null$width)))
+		i <- i + 1
+	}
 	return(cascade_comp)
 }
 
-#node_info_null <<- as.data.frame(read.csv('../data/iheart_ext_preprocessed_basic.txt', header=FALSE))
-#colnames(node_info_null) <- c('id', 'outdeg', 'indeg', 'deg')
-#null_odeg_dist <<- as.data.frame(table(node_info_null$outdeg))
-#colnames(null_odeg_dist) <- c('outdeg', 'count')
-#null_indeg_dist <<- as.data.frame(table(node_info_null$indeg))
-#colnames(null_indeg_dist) <- c('indeg', 'count')
+#comp <- sampling_comp(c('fp_nt_u/','sample_RDN/','sample_RW/','sample_BFS0/','sample_FF/'),c('No Sampling','RDN','RW','BFS','FF'))
+
+node_info_null <<- as.data.frame(read.csv('../data/iheart_preprocessed_basic.txt', header=FALSE))
+colnames(node_info_null) <- c('id', 'outdeg', 'indeg', '4', '5','6','7')
+null_odeg_dist <<- as.data.frame(table(node_info_null$outdeg))
+colnames(null_odeg_dist) <- c('outdeg', 'count')
+null_indeg_dist <<- as.data.frame(table(node_info_null$indeg))
+colnames(null_indeg_dist) <- c('indeg', 'count')
 
 load_node_basic_info <- function(node_info_sample_vec, sample_type_vec){
 	odeg_dist <- null_odeg_dist
@@ -190,7 +218,7 @@ sampling_node_basic_comp <- function(node_info_sample_vec, sample_type_vec){
 	plot <- ggplot(odeg_dist.df, aes(x = (outdeg), y = (pdf_val))) + 
 			geom_point(aes(group = sample_type, colour = sample_type, shape = sample_type), size=1)+
 			scale_x_log10()+ scale_y_log10() #+ theme(legend.position=c(.8, .7)) + xlim(0,log10(plot_x_lim*100))
-	plot <- change_plot_attributes_fancy(plot, "Sampling Method", 0:(sample_type_idx-1), sample_type_vec_out, "Out Degree", "Empirical PDF")
+	plot <- change_plot_attributes_fancy(plot, "Sampling Method", 0:(sample_type_idx-1), sample_type_vec, "Out Degree", "Empirical PDF")
 	save_ggplot(plot,file='sample_comp/odeg_pdf_logx_logy.pdf')
 	
 	seeds_odeg_dist.df <- ddply(seeds_odeg_dist, c('sample_type'), function(one_partition){
@@ -208,8 +236,21 @@ sampling_node_basic_comp <- function(node_info_sample_vec, sample_type_vec){
 	plot <- ggplot(seeds_odeg_dist.df, aes(x = (outdeg), y = (pdf_val))) + 
 			geom_point(aes(group = sample_type, colour = sample_type, shape = sample_type), size=1)+
 			scale_x_log10()+ scale_y_log10() #+ theme(legend.position=c(.8, .7)) + xlim(0,log10(plot_x_lim*100))
-	plot <- change_plot_attributes_fancy(plot, "Sampling Method", 0:(sample_type_idx-1), sample_type_vec, "Out Degree", "Empirical PDF")
+	plot <- change_plot_attributes_fancy(plot, "Sampling Method", 0:(sample_type_idx-1), sample_type_vec, "Cascade Seeds' Out-degree", "Empirical PDF")
 	save_ggplot(plot,file='sample_comp/seeds_odeg_pdf_logx_logy.pdf')
+
+	odeg_sampled_null <- data.frame(outdeg = rep(seeds_odeg_dist[seeds_odeg_dist$sample_type==0,]$outdeg,
+					times = seeds_odeg_dist[seeds_odeg_dist$sample_type==0,]$count))
+	i <- 1
+	while (i < sample_type_idx){
+		odeg_sampled <- data.frame(outdeg = rep(seeds_odeg_dist[seeds_odeg_dist$sample_type==i,]$outdeg,
+						times = seeds_odeg_dist[seeds_odeg_dist$sample_type==i,]$count))
+		print(summary(odeg_sampled))
+		print(summary(odeg_sampled_null))
+		print_report('KS-Test for seed outdegree with', sample_type_vec[i+1])
+		print (ks.test(as.numeric(odeg_sampled$outdeg), as.numeric(odeg_sampled_null$outdeg)))
+		i <- i + 1
+	}
 	
 	indeg_dist.df <- ddply(indeg_dist, c('sample_type'), function(one_partition){
 				one_partition = one_partition[order(one_partition$indeg),]
@@ -226,11 +267,11 @@ sampling_node_basic_comp <- function(node_info_sample_vec, sample_type_vec){
 	plot <- ggplot(indeg_dist.df, aes(x = (indeg), y = (pdf_val))) + 
 			geom_point(aes(group = sample_type, colour = sample_type, shape = sample_type), size=1)+
 			scale_x_log10()+ scale_y_log10() #+ theme(legend.position=c(.8, .7)) + xlim(0,log10(plot_x_lim*100))
-	plot <- change_plot_attributes_fancy(plot, "Sampling Method", 0:(sample_type_idx-1), sample_type_vec_in, "In Degree", "Empirical PDF")
+	plot <- change_plot_attributes_fancy(plot, "Sampling Method", 0:(sample_type_idx-1), sample_type_vec, "In Degree", "Empirical PDF")
 	save_ggplot(plot,file='sample_comp/indeg_pdf_logx_logy.pdf')
 }
 
-#comp <- sampling_node_basic_comp(c('../data/iheart_prep_sample_RDN_basic.txt','../data/iheart_prep_sample_RW_basic.txt','../data/iheart_prep_sample_BFS0_basic.txt','../data/iheart_prep_sample_FF_basic.txt'),c('No Sampling','RDN','RW','BFS','FF'))
+comp <- sampling_node_basic_comp(c('../data/iheart_prep_sample_RDN_basic.txt', '../data/iheart_prep_sample_RW_basic.txt','../data/iheart_prep_sample_BFS0_basic.txt','../data/iheart_prep_sample_FF_basic.txt'),c('No Sampling', 'RDN', 'RW','BFS','FF'))
 
 #sampling_node_basic_comp('../data/iheart_prep_sample_RE_basic.txt')
 #sampling_node_basic_comp('../data/iheart_prep_sample_RNE_basic.txt')
