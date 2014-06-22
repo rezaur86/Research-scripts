@@ -5,6 +5,8 @@ import csv
 import array
 from bitarray import bitarray
 import operator
+import resource
+
 
 MAX_USERS = 2**29 - 1
 NO_PARENT = MAX_USERS + 1
@@ -14,14 +16,14 @@ if __name__ == '__main__':
     is_leaf = bitarray(MAX_USERS)
     is_leaf.setall(True)
     
-    out_degree = [] #array.array('I')
-    sent_AR = [] #array.array('I')
-    in_degree = [] #array.array('I')
-    in_degree_until_active = [] #array.array('I')
+    out_degree = array.array('I')
+    sent_AR = array.array('I')
+    in_degree = array.array('I')
+    in_degree_until_active = array.array('i')
     potential_parents = []
-    born_time = [] #array.array('l')
-    activation_time = [] #array.array('l')
-    user_last_act_time = []
+    born_time = array.array('I')
+    activation_time = array.array('I')
+    user_last_act_time = array.array('I')
     
     file_list = sorted(os.listdir(sys.argv[1]))
     user_last_seen_time = array.array('l')
@@ -86,8 +88,10 @@ if __name__ == '__main__':
             
                 if(recv > vertices_count - 1):
                     vertices_count += 1
-                    potential_parents.append([])
-                    potential_parents[recv].append((sender,timestamp,hid))
+                    potential_parents.append(array.array('I'))
+                    potential_parents[recv].append(sender)
+                    potential_parents[recv].append(timestamp)
+                    potential_parents[recv].append(hid)
                     sent_AR[sender] += 1
                     born_time.append(timestamp)
                     activation_time.append(NEVER) # Not yet Activated
@@ -100,16 +104,18 @@ if __name__ == '__main__':
                     in_degree[recv] += 1 # Raising in degree even if multiple receiving at same node ??
                     if out_degree[recv] < 1:
                         if potential_parents[recv] == NO_PARENT:
-                            potential_parents[recv] = []
+                            potential_parents[recv] = array.array('I')
                         sent_AR[sender] += 1
 #                         in_degree_until_active[recv]  += 1 # If increased here, then I don't know if it gets active or not
                         sender_is_already_parent = False
-                        for (p,t,h) in potential_parents[recv]:
-                            if sender == p:
-                                sender_is_already_parent = True
-                                break
+#                         for (p,t,h) in potential_parents[recv]:
+#                             if sender == p:
+#                                 sender_is_already_parent = True
+#                                 break
                         if sender_is_already_parent == False:
-                            potential_parents[recv].append((sender,timestamp,hid))
+                            potential_parents[recv].append(sender)
+                            potential_parents[recv].append(timestamp)
+                            potential_parents[recv].append(hid)
             
                 if user_last_seen_time[sender]==activity_line:
                     users_done.append(sender)
@@ -150,22 +156,33 @@ if __name__ == '__main__':
                                                       (user_last_act_time[i] - activation_time[i] + 1) if is_leaf[i]==False else 0,
                                                       (activation_time[i] - born_time[i] + 1)if is_leaf[i]==False else 0,
                                                       sent_AR[i]))
-                    born_time[i] = None
-                    activation_time[i] = None
-                    out_degree[i] = None
-                    sent_AR[i] = None
-                    in_degree[i] = None
-                    in_degree_until_active[i] = None
-                    user_last_act_time[i] = None
+#                     born_time[i] = None
+#                     activation_time[i] = None
+#                     out_degree[i] = None
+#                     sent_AR[i] = None
+#                     in_degree[i] = None
+#                     in_degree_until_active[i] = None
+#                     user_last_act_time[i] = None
                     if potential_parents[i] == NO_PARENT:
                         o_f.write(' -1')
                     else:
-                        for (p,t,h) in potential_parents[i]:
-                            o_f.write(' %s,%s,%s'%(p,t,h))
+                        p_t_h_idx = 1
+                        for p_t_h in potential_parents[i]:
+                            if p_t_h_idx % 3 == 1:
+                                p = p_t_h
+                            if p_t_h_idx % 3 == 2:
+                                t = p_t_h
+                            if p_t_h_idx % 3 == 0:
+                                h = p_t_h
+                                o_f.write(' %s,%s,%s'%(p,t,h))
+                            p_t_h_idx += 1
                     potential_parents[i] = None
                     o_f.write('\n')
                     node_basic_f.write('\n')
                 users_done = []
+#                 print('*******************************************************')
+#                 print(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000)
+#                 print('*******************************************************')
             if activity_line%10000 == 0:
                 print activity_line*100/total_line, '% of', total_line
         f.close()
