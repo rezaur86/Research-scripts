@@ -102,14 +102,14 @@ f = open(sys.argv[2], "r")
 for line in f:
     element = line.split(',')
     app_user_seq = int(element[app_id_pos].strip())
-#     if element[4].strip() == 'female':
-#         genders[app_user_seq] = False
-#     if element[5].strip() not in locale_ids:
-#         locale_ids[element[5].strip()] = locale_idx
-#         locale_idx += 1
-#     locales[app_user_seq] = locale_ids[element[5].strip()]
     if app_user_seq != -1 and app_user_seq < MAX_USERS:
         users[app_user_seq] = True
+        if element[4].strip() == 'female':
+            genders[app_user_seq] = False
+        if element[6].strip() not in locale_ids:
+            locale_ids[element[6].strip()] = locale_idx
+            locale_idx += 1
+        locales[app_user_seq] = locale_ids[element[6].strip()]
 
 count = 0
 f = open(sys.argv[1], "r")
