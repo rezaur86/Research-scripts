@@ -1,0 +1,2 @@
+python ../scripts/Cascade/users_features.py iheart_prep_all_gift_sorted.txt users_gender_locale.txt ../output_cascade/iheart_gift/ 3 1
+python ~/scripts/Cascade/adoption_features.py iheart_prep_all_gift_sorted.txt ../output_cascade/iheart_gift/user_features.csv ../output_cascade/iheart_gift/succ_ 1

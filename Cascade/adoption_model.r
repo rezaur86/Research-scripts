@@ -8,7 +8,14 @@ library(Hmisc)
 library(gridExtra) 
 library(nnet)
 library(pROC)
-library(ROCR)
+library('ROCR', quietly = TRUE, warn.conflicts = FALSE)
+library('zoo', quietly = TRUE, warn.conflicts = FALSE) #For calculating area under a curve using trapezium figures (rollmean function is used for that)
+library('RWeka', quietly = TRUE, warn.conflicts = FALSE)
+library('leaps', quietly = TRUE, warn.conflicts = FALSE)
+library('glmulti', quietly = TRUE, warn.conflicts = FALSE)
+library('car', quietly = TRUE, warn.conflicts = FALSE)
+
+NaiveBayes <- make_Weka_classifier("weka/classifiers/bayes/NaiveBayes")
 
 getROC_AUC = function(probs, true_Y){
 	probsSort = sort(probs, decreasing = TRUE, index.return = TRUE)
@@ -68,31 +75,135 @@ multinomial_ROC_AUC <- function(class, probs, fig_n){
 	return(aucs)
 }
 
-adoption_logit_model <- function(file){
+getPerformanceAt <- function(pred, prec, rec, f, cutoff_idx){
+	return(c(f@x.values[[1]][cutoff_idx], prec@y.values[[1]][cutoff_idx], rec@y.values[[1]][cutoff_idx], f@y.values[[1]][cutoff_idx]))
+}
+
+myRLogisticRegression <- function(fmla, data, control = NULL){ #control is to make our function signature compatible with WEKA
+	tr_m=glm(fmla,data=data,family="binomial")
+	return(tr_m)
+}
+
+buildUniversalModel <- function(classifier_func, tr_data, te_data, fmla, is_weka, weka_params, eval_metrics){
+	tr_m = classifier_func(fmla, data=tr_data, control = weka_params)#, options=c('model' = TRUE, 'instances' = TRUE))
+	
+	############################### Training set performance, along with maximum f-cutoff on training set
+	if (is_weka){
+		tr_pred <- predict(tr_m, newdata = tr_data, type='probability')
+		if (!is.null(ncol(tr_pred)) && ncol(tr_pred) > 1) tr_pred = tr_pred[, 2]
+	}else{ #R Logistic Regression
+		tr_pred = tr_m$fitted.values
+	}
+	
+	tr_pred = prediction(tr_pred,tr_data$adopted)
+	tr_f = performance(tr_pred,measure="f")
+	tr_max_f_idx = which.max(tr_f@y.values[[1]])
+	#tr_max_f_measure = tr_f@y.values[[1]][tr_max_f_idx]
+	tr_max_cutoff = tr_f@x.values[[1]][tr_max_f_idx]
+	#auc= performance(tr_pred,measure="auc")@y.values[[1]][1]	
+	###########	####################
+	
+#	te_perf = getPerformanceROCR(eval_metrics, tr_m, is_weka,tr_max_cutoff, te_data)
+#	wcre_evol = calculateWCREEvolution(eval_metrics, tr_prj, tr_data, tr_te_pred, te_prj, te_data, te_perf$p_buggy)
+#	hypothesis_test = calculateHypothesisTest(eval_metrics, tr_m)
+#	
+#	te_perf$performance = c(te_perf$performance, wcre_evol, hypothesis_test)
+	
+	te_pred<-predict(tr_m,te_data,type=ifelse(is_weka, 'probability', 'response'))
+	if (!is.null(ncol(te_pred)) && ncol(te_pred) > 1) te_pred = te_pred[, 2]
+	pred = prediction(te_pred,te_data$adopted)
+	
+	auc = performance(pred,measure="auc")@y.values[[1]][1]
+#	acc = performance(pred,measure="acc")
+	prec = performance(pred,measure="prec")
+	rec = performance(pred,measure="rec")
+	f = performance(pred,measure="f")
+
+	tr_cutoff <- tr_max_cutoff
+	
+	tr_max_f_idx = which.min(abs(f@x.values[[1]] - tr_cutoff))
+	tr_cutoff_perf = getPerformanceAt(pred, prec, rec, f, tr_max_f_idx)
+	
+	te_max_f_idx = which.max(f@y.values[[1]]) #We are only returning metrics values at MAXIMUM F-score
+	te_cutoff_perf = getPerformanceAt(pred, prec, rec, f, te_max_f_idx)
+	
+	te_50_idx = which.min(abs(f@x.values[[1]] - 0.5))
+	te_50_perf = getPerformanceAt(pred, prec, rec, f, te_50_idx)
+	
+	ret = list(auc=auc, te_50_perf=te_50_perf, tr_cutoff_perf=tr_cutoff_perf, te_cutoff_perf=te_cutoff_perf)
+	
+	return(ret)	
+}
+
+buildClassifier <- function(classifier, tr_data, te_data, fmla, eval_metrics){
+	weka_params = Weka_control()
+	if (classifier == 1){
+		classifier_func = Logistic
+	}else if (classifier == 2){ #J48
+		classifier_func = J48
+		weka_params = Weka_control(U = TRUE, A = TRUE)
+#		Use unpruned tree and use laplace smoothing for probabilities. 
+#       Ref: https://list.scms.waikato.ac.nz/pipermail/wekalist/2007-September/037750.html
+#		The so-called probability estimation tree is just a C4.5 without pruning
+#		> and Laplace smoothing. The two options have been implemented in WEKA.
+#		> However,
+#		> you may want to change the code to trun off "collapse" by yourself.
+	}else if (classifier == 3){ #SVM
+		classifier_func = SMO
+		weka_params = Weka_control(M = TRUE) #Fits Logistic Regression model for better probability estimate
+	}else if (classifier == 4){ #NaiveBayes
+		classifier_func = NaiveBayes
+	}else if (classifier == 0){ #R Logistic Regression
+		classifier_func = myRLogisticRegression
+	}else{
+		stop("Not a valid classifier!")
+	}
+	return(buildUniversalModel(classifier_func, tr_data, te_data, fmla, classifier != 0, weka_params, eval_metrics))
+}
+
+load_features <- function(file){
 	adoption_feat <- as.data.frame(read.csv(file, header=FALSE))
 	colnames(adoption_feat) <- c('id', 'adopted', 'gender' ,'locale', 'inv_count', 'inviter_count', 'recep_burst',
-			'inv_elapsed_hr', 'delay_1', 'delay_n' , 'gift_veriety',
-			'avg_inviter_succ_ratio',
-			'popular_inv_gender', 'popular_inv_locale',
-			'popular_inv_invitation_count', 'popular_inv_fav_gift', 
-			'popular_inv_sent_ARs', 'popular_inv_children_count', 'popular_inv_active_children')
+			'inv_elapsed_hr', 'gift_veriety',
+			'chosen_inv_gender', 'chosen_inv_locale',
+			'chosen_inv_invitation_count', 'chosen_inv_fav_gift', 
+			'chosen_inv_sent_ARs', 'chosen_inv_children_count', 'chosen_inv_active_children',
+			'inviters_gender_popularity', 'inviters_locale_popularity', 'inviters_avg_sent_ARs',
+			'inviters_avg_active_children', 'inviters_avg_children_count', 'avg_inviter_succ_ratio')
 	adoption_feat <- adoption_feat[adoption_feat$inv_count > 0 & adoption_feat$avg_inviter_succ_ratio >= 0, ]
 	adoption_feat$int_sex <- 0
-	adoption_feat$int_sex[which(adoption_feat$gender == 1 & adoption_feat$popular_inv_gender == 0)] <- 1
-	adoption_feat$int_sex[which(adoption_feat$gender == 0 & adoption_feat$popular_inv_gender == 1)] <- -1
-	adoption_feat$succ_ratio <- adoption_feat$popular_inv_active_children / adoption_feat$popular_inv_children_count
-	print(summary(adoption_feat))
-	splitted_data <- split(adoption_feat, sample(1:2, nrow(adoption_feat), replace=TRUE, prob=c(1,2)))
+	adoption_feat$int_sex[which(adoption_feat$gender == 1 & adoption_feat$chosen_inv_gender == 0)] <- 1
+	adoption_feat$int_sex[which(adoption_feat$gender == 0 & adoption_feat$chosen_inv_gender == 1)] <- -1
+	adoption_feat$succ_ratio <- adoption_feat$chosen_inv_active_children / adoption_feat$chosen_inv_children_count
+	splitted_data <- split(adoption_feat, sample(1:3, nrow(adoption_feat), replace=TRUE, prob=c(1,2,7)))
 	training <- splitted_data[[2]]
 	test <- splitted_data[[1]]
-	model <- glm(adopted ~ id + gender + locale + inv_count + inviter_count + recep_burst +
-					inv_elapsed_hr + gift_veriety +
-					avg_inviter_succ_ratio +
-					int_sex +
-					popular_inv_gender + popular_inv_locale +
-					popular_inv_invitation_count + popular_inv_fav_gift +
-					popular_inv_sent_ARs + succ_ratio,
-					data = training)
+	training$adopted <- factor(training$adopted)
+	test$adopted <- factor(test$adopted)
+	return(list(training = training, test = test))
+}
+
+adoption_logit_model <- function(feat){
+	fmla <- adopted ~ gender + locale + inv_count + inviter_count + recep_burst +
+			inv_elapsed_hr + gift_veriety
+	print(buildClassifier(0, feat$training, feat$test, fmla, NULL))
+	fmla <- adopted ~ chosen_inv_gender + chosen_inv_locale +
+			chosen_inv_invitation_count + chosen_inv_fav_gift + succ_ratio + chosen_inv_sent_ARs
+	print(buildClassifier(0, feat$training, feat$test, fmla, NULL))
+	fmla <- adopted ~ inviters_gender_popularity + inviters_locale_popularity +
+			inviters_avg_sent_ARs + inviters_avg_active_children +
+			inviters_avg_children_count + avg_inviter_succ_ratio
+	print(buildClassifier(0, feat$training, feat$test, fmla, NULL))
+	fmla <- adopted ~ gender + locale + inv_count + inviter_count + recep_burst +
+			inv_elapsed_hr + gift_veriety +
+			int_sex +
+			chosen_inv_gender + chosen_inv_locale +
+			chosen_inv_invitation_count + chosen_inv_fav_gift + chosen_inv_sent_ARs + succ_ratio +
+			inviters_gender_popularity + inviters_locale_popularity +
+			inviters_avg_sent_ARs + inviters_avg_active_children +
+			inviters_avg_children_count + avg_inviter_succ_ratio
+	print(buildClassifier(0, feat$training, feat$test, fmla, NULL))
+	return(1)
 #	model_summary <- summary(model)
 #	z <- model_summary$coefficients/model_summary$standard.errors
 	p <- 0 # (1 - pnorm(abs(z), 0, 1)) * 2
@@ -125,9 +236,30 @@ adoption_logit_model <- function(file){
 	print(2*prec*recall/ (prec+recall))
 	print(true_pos/(true_pos+false_pos))
 	aucs <- multinomial_ROC_AUC(test$cat, test$adop.pred_prob, week_n)
-	return(list(training = training, test = test, prec=prec, recall=recall, p=p, true_pos = true_pos, false_pos = false_pos, FP_rate = false_pos_rate,
+	return(list(training = training, test = test, prec=prec, recall=recall, p=p,
+					true_pos = true_pos, false_pos = false_pos, FP_rate = false_pos_rate,
 					model = model, aucs=aucs))
 }
+
+#feat <- load_features('iheart_gift/adoption_features.csv')
+#logistic_model <- adoption_logit_model(feat)
+#
+
+
+#$auc
+#[1] 0.8951207
+#
+#$te_50_perf
+#2570758
+#0.5000000 0.7748823 0.6495590 0.7067076
+#
+#$tr_cutoff_perf
+#59093433
+#0.3515862 0.6947291 0.7699954 0.7304285
+#
+#$te_cutoff_perf
+#41090095
+#0.3479512 0.6924155 0.7728916 0.7304436
 
 build_all_models <- function(file='iheart_gift/size_vs_root.csv',
 		evolution_file='iheart_gift/top_size.csv_all_evolution.csv',

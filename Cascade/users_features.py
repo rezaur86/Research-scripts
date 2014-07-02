@@ -21,7 +21,7 @@ has_adopted = bitarray(MAX_USERS)
 has_adopted.setall(False)
 inv_count = array.array('I', (0,)*MAX_USERS)
 inviter_count = array.array('I', (0,)*MAX_USERS)
-recep_burst = array.array('h', (INVALID_BURSTINESS,)*MAX_USERS)
+recep_burst = array.array('f', (INVALID_BURSTINESS,)*MAX_USERS)
 inv_elapsed_hr = array.array('H', (NEVER,)*MAX_USERS)
 hr_delay_from_first_inv = array.array('H', (NEVER,)*MAX_USERS)
 hr_delay_from_last_inv = array.array('H', (NEVER,)*MAX_USERS)
@@ -88,8 +88,7 @@ def reg_children(user_id, parent_list, is_leaf, activation_time):
             temp_invitations.append(invitations[i] if i in invitations else 0)
         sd = np.sqrt(np.var(temp_invitations))
         avg = np.average(temp_invitations)
-        burstiness = round(((sd - avg) / (sd + avg)), 3)
-        recep_burst[user_id] = int(100*round(burstiness, 3)) 
+        recep_burst[user_id] = ((sd - avg) / (sd + avg))
     
 CLR_THRESHOLD = 500000
 app_id_pos = int(sys.argv[4])
@@ -142,7 +141,8 @@ for i in range(0,MAX_USERS):
     if users[i] == False:
         continue
     user_features_file.write('%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n' %(
-                            i, int(has_adopted[i]), int(genders[i]), locales[i], inv_count[i], inviter_count[i], recep_burst[i],
-                            inv_elapsed_hr[i], hr_delay_from_first_inv[i], hr_delay_from_last_inv[i], gift_veriety[i],
+                            i, int(has_adopted[i]), int(genders[i]), locales[i], inv_count[i], inviter_count[i], 
+                            round(recep_burst[i], 3), inv_elapsed_hr[i],
+                            hr_delay_from_first_inv[i], hr_delay_from_last_inv[i], gift_veriety[i],
                             sent_ARs[i], act_lifespan[i], children_count[i], active_children[i]))
 user_features_file.close()
