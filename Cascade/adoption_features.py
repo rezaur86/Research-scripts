@@ -38,20 +38,73 @@ active_children = array.array('i', (-1,)*MAX_USERS)
 chosen_inviter_gender = bitarray(MAX_USERS)
 chosen_inviter_gender.setall(True) #True/1 is for Male
 chosen_inviter_locale = array.array('B', (0,)*MAX_USERS)
+chosen_inviter_for_users = array.array('I', (0,)*MAX_USERS)
 chosen_inviter_inv_count = array.array('I', (0,)*MAX_USERS)
 chosen_inviter_fav_gift = array.array('H', (0,)*MAX_USERS)
 chosen_inviter_sent_ARs = array.array('I', (0,)*MAX_USERS)
 chosen_inviter_children_count = array.array('I', (0,)*MAX_USERS)
 chosen_inviter_active_children = array.array('I', (0,)*MAX_USERS)
+jaccard_neighboring_with_chosen_inviter = array.array('f', (-1,)*MAX_USERS)
 
 inviters_gender_popularity = bitarray(MAX_USERS)
 inviters_gender_popularity.setall(True) #True/1 is for Male
+inviters_male_count = array.array('I', (0,)*MAX_USERS)
+inviters_female_count = array.array('I', (0,)*MAX_USERS)
 inviters_locale_popularity = array.array('B', (0,)*MAX_USERS)
-inviters_avg_sent_ARs = array.array('I', (0,)*MAX_USERS)
-inviters_avg_active_children = array.array('I', (0,)*MAX_USERS)
-inviters_avg_children_count = array.array('I', (0,)*MAX_USERS)
+inviters_avg_invitation_count = array.array('f', (0,)*MAX_USERS)
+inviters_avg_sent_ARs = array.array('f', (0,)*MAX_USERS)
+inviters_avg_active_children = array.array('f', (0,)*MAX_USERS)
+inviters_avg_children_count = array.array('f', (0,)*MAX_USERS)
 inviters_avg_success_ratio = array.array('f', (-1,)*MAX_USERS)
 
+excep_inviters_avg_invitation_count = array.array('f', (0,)*MAX_USERS)
+excep_inviters_avg_sent_ARs = array.array('f', (0,)*MAX_USERS)
+excep_inviters_avg_active_children = array.array('f', (0,)*MAX_USERS)
+excep_inviters_avg_children_count = array.array('f', (0,)*MAX_USERS)
+excep_inviters_avg_success_ratio = array.array('f', (-1,)*MAX_USERS)
+
+node_parents = {}
+
+import math
+import functools
+
+def percentile(N, percent, key=lambda x:x):
+    """
+    Find the percentile of a list of values.
+
+    @parameter N - is a list of values. Note N MUST BE already sorted.
+    @parameter percent - a float value from 0.0 to 1.0.
+    @parameter key - optional key function to compute value from each element of N.
+
+    @return - the percentile of the values
+    """
+    if not N:
+        return None
+    k = (len(N)-1) * percent
+    f = math.floor(k)
+    c = math.ceil(k)
+    if f == c:
+        return key(N[int(k)])
+    d0 = key(N[int(f)]) * (c-k)
+    d1 = key(N[int(c)]) * (k-f)
+    return d0+d1
+
+def sepearate_outliers(values):
+    values.sort()    
+    q_1 = percentile(values, 0.25)
+    q_3 = percentile(values, 0.75)
+    iq = q_3 - q_1
+    u_o_l = q_3 + (3.0 * iq)
+    l_o_l = q_1 - (3.0 * iq)
+    natural = []
+    outliers = []
+    for x in values:
+        if x > u_o_l:
+            outliers.append(x)
+        else:
+            natural.append(x)
+    return (natural, outliers)
+    
 
 def reg_children(user_id, parent_list):
     l = len(parent_list)
@@ -81,13 +134,18 @@ def reg_children(user_id, parent_list):
             else:
                 inviters_gift_id[parent][hid] = 1
         else:
+            if user_id in node_parents:
+                node_parents[user_id].append(parent)
+            else:
+                node_parents[user_id] = array.array('I')
+                node_parents[user_id].append(parent)
             inviters[parent] = 1
             inviters_gift_id[parent] = {}
             inviters_gift_id[parent][hid] = 1
             inviters_succ_ratio[parent] = (active_children[parent]*1.0)/children_count[parent]
             inviters_sent_AR.append(sent_ARs[parent])
-            inviters_active_children.append(sent_ARs[parent])
-            inviters_children_count.append(sent_ARs[parent])
+            inviters_active_children.append(active_children[parent])
+            inviters_children_count.append(children_count[parent])
             if genders[parent] == False:
                 female_inv_count += 1
             else:
@@ -104,20 +162,50 @@ def reg_children(user_id, parent_list):
         chosen_inviter = max(inviters.iteritems(), key=operator.itemgetter(1))[0]
     if inviter_choice == SUCCESSFUL_INVITER:
         chosen_inviter = max(inviters_succ_ratio.iteritems(), key=operator.itemgetter(1))[0]
-    chosen_inviter_gender[user_id] = genders[chosen_inviter]
-    chosen_inviter_locale[user_id] = locales[chosen_inviter]
-    chosen_inviter_inv_count[user_id] = inviters[chosen_inviter]
-    chosen_inviter_fav_gift[user_id] = max(inviters_gift_id[chosen_inviter].iteritems(), key=operator.itemgetter(1))[0]
-    chosen_inviter_sent_ARs[user_id] = sent_ARs[chosen_inviter]
-    chosen_inviter_children_count[user_id] = children_count[chosen_inviter]
-    chosen_inviter_active_children[user_id] = active_children[chosen_inviter]
-    
-    inviters_gender_popularity[user_id] = True if male_inv_count > female_inv_count else False
+    if chosen_inviter != None:
+        chosen_inviter_for_users[user_id] = chosen_inviter
+        chosen_inviter_gender[user_id] = genders[chosen_inviter]
+        chosen_inviter_locale[user_id] = locales[chosen_inviter]
+        chosen_inviter_inv_count[user_id] = inviters[chosen_inviter]
+        chosen_inviter_fav_gift[user_id] = max(inviters_gift_id[chosen_inviter].iteritems(), key=operator.itemgetter(1))[0]
+        chosen_inviter_sent_ARs[user_id] = sent_ARs[chosen_inviter]
+        chosen_inviter_children_count[user_id] = children_count[chosen_inviter]
+        chosen_inviter_active_children[user_id] = active_children[chosen_inviter]
+        setted_user_parents = set(node_parents[user_id])
+        if chosen_inviter in node_parents:
+            jaccard_neighboring_with_chosen_inviter[user_id] = (
+                (1.0*len(setted_user_parents.intersection(node_parents[chosen_inviter]))) / 
+                (1.0*len(setted_user_parents.union(node_parents[chosen_inviter]))))
+        else:
+            jaccard_neighboring_with_chosen_inviter[user_id] = 0
+    if has_adopted[user_id] == False:
+        del node_parents[user_id]
+
+#     inviters_gender_popularity[user_id] = True if male_inv_count > female_inv_count else False
     inviters_locale_popularity[user_id] = max(inviters_locale.iteritems(), key=operator.itemgetter(1))[0]
-    inviters_avg_sent_ARs[user_id] = sum(inviters_sent_AR)/inviter_count[user_id]
-    inviters_avg_active_children[user_id] = sum(inviters_active_children)/inviter_count[user_id]
-    inviters_avg_children_count[user_id] = sum(inviters_children_count)/inviter_count[user_id]
-    inviters_avg_success_ratio[user_id] = sum(inviters_succ_ratio.itervalues())/inviter_count[user_id]
+#     inviters_avg_invitation_count[user_id] = sum(inviters.itervalues())/inviter_count[user_id]
+#     inviters_avg_sent_ARs[user_id] = sum(inviters_sent_AR)/inviter_count[user_id]
+#     inviters_avg_active_children[user_id] = sum(inviters_active_children)/inviter_count[user_id]
+#     inviters_avg_children_count[user_id] = sum(inviters_children_count)/inviter_count[user_id]
+#     inviters_avg_success_ratio[user_id] = sum(inviters_succ_ratio.itervalues())/inviter_count[user_id]
+    
+    inviters_male_count[user_id] = male_inv_count
+    inviters_female_count[user_id] = female_inv_count
+    natural, outliers = sepearate_outliers(list(inviters.itervalues()))
+    inviters_avg_invitation_count[user_id] = sum(natural)/len(natural)
+    excep_inviters_avg_invitation_count[user_id] = (1.0*sum(outliers))/len(outliers) if len(outliers) > 0 else 0
+    natural, outliers = sepearate_outliers(inviters_sent_AR)
+    inviters_avg_sent_ARs[user_id] = sum(natural)/len(natural)
+    excep_inviters_avg_sent_ARs[user_id] = (1.0*sum(outliers))/len(outliers) if len(outliers) > 0 else 0
+    natural, outliers = sepearate_outliers(inviters_active_children)
+    inviters_avg_active_children[user_id] = sum(natural)/len(natural)
+    excep_inviters_avg_active_children[user_id] = (1.0*sum(outliers))/len(outliers) if len(outliers) > 0 else 0
+    natural, outliers = sepearate_outliers(inviters_children_count)
+    inviters_avg_children_count[user_id] = sum(natural)/len(natural)
+    excep_inviters_avg_children_count[user_id] = (1.0*sum(outliers))/len(outliers) if len(outliers) > 0 else 0
+    natural, outliers = sepearate_outliers(list(inviters_succ_ratio.itervalues()))
+    inviters_avg_success_ratio[user_id] = sum(natural)/len(natural)
+    excep_inviters_avg_success_ratio[user_id] = sum(outliers)/len(outliers) if len(outliers) > 0 else 0
     
 
 CLR_THRESHOLD = 500000
@@ -169,14 +257,26 @@ for i in range(0,MAX_USERS):
         continue
     if inviters_avg_success_ratio[i] < 0:
         continue
+#     user_features_file.write('%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n' %(
+#                             i, int(has_adopted[i]), int(genders[i]), locales[i], inv_count[i], inviter_count[i],
+#                             round(recep_burst[i],3), inv_elapsed_hr[i], gift_veriety[i],
+#                             chosen_inviter_for_users[i], int(chosen_inviter_gender[i]), chosen_inviter_locale[i],
+#                             chosen_inviter_inv_count[i], chosen_inviter_fav_gift[i],
+#                             chosen_inviter_sent_ARs[i], chosen_inviter_children_count[i], chosen_inviter_active_children[i],
+#                             round(jaccard_neighboring_with_chosen_inviter[i],3),
+#                             int(inviters_gender_popularity[i]), inviters_locale_popularity[i],
+#                             inviters_avg_sent_ARs[i], inviters_avg_active_children[i], inviters_avg_children_count[i],
+#                             round(inviters_avg_success_ratio[i],3)
+#                             ))
     user_features_file.write('%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n' %(
                             i, int(has_adopted[i]), int(genders[i]), locales[i], inv_count[i], inviter_count[i],
                             round(recep_burst[i],3), inv_elapsed_hr[i], gift_veriety[i],
-                            int(chosen_inviter_gender[i]), chosen_inviter_locale[i],
-                            chosen_inviter_inv_count[i], chosen_inviter_fav_gift[i],
-                            chosen_inviter_sent_ARs[i], chosen_inviter_children_count[i], chosen_inviter_active_children[i],
-                            int(inviters_gender_popularity[i]), inviters_locale_popularity[i],
-                            inviters_avg_sent_ARs[i], inviters_avg_active_children[i], inviters_avg_children_count[i],
-                            round(inviters_avg_success_ratio[i],3)
+                            inviters_male_count[i], inviters_female_count[i], inviters_locale_popularity[i],
+                            round(inviters_avg_invitation_count[i],3), round(inviters_avg_sent_ARs[i],3),
+                            round(inviters_avg_active_children[i],3), round(inviters_avg_children_count[i],3),
+                            round(inviters_avg_success_ratio[i],3),
+                            round(excep_inviters_avg_invitation_count[i],3), round(excep_inviters_avg_sent_ARs[i],3),
+                            round(excep_inviters_avg_active_children[i],3), round(excep_inviters_avg_children_count[i],3),
+                            round(excep_inviters_avg_success_ratio[i],3)
                             ))
 user_features_file.close()

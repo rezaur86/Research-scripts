@@ -165,16 +165,61 @@ load_features <- function(file){
 	adoption_feat <- as.data.frame(read.csv(file, header=FALSE))
 	colnames(adoption_feat) <- c('id', 'adopted', 'gender' ,'locale', 'inv_count', 'inviter_count', 'recep_burst',
 			'inv_elapsed_hr', 'gift_veriety',
-			'chosen_inv_gender', 'chosen_inv_locale',
+			'chosen_inviter','chosen_inv_gender', 'chosen_inv_locale',
 			'chosen_inv_invitation_count', 'chosen_inv_fav_gift', 
 			'chosen_inv_sent_ARs', 'chosen_inv_children_count', 'chosen_inv_active_children',
+			'neighboring',
 			'inviters_gender_popularity', 'inviters_locale_popularity', 'inviters_avg_sent_ARs',
 			'inviters_avg_active_children', 'inviters_avg_children_count', 'avg_inviter_succ_ratio')
 	adoption_feat <- adoption_feat[adoption_feat$inv_count > 0 & adoption_feat$avg_inviter_succ_ratio >= 0, ]
 	adoption_feat$int_sex <- 0
 	adoption_feat$int_sex[which(adoption_feat$gender == 1 & adoption_feat$chosen_inv_gender == 0)] <- 1
 	adoption_feat$int_sex[which(adoption_feat$gender == 0 & adoption_feat$chosen_inv_gender == 1)] <- -1
+	adoption_feat$int_locale <- 1
+	adoption_feat$int_locale[which(adoption_feat$locale == adoption_feat$chosen_inv_locale)] <- 0
 	adoption_feat$succ_ratio <- adoption_feat$chosen_inv_active_children / adoption_feat$chosen_inv_children_count
+
+#	inviters <- unique(adoption_feat$chosen_inviter)
+#	inviter_features <- adoption_feat[adoption_feat$chosen_inviter %in% inviters, c('adopted', 'chosen_inv_gender', 'chosen_inv_locale',
+#					'chosen_inv_sent_ARs', 'chosen_inv_children_count', 'chosen_inv_active_children', 'succ_ratio')]	
+	adoption_feat$adopted <- factor(adoption_feat$adopted)
+	categories <- levels(adoption_feat$adopted)
+	adoption_feat$adopted_label <- factor(adoption_feat$adopted, levels = categories, labels = c('No', 'Yes'))
+
+	feature_boxplot(adoption_feat, 'inv_count', 
+			'Adopted by invitee', 'Number of received invitations', 'iheart_gift/users_inv_count.pdf')
+	feature_boxplot(adoption_feat, 'inviter_count', 
+			'Adopted by invitee', 'Number of inviters', 'iheart_gift/users_inviter_count.pdf')
+	feature_boxplot(adoption_feat, 'recep_burst', 
+			'Adopted by invitee', 'Reception burstiness', 'iheart_gift/users_recep_burst.pdf')
+	feature_boxplot(adoption_feat, 'inv_elapsed_hr', 
+			'Adopted by invitee', 'Invitation elapsed hour', 'iheart_gift/users_inv_elapsed_hr.pdf')
+	feature_boxplot(adoption_feat, 'gift_veriety', 
+			'Adopted by invitee', 'Gift variation count in invitations', 'iheart_gift/users_gift_veriety.pdf')
+	
+	feature_boxplot(adoption_feat, 'chosen_inv_sent_ARs', 
+			'Adopted by invitee', 'Inviters\' sent AR count', 'iheart_gift/inv_sent_ARs.pdf')
+	feature_boxplot(adoption_feat, 'chosen_inv_children_count', 
+			'Adopted by invitee', 'Inviters\' children count', 'iheart_gift/inv_children_count.pdf')
+	feature_boxplot(adoption_feat, 'chosen_inv_active_children', 
+			'Adopted by invitee', 'Inviters\' active children count', 'iheart_gift/inv_active_children.pdf')
+	feature_boxplot(adoption_feat, 'succ_ratio', 
+			'Adopted by invitee', 'Inviters\' success ratio', 'iheart_gift/inv_succ_ratio.pdf')
+	
+	feature_boxplot(adoption_feat, 'chosen_inv_invitation_count', 
+			'Adopted by invitee', 'Number of invitations received from the inviter', 'iheart_gift/link_inv_count.pdf')
+	feature_boxplot(adoption_feat, 'neighboring', 
+			'Adopted by invitee', 'Jaccard coefficient of neighbor similarity', 'iheart_gift/link_jaccard_neighbor.pdf')
+	
+	feature_boxplot(adoption_feat, 'inviters_avg_sent_ARs', 
+			'Adopted by invitee', 'Inviters\' average sent AR count', 'iheart_gift/avg_inviters_sent_ARs.pdf')
+	feature_boxplot(adoption_feat, 'inviters_avg_active_children', 
+			'Adopted by invitee', 'Inviters\' average active children count', 'iheart_gift/avg_inviters_active_children.pdf')
+	feature_boxplot(adoption_feat, 'inviters_avg_children_count', 
+			'Adopted by invitee', 'Inviters\' average children count', 'iheart_gift/avg_inviters_children_count.pdf')
+	feature_boxplot(adoption_feat, 'avg_inviter_succ_ratio', 
+			'Adopted by invitee', 'Inviters\' average success ratio', 'iheart_gift/avg_inviter_succ_ratio.pdf')
+	
 	splitted_data <- split(adoption_feat, sample(1:3, nrow(adoption_feat), replace=TRUE, prob=c(1,2,7)))
 	training <- splitted_data[[2]]
 	test <- splitted_data[[1]]
@@ -183,27 +228,76 @@ load_features <- function(file){
 	return(list(training = training, test = test))
 }
 
+feature_boxplot <- function(features, a_feature, label_x, label_y, figure_name){
+	features.a_feature <- ddply(features, c('adopted_label'), .drop=TRUE,
+			.fun = function(one_partition){
+				stats = boxplot.stats(one_partition[[a_feature]])$stats
+				c(ymin=stats[1],
+						lower=stats[2],
+						middle=stats[3],
+						upper=stats[4],
+						ymax=stats[5],
+						mean = mean(one_partition[[a_feature]]))
+			})
+	features.a_feature$adopted_label <- factor(features.a_feature$adopted_label)
+	plot <- ggplot(features.a_feature, aes(x=adopted_label, lower=lower, upper=upper, middle=middle, ymin=ymin, ymax=ymax)) + 
+			geom_boxplot(stat="identity") +
+			geom_point(data = features.a_feature, aes(x=adopted_label, y=mean), shape = 8, size = 3)+
+			xlab(label_x) + ylab(label_y) 
+	save_ggplot(plot, figure_name)
+}
+
+
 adoption_logit_model <- function(feat){
+	# Invitee's properties
 	fmla <- adopted ~ gender + locale + inv_count + inviter_count + recep_burst +
 			inv_elapsed_hr + gift_veriety
-	print(buildClassifier(0, feat$training, feat$test, fmla, NULL))
-	fmla <- adopted ~ chosen_inv_gender + chosen_inv_locale +
-			chosen_inv_invitation_count + chosen_inv_fav_gift + succ_ratio + chosen_inv_sent_ARs
-	print(buildClassifier(0, feat$training, feat$test, fmla, NULL))
+	m1 <- (buildClassifier(0, feat$training, feat$test, fmla, NULL))
+	# Inviter's properties
+	fmla <- adopted ~ chosen_inv_gender + chosen_inv_locale + succ_ratio + 
+			chosen_inv_sent_ARs + chosen_inv_children_count + chosen_inv_active_children
+	m2 <- (buildClassifier(0, feat$training, feat$test, fmla, NULL))
+	# Invitee and inviter's properties
+	fmla <- adopted ~ gender + locale + inv_count + inviter_count + recep_burst +
+			inv_elapsed_hr + gift_veriety +
+			chosen_inv_gender + chosen_inv_locale + succ_ratio + 
+			chosen_inv_sent_ARs + chosen_inv_children_count + chosen_inv_active_children
+	m3 <- (buildClassifier(0, feat$training, feat$test, fmla, NULL))
+	# Average inviters' properties
 	fmla <- adopted ~ inviters_gender_popularity + inviters_locale_popularity +
 			inviters_avg_sent_ARs + inviters_avg_active_children +
 			inviters_avg_children_count + avg_inviter_succ_ratio
-	print(buildClassifier(0, feat$training, feat$test, fmla, NULL))
+	m4 <- (buildClassifier(0, feat$training, feat$test, fmla, NULL))
+	# Invitee and average inviters' properties
 	fmla <- adopted ~ gender + locale + inv_count + inviter_count + recep_burst +
 			inv_elapsed_hr + gift_veriety +
-			int_sex +
-			chosen_inv_gender + chosen_inv_locale +
-			chosen_inv_invitation_count + chosen_inv_fav_gift + chosen_inv_sent_ARs + succ_ratio +
 			inviters_gender_popularity + inviters_locale_popularity +
 			inviters_avg_sent_ARs + inviters_avg_active_children +
 			inviters_avg_children_count + avg_inviter_succ_ratio
-	print(buildClassifier(0, feat$training, feat$test, fmla, NULL))
-	return(1)
+	m5 <- (buildClassifier(0, feat$training, feat$test, fmla, NULL))
+	# Link based properties
+	fmla <- adopted ~ int_sex + int_locale + neighboring + chosen_inv_invitation_count + chosen_inv_fav_gift
+	m6 <- (buildClassifier(0, feat$training, feat$test, fmla, NULL))
+	# Invitee's and link based properties
+	fmla <- adopted ~ gender + locale + inv_count + inviter_count + recep_burst +
+			inv_elapsed_hr + gift_veriety +
+			int_sex + int_locale + neighboring + chosen_inv_invitation_count + chosen_inv_fav_gift
+	m7 <- (buildClassifier(0, feat$training, feat$test, fmla, NULL))
+	# Inviter's and link based properties
+	fmla <- adopted ~ chosen_inv_gender + chosen_inv_locale + succ_ratio + 
+			chosen_inv_sent_ARs + chosen_inv_children_count + chosen_inv_active_children +
+			int_sex + int_locale + neighboring + chosen_inv_invitation_count + chosen_inv_fav_gift
+	m8 <- (buildClassifier(0, feat$training, feat$test, fmla, NULL))
+	fmla <- adopted ~ gender + locale + inv_count + inviter_count + recep_burst +
+			inv_elapsed_hr + gift_veriety +
+			chosen_inv_gender + chosen_inv_locale + succ_ratio +
+			chosen_inv_sent_ARs + chosen_inv_children_count + chosen_inv_active_children +
+			inviters_gender_popularity + inviters_locale_popularity +
+			inviters_avg_sent_ARs + inviters_avg_active_children +
+			inviters_avg_children_count + avg_inviter_succ_ratio +
+			int_sex + int_locale + neighboring + chosen_inv_invitation_count + chosen_inv_fav_gift
+	m9 <- (buildClassifier(0, feat$training, feat$test, fmla, NULL))
+	return(list(m1=m1, m2=m2, m3=m3, m4=m4, m5=m5, m6=m6, m7=m7, m8=m8, m9=m9))
 #	model_summary <- summary(model)
 #	z <- model_summary$coefficients/model_summary$standard.errors
 	p <- 0 # (1 - pnorm(abs(z), 0, 1)) * 2
@@ -241,7 +335,7 @@ adoption_logit_model <- function(feat){
 					model = model, aucs=aucs))
 }
 
-#feat <- load_features('iheart_gift/adoption_features.csv')
+#feat <- load_features('iheart_gift/succ_adoption_features.csv')
 #logistic_model <- adoption_logit_model(feat)
 #
 
