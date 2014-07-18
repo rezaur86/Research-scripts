@@ -49,6 +49,8 @@ def reg_children(user_id, parent_list, is_leaf, activation_time):
         else:
             invitations[invitation_hour] = 1
         parent = int(u_p[0])
+        if users[parent] == False:
+            continue
         if sent_ARs[parent] == -1:
             sent_ARs[parent] = 0
         sent_ARs[parent] += 1
@@ -129,7 +131,8 @@ for line in f:
     default_burstiness = BURSTINESS_ON
     if users[node_id] == False:
         BURSTINESS_ON = 0
-    reg_children(node_id, parent_list, is_leaf, activation_time)
+    else:
+        reg_children(node_id, parent_list, is_leaf, activation_time)
     BURSTINESS_ON = default_burstiness
     count = count+1
     if (count % (CLR_THRESHOLD/10)) == 0:
