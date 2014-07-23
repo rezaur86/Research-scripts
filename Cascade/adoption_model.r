@@ -122,16 +122,18 @@ load_features <- function(file){
 #			'excep_avg_active_children', 'excep_avg_children_count', 'avg_excep_succ_ratio'
 			)
 	adoption_feat <- adoption_feat[adoption_feat$inv_count > 0, ] # & adoption_feat$avg_inviter_succ_ratio >= 0
-	adoption_feat$gender_popularity[which(adoption_feat$female_inviters > adoption_feat$male_inviters)] <- 0
+	adoption_feat$gender_popularity <- 0
 	adoption_feat$gender_popularity[which(adoption_feat$male_inviters > adoption_feat$female_inviters)] <- 1
 	adoption_feat$int_gender <- 0
-	adoption_feat$int_gender[which(adoption_feat$gender == 1 & adoption_feat$female_inviters > adoption_feat$male_inviters)] <- 1
-	adoption_feat$int_gender[which(adoption_feat$gender == 0 & adoption_feat$male_inviters > adoption_feat$female_inviters)] <- -1
+	adoption_feat$int_gender[which(adoption_feat$gender == 1 & adoption_feat$gender_popularity == 0)] <- 1
+	adoption_feat$int_gender[which(adoption_feat$gender == 0 & adoption_feat$gender_popularity == 1)] <- 2
+	adoption_feat$int_gender[which(adoption_feat$gender == 1 & adoption_feat$gender_popularity == 1)] <- 3
 	adoption_feat$int_locale <- 1
 	adoption_feat$int_locale[which(adoption_feat$locale == adoption_feat$inviters_locale_popularity)] <- 0
 	adoption_feat$chosen_int_gender <- 0
 	adoption_feat$chosen_int_gender[which(adoption_feat$gender == 1 & adoption_feat$chosen_inv_gender == 0)] <- 1
-	adoption_feat$chosen_int_gender[which(adoption_feat$gender == 0 & adoption_feat$chosen_inv_gender == 1)] <- -1
+	adoption_feat$chosen_int_gender[which(adoption_feat$gender == 0 & adoption_feat$chosen_inv_gender == 1)] <- 2
+	adoption_feat$chosen_int_gender[which(adoption_feat$gender == 1 & adoption_feat$chosen_inv_gender == 1)] <- 3
 	adoption_feat$chosen_int_locale <- 1
 	adoption_feat$chosen_int_locale[which(adoption_feat$locale == adoption_feat$chosen_inv_locale)] <- 0
 	adoption_feat$succ_ratio <- adoption_feat$chosen_inv_active_children / adoption_feat$chosen_inv_children_count
@@ -164,7 +166,32 @@ load_features <- function(file){
 			scale_fill_manual(values=c("gray40", "gray65", "gray85"), name = '', breaks=0:2,
 					labels=c('Invitee','Chosen inviter','Popularity\namong inviters'))+
 			xlab('Gender') + ylab('Adoption probability') 
-	save_ggplot(plot, 'iheart_gift/users_gender.pdf', 24, opts(legend.position="bottom"))
+	save_ggplot(plot, 'iheart_gift/users_gender.pdf')
+	
+	int_gender.df <- int_gender_stat(adoption_feat, c('chosen_int_gender', 'int_gender'))
+	int_gender.df$gender <- factor(int_gender.df$gender)
+	int_gender.df$type <- factor(int_gender.df$type)
+	plot <- ggplot(int_gender.df, aes(x=gender, y=adop_prob, fill=type)) + 
+			geom_bar(stat="identity", position=position_dodge()) +
+			scale_fill_manual(values=c("gray40", "gray65"), name = '', breaks=0:1,
+					labels=c('Invitee vs. chosen inviter','Invitee vs. popularity\namong all inviters'))+
+			xlab('Invitee gender vs. inviter gender') + ylab('Adoption probability') 
+	save_ggplot(plot, 'iheart_gift/link_gender.pdf', 24, opts(legend.position=c(.7, .9)))
+	
+	fav_gifts <- as.data.frame(unique(adoption_feat$chosen_inv_fav_gift))
+	colnames(fav_gifts) <- c('gifts')
+	temp <- c()
+	for (gift in fav_gifts$gifts){
+		temp <- c(temp, sum(adoption_feat$adopted[which(adoption_feat$chosen_inv_fav_gift == gift)])/nrow(adoption_feat))
+	}
+	fav_gifts$adop_prob <- temp
+	fav_gifts <- fav_gifts[order(-fav_gifts$adop_prob),]
+	fav_gifts_to_plot <- fav_gifts[1:10,]
+	fav_gifts_to_plot$gifts <- factor(fav_gifts_to_plot$gifts)
+	plot <- ggplot(fav_gifts_to_plot, aes(x=gifts, y=adop_prob)) + 
+			geom_bar(stat="identity") +
+			xlab('Gift ID') + ylab('Adoption probability') 
+	save_ggplot(plot, 'iheart_gift/inv_fav_gift.pdf')
 	
 	chi_test <- feature_selction(adoption_feat, 'adopted', c(NR, NS, NAS, RD, SD, ASD, LD, LAD, LF, LAF))
 	adoption_feat$adopted <- factor(adoption_feat$adopted)
@@ -182,33 +209,12 @@ load_features <- function(file){
 			'Adopted by invitee', 'Invitation elapsed hour', 'iheart_gift/users_inv_elapsed_hr.pdf'),
 		users_gift_veriety= feature_boxplot(adoption_feat, 'gift_veriety', 
 			'Adopted by invitee', 'Gift variation count in invitations', 'iheart_gift/users_gift_veriety.pdf'),
-	
-#		inv_invitation_count = feature_boxplot(adoption_feat, 'chosen_inv_invitation_count', 
-#			'Adopted by invitee', 'Number of invitations received from the inviter', 'iheart_gift/inv_invitation_count.pdf'),
-#		inv_sent_ARs = feature_boxplot(adoption_feat, 'chosen_inv_sent_ARs', 
-#			'Adopted by invitee', 'Inviters\' sent AR count', 'iheart_gift/inv_sent_ARs.pdf'),
-#		inv_children_count = feature_boxplot(adoption_feat, 'chosen_inv_children_count', 
-#			'Adopted by invitee', 'Inviters\' children count', 'iheart_gift/inv_children_count.pdf'),
-#		inv_active_children = feature_boxplot(adoption_feat, 'chosen_inv_active_children', 
-#			'Adopted by invitee', 'Inviters\' active children count', 'iheart_gift/inv_active_children.pdf'),
-#		inv_succ_ratio = feature_boxplot(adoption_feat, 'succ_ratio', 
-#			'Adopted by invitee', 'Inviters\' success ratio', 'iheart_gift/inv_succ_ratio.pdf'),
+
 		inv_jaccard_neighbor = feature_boxplot(adoption_feat, 'neighboring', 
 			'Adopted by invitee', 'Jaccard coefficient of neighbor similarity', 'iheart_gift/inv_jaccard_neighbor.pdf'),
 
-#		avg_inviters_invitation = feature_boxplot(adoption_feat, 'inviters_avg_invitation_count', 
-#			'Adopted by invitee', 'Inviters\' average invitation count', 'iheart_gift/avg_inviters_invitation.pdf'),
-#		avg_inviters_sent_ARs = feature_boxplot(adoption_feat, 'inviters_avg_sent_ARs', 
-#			'Adopted by invitee', 'Inviters\' average sent AR count', 'iheart_gift/avg_inviters_sent_ARs.pdf'),
-#		avg_inviters_active_children = feature_boxplot(adoption_feat, 'inviters_avg_active_children', 
-#			'Adopted by invitee', 'Inviters\' average active children count', 'iheart_gift/avg_inviters_active_children.pdf'),
-#		avg_inviters_children_count = feature_boxplot(adoption_feat, 'inviters_avg_children_count', 
-#			'Adopted by invitee', 'Inviters\' average children count', 'iheart_gift/avg_inviters_children_count.pdf'),
-#		avg_inviter_succ_ratio = feature_boxplot(adoption_feat, 'avg_inviter_succ_ratio', 
-#			'Adopted by invitee', 'Inviters\' average success ratio', 'iheart_gift/avg_inviter_succ_ratio.pdf'),
-
-		comp_invitation_gender = feature_boxplot_comp(adoption_feat, 'male_inviters', 'female_inviters',
-				'Adopted by invitee', 'Population among the inviters', 'iheart_gift/comp_gender_population.pdf', c('Male','Female')),
+		comp_invitation_gender = feature_boxplot_comp(adoption_feat, 'female_inviters', 'male_inviters',
+				'Adopted by invitee', 'Population among the inviters', 'iheart_gift/comp_gender_population.pdf', c('Female','Male')),
 
 		comp_invitation_count = feature_boxplot_comp(adoption_feat, 'chosen_inv_invitation_count', 'inviters_avg_invitation_count',
 				'Adopted by invitee', 'Number of invitations received from the inviter', 'iheart_gift/comp_invitation_count.pdf'),
@@ -220,24 +226,14 @@ load_features <- function(file){
 				'Adopted by invitee', 'Inviters\' active children count', 'iheart_gift/comp_active_children.pdf'),
 		comp_succ_ratio = feature_boxplot_comp(adoption_feat, 'succ_ratio', 'avg_inviter_succ_ratio', 
 				'Adopted by invitee', 'Inviters\' success ratio', 'iheart_gift/comp_succ_ratio.pdf')
-
-#	feature_boxplot(adoption_feat, 'excep_avg_invitation_count', 
-#			'Adopted by invitee', 'Inviters\' avg. exceptional invitation count', 'iheart_gift/avg_excep_invitation.pdf')
-#	feature_boxplot(adoption_feat, 'excep_avg_sent_ARs', 
-#			'Adopted by invitee', 'Inviters\' avg. exceptional sent AR count', 'iheart_gift/avg_excep_sent_ARs.pdf')
-#	feature_boxplot(adoption_feat, 'excep_avg_active_children', 
-#			'Adopted by invitee', 'Inviters\' avg. exceptional active children count', 'iheart_gift/avg_excep_active_children.pdf')
-#	feature_boxplot(adoption_feat, 'excep_avg_children_count', 
-#			'Adopted by invitee', 'Inviters\' avg. exceptional children count', 'iheart_gift/avg_excep_children_count.pdf')
-#	feature_boxplot(adoption_feat, 'avg_excep_succ_ratio', 
-#			'Adopted by invitee', 'Inviters\' avg. exceptional success ratio', 'iheart_gift/avg_excep_succ_ratio.pdf')
 	)
 	splitted_data <- split(adoption_feat, sample(1:3, nrow(adoption_feat), replace=TRUE, prob=c(1,2,7)))
 	training <- splitted_data[[2]]
 	test <- splitted_data[[1]]
 	training$adopted <- factor(training$adopted)
 	test$adopted <- factor(test$adopted)
-	return(list(training = training, test = test, feat_summary = feature_summary, gender = gender.df, chi_test = chi_test))
+	return(list(training = training, test = test, feat_summary = feature_summary,
+					gender = gender.df, int_gender = int_gender.df, fav_gifts = fav_gifts, chi_test = chi_test))
 }
 
 gender_stat <- function(df, genders){
@@ -254,10 +250,30 @@ gender_stat <- function(df, genders){
 			gender.df <- rbind(gender.df, gender.df_temp)
 		df_n <- df_n + 1
 	}
-	gender.df$gender <- factor(gender.df$gender)
-	gender.df$type <- factor(gender.df$type)
 	return(gender.df)	
 }
+
+int_gender_stat <- function(df, int_genders){
+	df_n <- 0
+	for (a_gender in int_genders){
+		gender.df_temp <- as.data.frame(c('Female-\nfemale','Male-\nfemale', 'Female-\nmale', 'Male-\nmale'))
+		colnames(gender.df_temp) <- c('gender')
+		gender.df_temp$adop_prob <- c(
+				sum(df$adopted[which(df[[a_gender]] == 0)])/nrow(df),
+				sum(df$adopted[which(df[[a_gender]] == 1)])/nrow(df),
+				sum(df$adopted[which(df[[a_gender]] == 2)])/nrow(df),
+				sum(df$adopted[which(df[[a_gender]] == 3)])/nrow(df)
+		)
+		gender.df_temp$type <- df_n
+		if(df_n == 0)
+			gender.df <- gender.df_temp
+		else
+			gender.df <- rbind(gender.df, gender.df_temp)
+		df_n <- df_n + 1
+	}
+	return(gender.df)	
+}
+
 feature_boxplot <- function(features, a_feature, label_x, label_y, figure_name){
 	features.a_feature <- ddply(features, c('cat_label'), .drop=TRUE,
 			.fun = function(one_partition){
@@ -278,7 +294,8 @@ feature_boxplot <- function(features, a_feature, label_x, label_y, figure_name){
 	return(features.a_feature)
 }
 
-feature_boxplot_comp <- function(features, feature_1, feature_2, label_x, label_y, figure_name, comp_label=c('Chosen inviter', 'Average of all the inviters')){
+feature_boxplot_comp <- function(features, feature_1, feature_2, label_x, label_y, figure_name,
+		comp_label=c('Chosen inviter', 'Average of all the inviters')){
 	comp_features_1 <- as.data.frame(features$cat_label)
 	colnames(comp_features_1) <- c('cat_label')
 	comp_features_1$a_feature <- features[[feature_1]]
