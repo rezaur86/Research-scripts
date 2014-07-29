@@ -122,6 +122,8 @@ load_features <- function(file){
 #			'excep_avg_active_children', 'excep_avg_children_count', 'avg_excep_succ_ratio'
 			)
 	adoption_feat <- adoption_feat[adoption_feat$inv_count > 0, ] # & adoption_feat$avg_inviter_succ_ratio >= 0
+	adoption_feat$invitation_rate <- adoption_feat$inv_count * 24 / adoption_feat$inv_elapsed_hr
+	adoption_feat$inviter_rate <- adoption_feat$inviter_count * 24 / adoption_feat$inv_elapsed_hr
 	adoption_feat$gender_popularity <- 0
 	adoption_feat$gender_popularity[which(adoption_feat$male_inviters > adoption_feat$female_inviters)] <- 1
 	adoption_feat$int_gender <- 0
@@ -166,7 +168,7 @@ load_features <- function(file){
 			scale_fill_manual(values=c("gray40", "gray65", "gray85"), name = '', breaks=0:2,
 					labels=c('Invitee','Chosen inviter','Popularity\namong inviters'))+
 			xlab('Gender') + ylab('Adoption probability') 
-	save_ggplot(plot, 'iheart_gift/users_gender.pdf')
+	save_ggplot(plot, 'iheart_gift/users_gender.pdf', 24, opts(legend.position="bottom"))
 	
 	int_gender.df <- int_gender_stat(adoption_feat, c('chosen_int_gender', 'int_gender'))
 	int_gender.df$gender <- factor(int_gender.df$gender)
@@ -176,13 +178,14 @@ load_features <- function(file){
 			scale_fill_manual(values=c("gray40", "gray65"), name = '', breaks=0:1,
 					labels=c('Invitee vs. chosen inviter','Invitee vs. popularity\namong all inviters'))+
 			xlab('Invitee gender vs. inviter gender') + ylab('Adoption probability') 
-	save_ggplot(plot, 'iheart_gift/link_gender.pdf', 24, opts(legend.position=c(.7, .9)))
+	save_ggplot(plot, 'iheart_gift/link_gender.pdf', 24, opts(legend.position="bottom"))
 	
 	fav_gifts <- as.data.frame(unique(adoption_feat$chosen_inv_fav_gift))
 	colnames(fav_gifts) <- c('gifts')
 	temp <- c()
 	for (gift in fav_gifts$gifts){
-		temp <- c(temp, sum(adoption_feat$adopted[which(adoption_feat$chosen_inv_fav_gift == gift)])/nrow(adoption_feat))
+		gf <- adoption_feat$adopted[which(adoption_feat$chosen_inv_fav_gift == gift)]
+		temp <- c(temp, sum(gf)/length(gf))
 	}
 	fav_gifts$adop_prob <- temp
 	fav_gifts <- fav_gifts[order(-fav_gifts$adop_prob),]
@@ -199,10 +202,10 @@ load_features <- function(file){
 	adoption_feat$cat_label <- factor(adoption_feat$adopted, levels = categories, labels = c('No', 'Yes'))
 
 	feature_summary <- list(
-		users_inv_count = feature_boxplot(adoption_feat, 'inv_count', 
-			'Adopted by invitee', 'Number of received invitations', 'iheart_gift/users_inv_count.pdf'),
-		users_inviter_count = feature_boxplot(adoption_feat, 'inviter_count', 
-			'Adopted by invitee', 'Number of inviters', 'iheart_gift/users_inviter_count.pdf'),
+		users_inv_count = feature_boxplot(adoption_feat, 'invitation_rate', 
+			'Adopted by invitee', '# invitations recevied per day', 'iheart_gift/users_inv_count.pdf'),
+		users_inviter_count = feature_boxplot(adoption_feat, 'inviter_rate', 
+			'Adopted by invitee', '# inviters per day', 'iheart_gift/users_inviter_count.pdf'),
 		users_recep_burst = feature_boxplot(adoption_feat, 'recep_burst', 
 			'Adopted by invitee', 'Reception burstiness', 'iheart_gift/users_recep_burst.pdf'),
 		users_inv_elapsed_hr = feature_boxplot(adoption_feat, 'inv_elapsed_hr', 
@@ -241,8 +244,10 @@ gender_stat <- function(df, genders){
 	for (a_gender in genders){
 		gender.df_temp <- as.data.frame(c('Female','Male'))
 		colnames(gender.df_temp) <- c('gender')
-		gender.df_temp$adop_prob <- c(sum(df$adopted[which(df[[a_gender]] == 0)])/nrow(df),
-				sum(df$adopted[which(df[[a_gender]] == 1)])/nrow(df))
+		df0 <- df$adopted[which(df[[a_gender]] == 0)]
+		df1 <- df$adopted[which(df[[a_gender]] == 1)]
+		gender.df_temp$adop_prob <- c(sum(df0)/length(df0),
+				sum(df1)/length(df1))
 		gender.df_temp$type <- df_n
 		if(df_n == 0)
 			gender.df <- gender.df_temp
@@ -258,11 +263,15 @@ int_gender_stat <- function(df, int_genders){
 	for (a_gender in int_genders){
 		gender.df_temp <- as.data.frame(c('Female-\nfemale','Male-\nfemale', 'Female-\nmale', 'Male-\nmale'))
 		colnames(gender.df_temp) <- c('gender')
+		df0 <- df$adopted[which(df[[a_gender]] == 0)]
+		df1 <- df$adopted[which(df[[a_gender]] == 1)]
+		df2 <- df$adopted[which(df[[a_gender]] == 2)]
+		df3 <- df$adopted[which(df[[a_gender]] == 3)]
 		gender.df_temp$adop_prob <- c(
-				sum(df$adopted[which(df[[a_gender]] == 0)])/nrow(df),
-				sum(df$adopted[which(df[[a_gender]] == 1)])/nrow(df),
-				sum(df$adopted[which(df[[a_gender]] == 2)])/nrow(df),
-				sum(df$adopted[which(df[[a_gender]] == 3)])/nrow(df)
+				sum(df0)/length(df0),
+				sum(df1)/length(df1),
+				sum(df2)/length(df2),
+				sum(df3)/length(df3)
 		)
 		gender.df_temp$type <- df_n
 		if(df_n == 0)
@@ -272,6 +281,41 @@ int_gender_stat <- function(df, int_genders){
 		df_n <- df_n + 1
 	}
 	return(gender.df)	
+}
+
+facet_boxplot <- function(df, features, label_x, label_y, figure_name){
+	df_n <- 0
+	for (a_feature in features){
+		df_temp <- as.data.frame(df$cat_label)
+		colnames(df_temp) <- c('cat_label')
+		df_temp$a_feature <- df[[a_feature]]
+		df_temp$comp_type <- df_n
+		if (df_n == 0)
+			df.all <- df_temp
+		else
+			df.all <- rbind(df.all, df_temp)
+		df_n <- df_n + 1
+	}
+	features.a_feature <- ddply(df.all, c('comp_type', 'cat_label'), .drop=TRUE,
+			.fun = function(one_partition){
+				stats = boxplot.stats(one_partition$a_feature)$stats
+				c(ymin=stats[1],
+						lower=stats[2],
+						middle=stats[3],
+						upper=stats[4],
+						ymax=stats[5],
+						mean = mean(one_partition$a_feature))
+			})
+	features.a_feature$comp_type <- factor(features.a_feature$comp_type)
+	features.a_feature$cat_label <- factor(features.a_feature$cat_label)
+	
+	plot <- ggplot(features.a_feature, aes(x=cat_label, lower=lower, upper=upper, middle=middle, ymin=ymin, ymax=ymax)) + 
+			geom_boxplot(stat="identity") +
+			geom_point(data = features.a_feature, aes(x=cat_label, y=mean), shape = 8, size = 3)+
+			facet_wrap(. ~ comp_type, scales="free_y")+
+			xlab(label_x) + ylab(label_y) 
+	save_ggplot(plot, figure_name, width=14)
+	return(features.a_feature)
 }
 
 feature_boxplot <- function(features, a_feature, label_x, label_y, figure_name){
@@ -293,6 +337,32 @@ feature_boxplot <- function(features, a_feature, label_x, label_y, figure_name){
 	save_ggplot(plot, figure_name)
 	return(features.a_feature)
 }
+
+grid_boxplots <- function(feature_summary_list, feature_set, label_x_set, label_y_set, figure_name){
+	plist <- list()
+	i <- 1
+	for (a_feature in feature_set){
+		plist[[a_feature]] <- ggplot(feature_summary_list[[a_feature]], aes(x=cat_label, lower=lower, upper=upper, middle=middle, ymin=ymin, ymax=ymax)) + 
+				geom_boxplot(stat="identity") +
+				geom_point(data = feature_summary_list[[a_feature]], aes(x=cat_label, y=mean), shape = 8, size = 3)+
+				xlab(label_x_set[i]) + ylab(label_y_set[i]) +
+				myPlotTheme(19)	
+		i <- i + 1
+	}
+	pdf(figure_name, width = 15, height = 3.5)
+	print(do.call("grid.arrange", c(plist, ncol=length(plist))))
+	dev.off()
+#	save_ggplot(do.call("grid.arrange", c(plist, ncol=length(plist))), figure_name, width=14)
+}
+
+grid_boxplots(feat$feat_summary, c('users_inv_count','users_inviter_count', 
+				'users_recep_burst', 'users_inv_elapsed_hr', 'users_gift_veriety'),
+		c('Adopted by invitee\n(a) AR count', 'Adopted by invitee\n(b) Invitee count',
+				'Adopted by invitee\n(c) AR recep. burstiness',
+				'Adopted by invitee\n(d) AR elapsed hr', 'Adopted by invitee\n(e) Gift variety'),
+		c('# AR recevied per day', '# inviters per day', 'Reception burstiness', 
+				'Invitation elapsed hr', 'Gift variations in ARs'),
+		'iheart_gift/users_all_feat.pdf')
 
 feature_boxplot_comp <- function(features, feature_1, feature_2, label_x, label_y, figure_name,
 		comp_label=c('Chosen inviter', 'Average of all the inviters')){
