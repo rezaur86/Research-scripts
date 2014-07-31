@@ -319,18 +319,18 @@ build_all_models <- function(file='iheart_gift/size_vs_root.csv',
 #	cascade$cat <- factor(cascade$bin, levels = categories, labels = c(1,2,3))
 #	cascade$cat <- relevel(cascade$cat, ref = 1)
 	cascade$cat <- 0
-	cascade$cat[which(cascade$size > class_bin[2])] <- 1
-	chi <- list()
-	for (w_n in 1:4){
-		xnames.struct <- c(paste(c('depth_', w_n), collapse= ""), paste(c('width_', w_n), collapse= ""))
-		xnames.evol <- c(paste(c("speed_", w_n), collapse= ""), paste(c("burst_", w_n), collapse= ""))
-		xnames.root <- c(paste(c("root_contr_", w_n), collapse= ""), paste(c("rn_contr_", w_n), collapse= ""),
-				paste(c("succ_", w_n), collapse= ""))
-		xnames <- c(xnames.struct, xnames.evol, xnames.root)
-		print(xnames)
-		chi[[w_n]] <- feature_selction(cascade, 'cat', xnames)
-	}
-	return(chi)
+	cascade$cat[which(cascade$size >= class_bin[2])] <- 1
+#	chi <- list()
+#	for (w_n in 1:4){
+#		xnames.struct <- c(paste(c('depth_', w_n), collapse= ""), paste(c('width_', w_n), collapse= ""))
+#		xnames.evol <- c(paste(c("speed_", w_n), collapse= ""), paste(c("burst_", w_n), collapse= ""))
+#		xnames.root <- c(paste(c("root_contr_", w_n), collapse= ""), paste(c("rn_contr_", w_n), collapse= ""),
+#				paste(c("succ_", w_n), collapse= ""))
+#		xnames <- c(xnames.struct, xnames.evol, xnames.root)
+#		print(xnames)
+#		chi[[w_n]] <- feature_selction(cascade, 'cat', xnames)
+#	}
+#	return(chi)
 	cascade$cat <- factor(cascade$cat)
 	print('Size of dataset:')
 	print(nrow(cascade))
@@ -387,8 +387,8 @@ feature_selction <- function(df, cat, features){
 	return(chi_result)
 }
 
-#hugged_model <- build_all_models('hugged_cascade/size_vs_root.csv', 'hugged_cascade/root_weekly_evolution.csv', 
-#		'hugged_cascade/top_size.csv_all_weekly_evolution.csv',  c(1, 99, 10000000), c(TRUE, TRUE, TRUE, TRUE)) #5% 386
+hugged_model <- build_all_models('hugged_cascade/size_vs_root.csv', 'hugged_cascade/root_weekly_evolution.csv', 
+		'hugged_cascade/top_size.csv_all_weekly_evolution.csv',  c(1, 99, 10000000), c(TRUE, TRUE, TRUE, TRUE)) #5% 386
 iheart_model <- build_all_models(class_bin = c(1, 70, 10000000), week_n=c(TRUE, TRUE, TRUE, TRUE)) #5% 281
 
 #hugged_model <- build_all_models('hugged_cascade/size_vs_root.csv', 'hugged_cascade/top_size.csv_all_evolution.csv', 
