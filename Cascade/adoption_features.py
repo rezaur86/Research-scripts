@@ -236,7 +236,9 @@ for line in f:
     children_count[user_id] = int(element[13].strip())
     active_children[user_id] = int(element[14].strip())
     if has_adopted[user_id] == True:
-        inviters_features_file.write('%s,%s,%s,%s,%s\n' %(int(genders[user_id]), locales[user_id], sent_ARs[user_id], active_children[user_id], children_count[user_id]))
+        inviters_features_file.write('%s,%s,%s,%s,%s\n' %(
+            int(genders[user_id]), locales[user_id], sent_ARs[user_id], 
+            active_children[user_id], children_count[user_id]))
 
 count = 0
 f = open(sys.argv[1], "r")

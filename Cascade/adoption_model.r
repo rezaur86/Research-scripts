@@ -355,14 +355,14 @@ grid_boxplots <- function(feature_summary_list, feature_set, label_x_set, label_
 #	save_ggplot(do.call("grid.arrange", c(plist, ncol=length(plist))), figure_name, width=14)
 }
 
-grid_boxplots(feat$feat_summary, c('users_inv_count','users_inviter_count', 
-				'users_recep_burst', 'users_inv_elapsed_hr', 'users_gift_veriety'),
-		c('Adopted by invitee\n(a) AR count', 'Adopted by invitee\n(b) Invitee count',
-				'Adopted by invitee\n(c) AR recep. burstiness',
-				'Adopted by invitee\n(d) AR elapsed hr', 'Adopted by invitee\n(e) Gift variety'),
-		c('# AR recevied per day', '# inviters per day', 'Reception burstiness', 
-				'Invitation elapsed hr', 'Gift variations in ARs'),
-		'iheart_gift/users_all_feat.pdf')
+#grid_boxplots(feat$feat_summary, c('users_inv_count','users_inviter_count', 
+#				'users_recep_burst', 'users_inv_elapsed_hr', 'users_gift_veriety'),
+#		c('Adopted by invitee\n(a) AR count', 'Adopted by invitee\n(b) Invitee count',
+#				'Adopted by invitee\n(c) AR recep. burstiness',
+#				'Adopted by invitee\n(d) AR elapsed hr', 'Adopted by invitee\n(e) Gift variety'),
+#		c('# AR recevied per day', '# inviters per day', 'Reception burstiness', 
+#				'Invitation elapsed hr', 'Gift variations in ARs'),
+#		'iheart_gift/users_all_feat.pdf')
 
 feature_boxplot_comp <- function(features, feature_1, feature_2, label_x, label_y, figure_name,
 		comp_label=c('Chosen inviter', 'Average of all the inviters')){

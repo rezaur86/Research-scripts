@@ -115,7 +115,8 @@ parent_type_comp <- function(dir_vector, parent_type_vector){
 			})
 	cascade_comp$depth$parent_type <- factor(cascade_comp$depth$parent_type)
 	plot <- ggplot(cascade_comp$depth,aes(x = depth, y = (pdf_val))) + geom_point(aes(group = parent_type,colour = parent_type, shape = parent_type)) + 
-			scale_y_log10() #+ theme(legend.position=c(.8, .7))
+			scale_y_log10()+
+			scale_x_discrete(breaks=seq(0,60,5), labels=seq(0,60,5))
 	plot <- change_plot_attributes(plot, "Parent Type", 0:(parent_type_idx-1), parent_type_vector,  "Cascade Depth", "Empirical PDF")
 	save_ggplot(plot,file='parent_comp/depth_pdf_logy.pdf')
 	plot <- ggplot(cascade_comp$depth,aes(x = depth, y = (pdf_val))) + geom_point(aes(group = parent_type,colour = parent_type)) + scale_x_log10() + scale_y_log10()
@@ -397,7 +398,8 @@ size_vs_root_characteristics <- function (dir){
 	plot1 <- ggplot(size_vs_root[size_vs_root$size>=156,], aes(x=depth, y=size))+ geom_point(size=.5)+ scale_y_log10() + #+ geom_smooth(method=lm)
 			xlab("Reach of Influece of a Seed (Max Tree Depth)")+ylab("Size of the Adoption\nRooted at the Seed") + myPlotTheme(12)
 	plot2 <- ggplot(size_vs_root[size_vs_root$size>=156,], aes(x=lifespan, y=size))+ geom_point(size=.5)+ scale_y_log10() + #+ geom_smooth(method=lm)
-			scale_x_log10(breaks=c(86400,86400*7,2*86400*7,4*86400*7,8*86400*7,16*86400*7,32*86400*7,64*86400*7),labels=c('1day','1week','2week','4week','8week','16week','32week','64week'))+
+			scale_x_log10(breaks=c(1,10,60,600,3600,36000,86400,86400*7,2*86400*7,4*86400*7,8*86400*7,16*86400*7,32*86400*7,64*86400*7),
+					labels=c('1s','10s','1m','10m','1hr','10hr','1day','1week','2week','4week','8week','16week','32week','64week'))+
 			myPlotTheme(12) + opts(axis.text.x=theme_text(angle=45,hjust=1,vjust=1))+
 			xlab("Active Lifetime of a Seed")+ylab("Size of the Adoption\nRooted at the Seed")
 	plot3 <- ggplot(size_vs_root_odeg[size_vs_root_odeg$size>=156,], aes(x=root_outdeg, y=size))+ geom_point(size=.5)+ scale_y_log10() +
