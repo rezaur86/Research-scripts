@@ -44,7 +44,8 @@ chosen_inviter_fav_gift = array.array('H', (0,)*MAX_USERS)
 chosen_inviter_sent_ARs = array.array('I', (0,)*MAX_USERS)
 chosen_inviter_children_count = array.array('I', (0,)*MAX_USERS)
 chosen_inviter_active_children = array.array('I', (0,)*MAX_USERS)
-jaccard_neighboring_with_chosen_inviter = array.array('f', (-1,)*MAX_USERS)
+grand_parent_max_succ = array.array('f', (-1,)*MAX_USERS)
+grand_parent_avg_succ = array.array('f', (-1,)*MAX_USERS)
 
 inviters_gender_popularity = bitarray(MAX_USERS)
 inviters_gender_popularity.setall(True) #True/1 is for Male
@@ -119,6 +120,7 @@ def reg_children(user_id, parent_list):
     inviters_sent_AR = []
     inviters_active_children = []
     inviters_children_count = []
+    grand_parents = []
     for i in range(l-1,-1,-1):
         u_p = parent_list[i].strip().split(',')
         if u_p[0] == '-1':
@@ -136,6 +138,8 @@ def reg_children(user_id, parent_list):
         else:
             if user_id in node_parents:
                 node_parents[user_id].append(parent)
+                if parent in node_parents:
+                    grand_parents.extend(node_parents[parent])
             else:
                 node_parents[user_id] = array.array('I')
                 node_parents[user_id].append(parent)
@@ -157,6 +161,13 @@ def reg_children(user_id, parent_list):
             
     if len(inviters) == 0:
         return
+    setted_grand_parents = set(grand_parents)
+    if len(setted_grand_parents) > 0:
+        grand_parent_succ = []
+        for a_grand_parent in setted_grand_parents:
+            grand_parent_succ.append((active_children[a_grand_parent]*1.0)/children_count[a_grand_parent])        
+        grand_parent_avg_succ[user_id] = (1.0*sum(grand_parent_succ))/len(setted_grand_parents)
+        grand_parent_max_succ[user_id] = max(grand_parent_succ)
     chosen_inviter = None
     if inviter_choice == POPULAR_INVITER:
         chosen_inviter = max(inviters.iteritems(), key=operator.itemgetter(1))[0]
@@ -171,13 +182,6 @@ def reg_children(user_id, parent_list):
         chosen_inviter_sent_ARs[user_id] = sent_ARs[chosen_inviter]
         chosen_inviter_children_count[user_id] = children_count[chosen_inviter]
         chosen_inviter_active_children[user_id] = active_children[chosen_inviter]
-        setted_user_parents = set(node_parents[user_id])
-        if chosen_inviter in node_parents:
-            jaccard_neighboring_with_chosen_inviter[user_id] = (
-                (1.0*len(setted_user_parents.intersection(node_parents[chosen_inviter]))) / 
-                (1.0*len(setted_user_parents.union(node_parents[chosen_inviter]))))
-        else:
-            jaccard_neighboring_with_chosen_inviter[user_id] = 0
     if has_adopted[user_id] == False:
         del node_parents[user_id]
 
@@ -262,13 +266,13 @@ for i in range(0,MAX_USERS):
         continue
     if inviters_avg_success_ratio[i] < 0:
         continue
-    user_features_file.write('%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n' %(
+    user_features_file.write('%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n' %(
                             i, int(has_adopted[i]), int(genders[i]), locales[i], inv_count[i], inviter_count[i],
                             round(recep_burst[i],3), inv_elapsed_hr[i], gift_veriety[i],
                             chosen_inviter_for_users[i], int(chosen_inviter_gender[i]), chosen_inviter_locale[i],
                             chosen_inviter_inv_count[i], chosen_inviter_fav_gift[i],
                             chosen_inviter_sent_ARs[i], chosen_inviter_children_count[i], chosen_inviter_active_children[i],
-                            round(jaccard_neighboring_with_chosen_inviter[i],3),
+                            grand_parent_avg_succ[i], grand_parent_max_succ[i],
                             inviters_male_count[i], inviters_female_count[i], inviters_locale_popularity[i],
                             round(inviters_avg_invitation_count[i],3), round(inviters_avg_sent_ARs[i],3),
                             round(inviters_avg_active_children[i],3), round(inviters_avg_children_count[i],3),

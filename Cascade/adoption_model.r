@@ -114,7 +114,7 @@ load_features <- function(file){
 			'chosen_inviter','chosen_inv_gender', 'chosen_inv_locale',
 			'chosen_inv_invitation_count', 'chosen_inv_fav_gift', 
 			'chosen_inv_sent_ARs', 'chosen_inv_children_count', 'chosen_inv_active_children',
-			'neighboring',
+			'grand_parent_avg_succ', 'grand_parent_max_succ',
 			'male_inviters', 'female_inviters', 'inviters_locale_popularity',
 			'inviters_avg_invitation_count','inviters_avg_sent_ARs',
 			'inviters_avg_active_children', 'inviters_avg_children_count', 'avg_inviter_succ_ratio'
@@ -157,8 +157,8 @@ load_features <- function(file){
 	LD <- c('chosen_int_gender', 'chosen_int_locale')
 	LAD <- c('int_gender', 'int_locale')
 	
-	LF <- c('chosen_inv_invitation_count', 'chosen_inv_fav_gift', 'neighboring')
-	LAF <- c('inviters_avg_invitation_count')
+	LF <- c('chosen_inv_invitation_count', 'chosen_inv_fav_gift')
+	LAF <- c('inviters_avg_invitation_count', 'grand_parent_avg_succ', 'grand_parent_max_succ')
 
 	gender.df <- gender_stat(adoption_feat, c('gender', 'chosen_inv_gender', 'gender_popularity'))
 	gender.df$gender <- factor(gender.df$gender)
@@ -213,8 +213,8 @@ load_features <- function(file){
 		users_gift_veriety= feature_boxplot(adoption_feat, 'gift_veriety', 
 			'Adopted by invitee', 'Gift variation count in invitations', 'iheart_gift/users_gift_veriety.pdf'),
 
-		inv_jaccard_neighbor = feature_boxplot(adoption_feat, 'neighboring', 
-			'Adopted by invitee', 'Jaccard coefficient of neighbor similarity', 'iheart_gift/inv_jaccard_neighbor.pdf'),
+#		inv_jaccard_neighbor = feature_boxplot(adoption_feat, 'neighboring', 
+#			'Adopted by invitee', 'Jaccard coefficient of neighbor similarity', 'iheart_gift/inv_jaccard_neighbor.pdf'),
 
 		comp_invitation_gender = feature_boxplot_comp(adoption_feat, 'female_inviters', 'male_inviters',
 				'Adopted by invitee', 'Population among the inviters', 'iheart_gift/comp_gender_population.pdf', c('Female','Male')),
@@ -436,8 +436,8 @@ adoption_logit_model <- function(feat){
 	LD <- c('chosen_int_gender', 'chosen_int_locale')
 	LAD <- c('int_gender', 'int_locale')
 	
-	LF <- c('chosen_inv_invitation_count', 'chosen_inv_fav_gift', 'neighboring')
-	LAF <- c('inviters_avg_invitation_count')
+	LF <- c('chosen_inv_invitation_count', 'chosen_inv_fav_gift')
+	LAF <- c('inviters_avg_invitation_count', 'grand_parent_avg_succ', 'grand_parent_max_succ')
 	
 	fmla <- c(
 			paste("adopted~", paste(NR, collapse= "+")),
