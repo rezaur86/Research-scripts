@@ -109,44 +109,88 @@ apps_active_lifespan <- function(){
 }
 
 class_distance_across_apps <- function(df, figure_name, feature_name){
-	hug <- as.data.frame(df[,c('seq', 'hugged')])
+	hug <- as.data.frame(df[,c('seq', 'hugged')])	
+#	hug$rank <- as.numeric(-factor(hug$hugged))
 	q <- quantile(hug$hugged, c(.5,.9,.99))
-	hug$rank <- 1
-	hug$rank [hug$hugged < q[3]] <- 2
-	hug$rank [hug$hugged < q[2]] <- 3
-	hug$rank [hug$hugged < q[1]] <- 4
+#	hug_top <- hug[hug$hugged >= q[3], ]
+	hug$rank <- rank(hug$hugged, ties.method = "min") * 100 / length(hug$hugged)
+	hug$top <- 1
+	hug$top [hug$hugged < q[3]] <- 2
+	hug$top [hug$hugged < q[2]] <- 3
 #	hug <- as.data.frame(hug[,c('seq', 'rank')])
 	
 	ism <- as.data.frame(df[,c('seq', 'ismile')])
 	q <- quantile(ism$ismile, c(.5,.9,.99))
-	ism$rank <- 1
-	ism$rank [ism$ismile < q[3]] <- 2
-	ism$rank [ism$ismile < q[2]] <- 3
-	ism$rank [ism$ismile < q[1]] <- 4
+	ism$rank <- rank(ism$ismile, ties.method = "min") * 100 / length(ism$ismile)
+	ism$top <- 1
+	ism$top [ism$ismile < q[3]] <- 2
+	ism$top [ism$ismile < q[2]] <- 3
 #	ism <- as.data.frame(ism[,c('seq', 'rank')])
 	
 	ihe <- as.data.frame(df[,c('seq', 'iheart')])
 	q <- quantile(ihe$iheart, c(.5,.9,.99))
-	ihe$rank <- 1
-	ihe$rank [ihe$iheart < q[3]] <- 2
-	ihe$rank [ihe$iheart < q[2]] <- 3
-	ihe$rank [ihe$iheart < q[1]] <- 4
+	ihe$rank <- rank(ihe$iheart, ties.method = "min") * 100 / length(ihe$iheart)
+	ihe$top <- 1
+	ihe$top [ihe$iheart < q[3]] <- 2
+	ihe$top [ihe$iheart < q[2]] <- 3
 #	ihe <- as.data.frame(ihe[,c('seq', 'rank')])
 
-	temp <- merge(hug, ihe, by="seq")
-	hug_ism_ihe <- merge(temp, ism, by="seq")
-	hug_ism_ihe <- hug_ism_ihe[hug_ism_ihe$rank.x == 1 & hug_ism_ihe$rank.y == 1 & hug_ism_ihe$rank == 1, ]
-	feat_1 <- as.data.frame(hug_ism_ihe$hugged)
+	hug_ism <- merge(hug, ism, by="seq", all.x = TRUE)
+	hug_ihe <- merge(hug, ihe, by="seq", all.x = TRUE)
+	ism_ihe <- merge(ism, ihe, by="seq", all.x = TRUE)
+	
+	top_stat_99 <- as.data.frame(
+			c(length(which(hug_ism$top.x==1 & hug_ism$top.y==1))*100/length(which(hug_ism$top.x==1)),
+			length(which(hug_ihe$top.x==1 & hug_ihe$top.y==1))*100/length(which(hug_ihe$top.x==1)),
+			length(which(ism_ihe$top.x==1 & ism_ihe$top.y==1))*100/length(which(ism_ihe$top.x==1))),
+	)
+	colnames(top_stat_99) <- c('remained_top')
+	top_stat_99$app_type <- c(0,3,6)
+	top_stat_99$top_cat <- 0
+	top_stat_90 <- as.data.frame(
+			c(length(which(hug_ism$top.x<=2 & hug_ism$top.y<=2))*100/length(which(hug_ism$top.x<=2)),
+					length(which(hug_ihe$top.x<=2 & hug_ihe$top.y<=2))*100/length(which(hug_ihe$top.x<=2)),
+					length(which(ism_ihe$top.x<=2 & ism_ihe$top.y<=2))*100/length(which(ism_ihe$top.x<=2))),
+	)
+	colnames(top_stat_90) <- c('remained_top')
+	top_stat_90$app_type <- c(0,3,6)
+	top_stat_90$top_cat <- 1
+	top_stat <- rbind(top_stat_99, top_stat_90)
+	top_stat$top_cat <- factor(top_stat$top_cat)
+	plot <-ggplot(data=top_stat, aes(x=app_type, y=remained_top, fill=top_cat)) + 
+			geom_bar(stat="identity", position=position_dodge()) +
+			scale_x_discrete(breaks=c(0,3,6), labels= c('Hugged vs.\niSmile', 'Hugged vs.\niHeart', 'iSmile vs.\niHeart'))+
+			scale_fill_manual(values=c("gray40", "gray65"), name = '', breaks=0:1, labels=c('Top 1%', 'Top 10%'))+
+			xlab('') + ylab('Percentage remained as top')
+	save_ggplot(plot, paste(c('raw_stat_apps/top_stat_', figure_name, '.pdf'), collapse = ''), 24,
+			opts(legend.position=c(.8, .7)))
+
+	feat_1 <- as.data.frame(hug_ism[which(hug_ism$top.x<=1 & hug_ism$top.y>1),]$rank.y)
 	colnames(feat_1) <- c('feature')
-	feat_1$app_type <- 0 #'Hugged'
-	feat_2 <- as.data.frame(hug_ism_ihe$ismile)
+	feat_1$app_comp <- 0 #'Hugged vs iSmile'
+	feat_1$app_num <- 0 #'Hugged'
+	feat_11<- as.data.frame(hug_ism[which(hug_ism$top.x<=2 & hug_ism$top.y>2),]$rank.y)
+	colnames(feat_11) <- c('feature')
+	feat_11$app_comp <- 0 #'Hugged vs iSmile'
+	feat_11$app_num <- 1 #'iSmile'
+	feat_2 <- as.data.frame(hug_ihe[which(hug_ihe$top.x<=1 & hug_ihe$top.y>1),]$rank.y)
 	colnames(feat_2) <- c('feature')
-	feat_2$app_type <- 1 #'iSmile'
-	feat_3 <- as.data.frame(hug_ism_ihe$iheart)
+	feat_2$app_comp <- 1 #'Hugged vs iHeart'
+	feat_2$app_num <- 0 #'Hugged'
+	feat_21 <- as.data.frame(hug_ihe[which(hug_ihe$top.x<=2 & hug_ihe$top.y>2),]$rank.y)
+	colnames(feat_21) <- c('feature')
+	feat_21$app_comp <- 1 #'Hugged vs iHeart'
+	feat_21$app_num <- 1 #'iHeart'
+	feat_3 <- as.data.frame(ism_ihe[which(ism_ihe$top.x<=1 & ism_ihe$top.y>1),]$rank.y)
 	colnames(feat_3) <- c('feature')
-	feat_3$app_type <- 2 #'iHeart'
-	feat <- rbind(feat_1, feat_2, feat_3)
-	feat.box <- ddply(feat, c('app_type'), .drop=TRUE,
+	feat_3$app_comp <- 2 #'iSmile vs iHeart'
+	feat_3$app_num <- 0 #'iSmile'
+	feat_31 <- as.data.frame(ism_ihe[which(ism_ihe$top.x<=2 & ism_ihe$top.y>2),]$rank.y)
+	colnames(feat_31) <- c('feature')
+	feat_31$app_comp <- 2 #'iSmile vs iHeart'
+	feat_31$app_num <- 1 #'iHeart'
+	feat <- rbind(feat_1, feat_11, feat_2, feat_21, feat_3, feat_31)
+	feat.box <- ddply(feat, c('app_comp', 'app_num'), .drop=TRUE,
 			.fun = function(one_partition){
 				stats = boxplot.stats(one_partition$feature)$stats
 				c(ymin=stats[1],
@@ -156,14 +200,17 @@ class_distance_across_apps <- function(df, figure_name, feature_name){
 						ymax=stats[5],
 						mean = mean(one_partition$feature))
 			})
-	feat.box$app_type <- factor(feat.box$app_type)
-	plot <- ggplot(feat.box, aes(x=app_type, lower=lower, upper=upper, middle=middle, ymin=ymin, ymax=ymax)) + 
-			geom_boxplot(stat="identity", fatten = 4) + geom_point(data = feat.box, aes(x=app_type, y=mean), shape = 8, size = 3)+
-			scale_x_discrete(breaks=0:2, labels= c('Hugged', 'iSmile', 'iHeart'))+
-			scale_y_continuous(limits = c(0, 1))+
-			xlab('') + ylab(feature_name) 
-	save_ggplot(plot, paste(c('raw_stat_apps/feature_', figure_name, '.pdf'), collapse = ''))
-	return (hug_ism_ihe)
+	print(feat.box)
+	feat.box$app_comp <- factor(feat.box$app_comp)
+	feat.box$app_num <- factor(feat.box$app_num)
+	plot <- ggplot(feat.box, aes(x=app_comp, mean, fill = app_num, lower=lower, upper=upper, middle=middle, ymin=ymin, ymax=ymax)) + 
+			geom_boxplot(stat="identity", fatten = 4) + #geom_point(data = feat.box, aes(x=app_type, y=mean), shape = 8, size = 3)+
+			stat_summary(fun.y = "mean", geom = "point", shape= 8, size= 3, position=position_dodge(width=.9)) +
+			scale_x_discrete(breaks=0:2, labels= c('Hugged vs.\niSmile', 'Hugged vs.\niHeart', 'iSmile vs.\niHeart'))+
+			scale_fill_manual(values=c("gray40", "gray65"), name = '', breaks=0:1, labels=c('Top 1%', 'Top 10%'))+
+			xlab('Comparison') + ylab(feature_name) 
+	save_ggplot(plot, paste(c('raw_stat_apps/left_', figure_name, '.pdf'), collapse = ''), 24,
+			opts(legend.position="bottom"))
 	
 	hug_ism <- merge(hug[,c('seq', 'rank')], ism[,c('seq', 'rank')], by="seq")
 	hug_ism$distance <- (hug_ism$rank.y - hug_ism$rank.x)
@@ -177,31 +224,31 @@ class_distance_across_apps <- function(df, figure_name, feature_name){
 	ism_ihe$distance <- (ism_ihe$rank.y - ism_ihe$rank.x)
 	ism_ihe$comp_type <- 2 #'iSmile vs.   \n  iHeart'
 	
-	roles <- rbind(hug_ism, hug_ihe, ism_ihe)
-	roles.box <- ddply(roles, c('comp_type', 'rank.x'), .drop=TRUE,
-			.fun = function(one_partition){
-				stats = boxplot.stats(one_partition$distance)$stats
-				c(ymin=stats[1],
-						lower=stats[2],
-						middle=stats[3],
-						upper=stats[4],
-						ymax=stats[5],
-						mean = mean(one_partition$distance))
-			})
-	roles.box$comp_type <- factor(roles.box$comp_type)
-	roles.box$rank.x <- factor(roles.box$rank.x)
-	print(roles.box)
-	plot <- ggplot(roles.box, aes(rank.x, mean, fill = comp_type, lower=lower, upper=upper, middle=middle, ymin=ymin, ymax=ymax)) + 
-			geom_boxplot(stat="identity", fatten = 4)+ #scale_fill_grey(start = .5, end = .9, name = '') +
-			stat_summary(fun.y = "mean", geom = "point", shape= 8, size= 3, position=position_dodge(width=.9)) +
-			scale_x_discrete(breaks=1:4, labels= c('1st', '2nd', '3rd', '4th'))+
-			scale_fill_manual(values=c("gray40", "gray65", "gray90"), name = '', breaks=0:2,
-					labels=c('Hugged vs.   \n   iSmile', 'Hugged vs.   \n   iHeart', 'iSmile vs.   \n  iHeart'))+
-			xlab('Class') + ylab('Role distance')
-	save_ggplot(plot, paste(c('raw_stat_apps/cross_app_', figure_name, '.pdf'), collapse = ''), 24,
-			opts(legend.position="bottom"))
-	
-	temp.box <- roles.box
+#	roles <- rbind(hug_ism, hug_ihe, ism_ihe)
+#	roles.box <- ddply(roles, c('comp_type', 'rank.x'), .drop=TRUE,
+#			.fun = function(one_partition){
+#				stats = boxplot.stats(one_partition$distance)$stats
+#				c(ymin=stats[1],
+#						lower=stats[2],
+#						middle=stats[3],
+#						upper=stats[4],
+#						ymax=stats[5],
+#						mean = mean(one_partition$distance))
+#			})
+#	roles.box$comp_type <- factor(roles.box$comp_type)
+#	roles.box$rank.x <- factor(roles.box$rank.x)
+#	print(roles.box)
+#	plot <- ggplot(roles.box, aes(rank.x, mean, fill = comp_type, lower=lower, upper=upper, middle=middle, ymin=ymin, ymax=ymax)) + 
+#			geom_boxplot(stat="identity", fatten = 4)+ #scale_fill_grey(start = .5, end = .9, name = '') +
+#			stat_summary(fun.y = "mean", geom = "point", shape= 8, size= 3, position=position_dodge(width=.9)) +
+#			scale_x_discrete(breaks=1:4, labels= c('1st', '2nd', '3rd', '4th'))+
+#			scale_fill_manual(values=c("gray40", "gray65", "gray90"), name = '', breaks=0:2,
+#					labels=c('Hugged vs.   \n   iSmile', 'Hugged vs.   \n   iHeart', 'iSmile vs.   \n  iHeart'))+
+#			xlab('Class') + ylab('Role distance')
+#	save_ggplot(plot, paste(c('raw_stat_apps/cross_app_', figure_name, '.pdf'), collapse = ''), 24,
+#			opts(legend.position="bottom"))
+#	
+#	temp.box <- roles.box
 	sim_hug_ism <- as.data.frame(hug_ism$distance)
 	colnames(sim_hug_ism) <- 'distance'
 	sim_hug_ism$comp_type <- 0 #'Hugged vs.\niSmile'
@@ -234,7 +281,7 @@ class_distance_across_apps <- function(df, figure_name, feature_name){
 			scale_x_discrete(breaks=0:2, labels= c('Hugged vs.\niSmile', 'Hugged vs.\niHeart', 'iSmile vs.\niHeart'))+
 			xlab('') + ylab('Role distance') 
 	save_ggplot(plot, paste(c('raw_stat_apps/similarity_', figure_name, '.pdf'), collapse = ''))
-	return (list(class=temp.box, sim=roles))
+	return (list(sim=roles))
 }
 
 comb_app_user_features <- function (){
