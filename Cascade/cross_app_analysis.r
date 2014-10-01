@@ -138,19 +138,20 @@ class_distance_across_apps <- function(df, figure_name, feature_name){
 	hug_ism <- merge(hug, ism, by="seq", all.x = TRUE)
 	hug_ihe <- merge(hug, ihe, by="seq", all.x = TRUE)
 	ism_ihe <- merge(ism, ihe, by="seq", all.x = TRUE)
+	hug_ism_ihe <- merge(hug_ism, ihe, by="seq")
 	
 	top_stat_99 <- as.data.frame(
-			c(100-length(which(hug_ism$top.x==1 & hug_ism$top.y==1))*100/length(which(hug_ism$top.x==1)),
-			100-length(which(hug_ihe$top.x==1 & hug_ihe$top.y==1))*100/length(which(hug_ihe$top.x==1)),
-			100-length(which(ism_ihe$top.x==1 & ism_ihe$top.y==1))*100/length(which(ism_ihe$top.x==1))),
+			c(length(which(hug_ism$top.x==1 & hug_ism$top.y==1))*100/length(which(hug_ism$top.x==1)),
+			length(which(hug_ihe$top.x==1 & hug_ihe$top.y==1))*100/length(which(hug_ihe$top.x==1)),
+			length(which(ism_ihe$top.x==1 & ism_ihe$top.y==1))*100/length(which(ism_ihe$top.x==1))),
 	)
 	colnames(top_stat_99) <- c('remained_top')
 	top_stat_99$app_type <- c(0,3,6)
 	top_stat_99$top_cat <- 0
 	top_stat_90 <- as.data.frame(
-			c(100-length(which(hug_ism$top.x<=2 & hug_ism$top.y<=2))*100/length(which(hug_ism$top.x<=2)),
-					100-length(which(hug_ihe$top.x<=2 & hug_ihe$top.y<=2))*100/length(which(hug_ihe$top.x<=2)),
-					100-length(which(ism_ihe$top.x<=2 & ism_ihe$top.y<=2))*100/length(which(ism_ihe$top.x<=2))),
+			c(length(which(hug_ism$top.x<=2 & hug_ism$top.y<=2))*100/length(which(hug_ism$top.x<=2)),
+					length(which(hug_ihe$top.x<=2 & hug_ihe$top.y<=2))*100/length(which(hug_ihe$top.x<=2)),
+					length(which(ism_ihe$top.x<=2 & ism_ihe$top.y<=2))*100/length(which(ism_ihe$top.x<=2))),
 	)
 	colnames(top_stat_90) <- c('remained_top')
 	top_stat_90$app_type <- c(0,3,6)
@@ -283,7 +284,8 @@ class_distance_across_apps <- function(df, figure_name, feature_name){
 			scale_x_discrete(breaks=0:2, labels= c('Hugged vs.\niSmile', 'Hugged vs.\niHeart', 'iSmile vs.\niHeart'))+
 			xlab('') + ylab('Role distance') 
 	save_ggplot(plot, paste(c('raw_stat_apps/similarity_', figure_name, '.pdf'), collapse = ''))
-	return (list(top_stat=top_stat, left=feat.box, sim=roles.box, hug_ism=hug_ism, hug_ihe=hug_ihe, ism_ihe=ism_ihe))
+	return (list(top_stat=top_stat, left=feat.box, sim=roles.box,
+					hug_ism=hug_ism, hug_ihe=hug_ihe, ism_ihe=ism_ihe, hug_ism_ihe=hug_ism_ihe))
 }
 
 comb_app_user_features <- function (){
@@ -360,10 +362,15 @@ spearman_correlation <- function (df1, df2, app1, app2, filter = 1){
 #sr <- apps_success_ratio()
 #lt <- apps_active_lifespan()
 
-class_inv <- class_distance_across_apps (comb_sent_AR, 'invitations', 'Application requests')
-class_act_users <- class_distance_across_apps (comb_act_child, 'act_users', 'Activated users')
-class_succ <- class_distance_across_apps (comb_succ, 'succ_ratio', expression(paste('Success ratio (',tau,')')))
-class_act_life <- class_distance_across_apps (comb_act_life, 'act_life', 'Lifetime (Days)')
+class_inv <- class_distance_across_apps (comb_sent_AR, 'invitations', 'Percentile rank w.r.t AR')
+class_act_users <- class_distance_across_apps (comb_act_child, 'act_users', 'Percentile rank w.r.t AU')
+class_succ <- class_distance_across_apps (comb_succ, 'succ_ratio', 'Percentile rank w.r.t SR')
+class_act_life <- class_distance_across_apps (comb_act_life, 'act_life', 'Percentile rank w.r.t LT')
+
+get_remain_seq <- function(feat, app_name, top){
+	seq <- feat[[app_name]][which(feat[[app_name]]$top.x<=top & feat[[app_name]]$top.y<=top),]$seq
+	return(seq)
+}
 
 get_seq <- function(feat, app_name, top){
 	seq <- feat[[app_name]][which(feat[[app_name]]$top.x<=top & feat[[app_name]]$top.y>top),]$seq
@@ -378,22 +385,25 @@ get_feat <- function(feat, app_name, seq, feat_comp, app_comp){
 	
 }
 
-cross_feature <- function(feat_0, feat_comp_label, figure_name){
-	seq <- get_seq(feat_0, 'hug_ism', 2)
+cross_feature <- function(feat_0, left=0, pivot){
+	if(left == 0) seq <- get_remain_seq(feat_0, 'hug_ism', 2)
+	else seq <- get_seq(feat_0, 'hug_ism', 2)
 	feat_hug_ism <- rbind(
 			get_feat(class_inv, 'hug_ism', seq, 0, 0),
 			get_feat(class_act_users, 'hug_ism', seq, 1, 0),
 			get_feat(class_succ, 'hug_ism', seq, 2, 0),
 			get_feat(class_act_life, 'hug_ism', seq, 3, 0)
 	)
-	seq <- get_seq(feat_0, 'hug_ihe', 2)
+	if(left == 0) seq <- get_remain_seq(feat_0, 'hug_ihe', 2)
+	else  seq <- get_seq(feat_0, 'hug_ihe', 2)
 	feat_hug_ihe <- rbind(
 			get_feat(class_inv, 'hug_ihe', seq, 0, 1),
 			get_feat(class_act_users, 'hug_ihe', seq, 1, 1),
 			get_feat(class_succ, 'hug_ihe', seq, 2, 1),
 			get_feat(class_act_life, 'hug_ihe', seq, 3, 1)
 	)
-	seq <- get_seq(feat_0, 'ism_ihe', 2)
+	if(left == 0) seq <- get_remain_seq(feat_0, 'ism_ihe', 2)
+	else seq <- get_seq(feat_0, 'ism_ihe', 2)
 	feat_ism_ihe <- rbind(
 			get_feat(class_inv, 'ism_ihe', seq, 0, 2),
 			get_feat(class_act_users, 'ism_ihe', seq, 1, 2),
@@ -411,53 +421,137 @@ cross_feature <- function(feat_0, feat_comp_label, figure_name){
 						ymax=stats[5],
 						mean = mean(one_partition$feature))
 			})
-	return(feat.box)
-	print(feat.box)
-	feat.box$app_comp <- factor(feat.box$app_comp)
-	feat.box$feat_comp <- factor(feat.box$feat_comp)
-	plot <- ggplot(feat.box, aes(x=app_comp, mean, fill = feat_comp, lower=lower, upper=upper, middle=middle, ymin=ymin, ymax=ymax)) + 
-			geom_boxplot(stat="identity", fatten = 4) + #geom_point(data = feat.box, aes(x=app_type, y=mean), shape = 8, size = 3)+
-			stat_summary(fun.y = "mean", geom = "point", shape= 8, size= 3, position=position_dodge(width=.9)) +
-			scale_x_discrete(breaks=0:2, labels= c('Hugged vs.\niSmile', 'Hugged vs.\niHeart', 'iSmile vs.\niHeart'))+
-			scale_y_continuous(breaks=c(0,20,40,60,80,100))+
-			scale_fill_manual(values=c("gray40", "gray60", "gray75", "gray90"), name = '',
-					breaks=0:3, labels=feat_comp_label)+
-			xlab('Comparison') + ylab('Rank percentile') 
-	save_ggplot(plot, paste(c('raw_stat_apps/cross_feat_', figure_name, '.pdf'), collapse = ''), 24,
-			opts(legend.position="bottom"))
-	
+	feat.box$pivot <- pivot
+	return(feat.box)	
 }
 
 tile_cross_feature <- function (){
-	cross_inv <- cross_feature(class_inv, c('AR', 'AU', 'SR', 'LT'), figure_name='ar')
-	cross_inv$pivot <- 0
-	cross_act_users <- cross_feature(class_act_users, c('AR', 'AU', 'SR', 'LT'), figure_name='au')
-	cross_act_users$pivot <- 1
-	cross_succ <- cross_feature(class_succ, c('AR', 'AU', 'SR', 'LT'), figure_name='sr')
-	cross_succ$pivot <- 2
-	cross_act_life <- cross_feature(class_act_life, c('AR', 'AU', 'SR', 'LT'), figure_name='lt')
-	cross_act_life$pivot <- 3
+	cross_inv <- rbind(cross_feature(class_inv, 0, 0),
+			cross_feature(class_inv, 1, 1))
+	cross_act_users <- rbind(cross_feature(class_act_users, 0, 2),
+			cross_feature(class_act_users, 1, 3))
+	cross_succ <- rbind(cross_feature(class_succ, 0, 4),
+			cross_feature(class_succ, 1, 5))
+	cross_act_life <- rbind(cross_feature(class_act_life, 0, 6),
+			cross_feature(class_act_life, 1, 7))
 	
 	cross_feat <- rbind(cross_inv, cross_act_users, cross_succ, cross_act_life)
 	cross_feat$app_comp <- factor(cross_feat$app_comp)
 	cross_feat$feat_comp <- factor(cross_feat$feat_comp, levels = c(0,1,2,3), labels = c("AR","AU","SR","LT"))
-	cross_feat$pivot <- factor(cross_feat$pivot, levels = c(0,1,2,3), labels = c("AR","AU","SR","LT"))
+	cross_feat$pivot <- factor(cross_feat$pivot, levels = c(0,1,2,3,4,5,6,7), 
+			labels = c("Remained\nas top 10%\nw.r.t AR","Left from\ntop 10%\nw.r.t AR",
+					"Remained\nas top 10%\nw.r.t AU","Left from\ntop 10%\nw.r.t AU",
+					"Remained\nas top 10%\nw.r.t SR","Left from\ntop 10%\nw.r.t SR",
+					"Remained\nas top 10%\nw.r.t LT","Left from\ntop 10%\nw.r.t LT"))
 	
 	plot <- ggplot(cross_feat, aes(x=app_comp, mean, fill = app_comp, lower=lower, upper=upper, middle=middle, ymin=ymin, ymax=ymax)) + 
 			geom_boxplot(stat="identity", fatten = 4) + #geom_point(data = feat.box, aes(x=app_type, y=mean), shape = 8, size = 3)+
 			stat_summary(fun.y = "mean", geom = "point", shape= 8, size= 3, position=position_dodge(width=.9)) +
 			scale_fill_manual(values=c("gray40", "gray65", "gray90"), name = '',
 					breaks=0:2, labels= c('Hugged vs.\niSmile', 'Hugged vs.\niHeart', 'iSmile vs.\niHeart'))+
-			facet_grid(pivot ~ feat_comp)+
+			facet_grid(feat_comp ~ pivot)+
 			scale_x_discrete(breaks=NULL)+
 			scale_y_continuous(breaks=c(0,20,40,60,80))+
 #			scale_fill_manual(values=c("gray40", "gray60", "gray75", "gray90"), name = '',
 #				breaks=0:3, labels=feat_comp_label)+
-			xlab('Comparison') + ylab('Rank percentile') 
+			xlab('Comparison') + ylab('Rank percentile')
+	
 	save_ggplot(plot, paste(c('raw_stat_apps/cross_feat.pdf'), collapse = ''), 24,
-			opts(legend.position="bottom"))
+			opts(legend.position="bottom"), width=12, height=10)
+	return(cross_feat)
 }
 
-#tile_cross_feature()
+get_remain_seq <- function(feat, app_name, top){
+	seq <- feat[[app_name]][which(feat[[app_name]]$top.x<=top & feat[[app_name]]$top.y<=top),]$seq
+	return(seq)
+}
+
+get_feat <- function(feat, app_name, seq, feat_comp, app_comp, app_side){
+	return (data.frame(
+					seq = seq,
+					feature = feat[[app_name]][feat[[app_name]]$seq %in% seq,][[app_side]],
+					feat_comp = feat_comp, app_comp = app_comp))
+	
+}
+
+cross_feature <- function(feat_0, left=0, pivot, app_side){
+	if(left == 0) seq <- get_remain_seq(feat_0, 'hug_ism', 2)
+	else seq <- get_seq(feat_0, 'hug_ism', 2)
+	feat_hug_ism <- rbind(
+			get_feat(class_inv, 'hug_ism', seq, 0, 0, app_side),
+			get_feat(class_act_users, 'hug_ism', seq, 1, 0, app_side),
+			get_feat(class_succ, 'hug_ism', seq, 2, 0, app_side),
+			get_feat(class_act_life, 'hug_ism', seq, 3, 0, app_side)
+	)
+	if(left == 0) seq <- get_remain_seq(feat_0, 'hug_ihe', 2)
+	else  seq <- get_seq(feat_0, 'hug_ihe', 2)
+	feat_hug_ihe <- rbind(
+			get_feat(class_inv, 'hug_ihe', seq, 0, 1, app_side),
+			get_feat(class_act_users, 'hug_ihe', seq, 1, 1, app_side),
+			get_feat(class_succ, 'hug_ihe', seq, 2, 1, app_side),
+			get_feat(class_act_life, 'hug_ihe', seq, 3, 1, app_side)
+	)
+	if(left == 0) seq <- get_remain_seq(feat_0, 'ism_ihe', 2)
+	else seq <- get_seq(feat_0, 'ism_ihe', 2)
+	feat_ism_ihe <- rbind(
+			get_feat(class_inv, 'ism_ihe', seq, 0, 2, app_side),
+			get_feat(class_act_users, 'ism_ihe', seq, 1, 2, app_side),
+			get_feat(class_succ, 'ism_ihe', seq, 2, 2, app_side),
+			get_feat(class_act_life, 'ism_ihe', seq, 3, 2, app_side)
+	)
+	feat <- rbind(feat_hug_ism, feat_hug_ihe, feat_ism_ihe)
+	feat.box <- ddply(feat, c('app_comp', 'feat_comp'), .drop=TRUE,
+			.fun = function(one_partition){
+				stats = boxplot.stats(one_partition$feature)$stats
+				c(ymin=stats[1],
+						lower=stats[2],
+						middle=stats[3],
+						upper=stats[4],
+						ymax=stats[5],
+						mean = mean(one_partition$feature))
+			})
+	feat.box$pivot <- pivot
+	return(feat.box)	
+}
+
+tile_cross_feature <- function (){
+	cross_inv <- rbind(cross_feature(class_inv, 0, 0, 'rank.x'),
+			cross_feature(class_inv, 0, 1, 'rank.y'))
+	cross_act_users <- rbind(cross_feature(class_act_users, 0, 2, 'rank.x'),
+			cross_feature(class_act_users, 0, 3, 'rank.y'))
+	cross_succ <- rbind(cross_feature(class_succ, 0, 4, 'rank.x'),
+			cross_feature(class_succ, 0, 5, 'rank.y'))
+	cross_act_life <- rbind(cross_feature(class_act_life, 0, 6, 'rank.x'),
+			cross_feature(class_act_life, 0, 7, 'rank.y'))
+	
+	cross_feat <- rbind(cross_inv, cross_act_users, cross_succ, cross_act_life)
+	cross_feat$app_comp <- factor(cross_feat$app_comp)
+	cross_feat$feat_comp <- factor(cross_feat$feat_comp, levels = c(0,1,2,3), labels = c("(1)\nAR","(2)\nAU","(3)\nSR","(4)\nLT"))
+	cross_feat$pivot <- factor(cross_feat$pivot, levels = c(0,1,2,3,4,5,6,7), 
+			labels = c("(1)\nRank in\napp1\nw.r.t AR","(2)\nRank in\napp2\nw.r.t AR",
+					"(3)\nRank in\napp1\nw.r.t AU","(4)\nRank in\napp2\nw.r.t AU",
+					"(5)\nRank in\napp1\nw.r.t SR","(6)\nRank in\napp2\nw.r.t SR",
+					"(7)\nRank in\napp1\nw.r.t LT","(8)\nRank in\napp2\nw.r.t LT"))
+	
+	plot <- ggplot(cross_feat, aes(x=app_comp, mean, fill = app_comp, lower=lower, upper=upper, middle=middle, ymin=ymin, ymax=ymax)) + 
+			geom_boxplot(stat="identity", fatten = 4) + #geom_point(data = feat.box, aes(x=app_type, y=mean), shape = 8, size = 3)+
+			stat_summary(fun.y = "mean", geom = "point", shape= 8, size= 3, position=position_dodge(width=.9)) +
+			scale_fill_manual(values=c("gray40", "gray65", "gray90"), 
+					name = 'app1 vs.  \napp2:',
+					breaks=0:2, labels= c('Hugged vs.\niSmile', 'Hugged vs.\niHeart', 'iSmile vs.\niHeart'))+
+			facet_grid(feat_comp ~ pivot)+
+			scale_x_discrete(breaks=NULL)+
+			scale_y_continuous(breaks=c(0,20,40,60,80))+
+#			scale_fill_manual(values=c("gray40", "gray60", "gray75", "gray90"), name = '',
+#				breaks=0:3, labels=feat_comp_label)+
+			xlab(NULL) + ylab('Percentile rank')
+	
+	save_ggplot(plot, paste(c('raw_stat_apps/cross_feat_app1_app2.pdf'), collapse = ''), 24,
+			opts(legend.position="bottom"), width=12, height=10)
+	return(cross_feat)
+}
+
+tile_feat <- tile_cross_feature()
+
 
 #corr <- comb_app_user_features()
