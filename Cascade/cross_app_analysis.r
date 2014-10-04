@@ -146,7 +146,7 @@ class_distance_across_apps <- function(df, figure_name, feature_name){
 			length(which(ism_ihe$top.x==1 & ism_ihe$top.y==1))*100/length(which(ism_ihe$top.x==1))),
 	)
 	colnames(top_stat_99) <- c('remained_top')
-	top_stat_99$app_type <- c(0,3,6)
+	top_stat_99$app_type <- c(0,5,10)
 	top_stat_99$top_cat <- 0
 	top_stat_90 <- as.data.frame(
 			c(length(which(hug_ism$top.x<=2 & hug_ism$top.y<=2))*100/length(which(hug_ism$top.x<=2)),
@@ -154,18 +154,19 @@ class_distance_across_apps <- function(df, figure_name, feature_name){
 					length(which(ism_ihe$top.x<=2 & ism_ihe$top.y<=2))*100/length(which(ism_ihe$top.x<=2))),
 	)
 	colnames(top_stat_90) <- c('remained_top')
-	top_stat_90$app_type <- c(0,3,6)
+	top_stat_90$app_type <- c(0,5,10)
 	top_stat_90$top_cat <- 1
 	top_stat <- rbind(top_stat_99, top_stat_90)
 	top_stat$top_cat <- factor(top_stat$top_cat)
 	plot <-ggplot(data=top_stat, aes(x=app_type, y=remained_top, fill=top_cat)) + 
-			geom_bar(stat="identity", position=position_dodge()) +
-			scale_x_discrete(breaks=c(0,3,6), labels= c('Hugged vs.\niSmile', 'Hugged vs.\niHeart', 'iSmile vs.\niHeart'))+
+			geom_bar(stat="identity", position=position_dodge(), width=4) +
+			scale_x_discrete(breaks=c(0,5,10), labels= c('Hugged vs.\niSmile', 'Hugged vs.\niHeart', 'iSmile vs.\niHeart'),
+					limits=c(0,5,10))+
 			scale_y_continuous(breaks=c(0,10,20,30,40,50,60,70,80,90,100))+
 			scale_fill_manual(values=c("gray40", "gray65"), name = '', breaks=0:1, labels=c('Top 1%', 'Top 10%'))+
-			xlab('') + ylab('Percentage remained as top')
+			xlab('') + ylab('Percentage of remaining users')
 	save_ggplot(plot, paste(c('raw_stat_apps/top_stat_', figure_name, '.pdf'), collapse = ''), 24,
-			opts(legend.position=c(.8, .7)))
+			opts(legend.position=c(.2, .9)))
 
 	feat_1 <- as.data.frame(hug_ism[which(hug_ism$top.x<=1 & hug_ism$top.y>1),]$rank.y)
 	colnames(feat_1) <- c('feature')
@@ -211,7 +212,7 @@ class_distance_across_apps <- function(df, figure_name, feature_name){
 			scale_x_discrete(breaks=0:2, labels= c('Hugged vs.\niSmile', 'Hugged vs.\niHeart', 'iSmile vs.\niHeart'))+
 			scale_y_continuous(breaks=c(0,20,40,60,80,100))+
 			scale_fill_manual(values=c("gray40", "gray65"), name = '', breaks=0:1, labels=c('Top 1%', 'Top 10%'))+
-			xlab('Comparison') + ylab(feature_name) 
+			xlab(NULL) + ylab(feature_name) 
 	save_ggplot(plot, paste(c('raw_stat_apps/left_', figure_name, '.pdf'), collapse = ''), 24,
 			opts(legend.position="bottom"))
 	
@@ -282,7 +283,7 @@ class_distance_across_apps <- function(df, figure_name, feature_name){
 	plot <- ggplot(roles.box, aes(x=comp_type, lower=lower, upper=upper, middle=middle, ymin=ymin, ymax=ymax)) + 
 			geom_boxplot(stat="identity", fatten = 4) + geom_point(data = roles.box, aes(x=comp_type, y=mean), shape = 8, size = 3)+
 			scale_x_discrete(breaks=0:2, labels= c('Hugged vs.\niSmile', 'Hugged vs.\niHeart', 'iSmile vs.\niHeart'))+
-			xlab('') + ylab('Role distance') 
+			xlab('') + ylab('Role difference') 
 	save_ggplot(plot, paste(c('raw_stat_apps/similarity_', figure_name, '.pdf'), collapse = ''))
 	return (list(top_stat=top_stat, left=feat.box, sim=roles.box,
 					hug_ism=hug_ism, hug_ihe=hug_ihe, ism_ihe=ism_ihe, hug_ism_ihe=hug_ism_ihe))
@@ -362,10 +363,10 @@ spearman_correlation <- function (df1, df2, app1, app2, filter = 1){
 #sr <- apps_success_ratio()
 #lt <- apps_active_lifespan()
 
-class_inv <- class_distance_across_apps (comb_sent_AR, 'invitations', 'Percentile rank w.r.t AR')
-class_act_users <- class_distance_across_apps (comb_act_child, 'act_users', 'Percentile rank w.r.t AU')
-class_succ <- class_distance_across_apps (comb_succ, 'succ_ratio', 'Percentile rank w.r.t SR')
-class_act_life <- class_distance_across_apps (comb_act_life, 'act_life', 'Percentile rank w.r.t LT')
+class_inv <- class_distance_across_apps (comb_sent_AR, 'invitations', 'Percentile rank')
+class_act_users <- class_distance_across_apps (comb_act_child, 'act_users', 'Percentile rank')
+class_succ <- class_distance_across_apps (comb_succ, 'succ_ratio', 'Percentile rank')
+class_act_life <- class_distance_across_apps (comb_act_life, 'act_life', 'Percentile rank')
 
 get_remain_seq <- function(feat, app_name, top){
 	seq <- feat[[app_name]][which(feat[[app_name]]$top.x<=top & feat[[app_name]]$top.y<=top),]$seq
@@ -526,12 +527,12 @@ tile_cross_feature <- function (){
 	
 	cross_feat <- rbind(cross_inv, cross_act_users, cross_succ, cross_act_life)
 	cross_feat$app_comp <- factor(cross_feat$app_comp)
-	cross_feat$feat_comp <- factor(cross_feat$feat_comp, levels = c(0,1,2,3), labels = c("(1)\nAR","(2)\nAU","(3)\nSR","(4)\nLT"))
+	cross_feat$feat_comp <- factor(cross_feat$feat_comp, levels = c(0,1,2,3), labels = c("(f1)\nAR","(f2)\nAU","(f3)\nSR","(f4)\nLT"))
 	cross_feat$pivot <- factor(cross_feat$pivot, levels = c(0,1,2,3,4,5,6,7), 
-			labels = c("(1)\nRank in\napp1\nw.r.t AR","(2)\nRank in\napp2\nw.r.t AR",
-					"(3)\nRank in\napp1\nw.r.t AU","(4)\nRank in\napp2\nw.r.t AU",
-					"(5)\nRank in\napp1\nw.r.t SR","(6)\nRank in\napp2\nw.r.t SR",
-					"(7)\nRank in\napp1\nw.r.t LT","(8)\nRank in\napp2\nw.r.t LT"))
+			labels = c("(1)\nUsers\nin app1\nw.r.t AR","(2)\nUsers\nin app2\nw.r.t AR",
+					"(3)\nUsers\nin app1\nw.r.t AU","(4)\nUsers\nin app2\nw.r.t AU",
+					"(5)\nUsers\nin app1\nw.r.t SR","(6)\nUsers\nin app2\nw.r.t SR",
+					"(7)\nUsers\nin app1\nw.r.t LT","(8)\nUsers\nin app2\nw.r.t LT"))
 	
 	plot <- ggplot(cross_feat, aes(x=app_comp, mean, fill = app_comp, lower=lower, upper=upper, middle=middle, ymin=ymin, ymax=ymax)) + 
 			geom_boxplot(stat="identity", fatten = 4) + #geom_point(data = feat.box, aes(x=app_type, y=mean), shape = 8, size = 3)+
