@@ -1,3 +1,5 @@
+options( java.parameters = "-Xmx32g" )
+library( "RWeka" )
 source('~/scripts/Cascade/tools.r')
 #source('~/scripts/Cascade/plfit.r')
 library(ggplot2)
@@ -31,7 +33,7 @@ myRLogisticRegression <- function(fmla, data, control = NULL){ #control is to ma
 
 buildUniversalModel <- function(classifier_func, tr_data, te_data, fmla, is_weka, weka_params, eval_metrics){
 	tr_m = classifier_func(fmla, data=tr_data, control = weka_params)#, options=c('model' = TRUE, 'instances' = TRUE))
-	
+	print(tr_m)
 	############################### Training set performance, along with maximum f-cutoff on training set
 	if (is_weka){
 		tr_pred <- predict(tr_m, newdata = tr_data, type='probability')
@@ -76,7 +78,7 @@ buildUniversalModel <- function(classifier_func, tr_data, te_data, fmla, is_weka
 	te_50_idx = which.min(abs(f@x.values[[1]] - 0.5))
 	te_50_perf = getPerformanceAt(pred, prec, rec, fpr, f, te_50_idx)
 	
-	ret = list(auc=auc, te_50_perf=te_50_perf, tr_cutoff_perf=tr_cutoff_perf, te_cutoff_perf=te_cutoff_perf)
+	ret = list(model=tr_m, auc=auc, te_50_perf=te_50_perf, tr_cutoff_perf=tr_cutoff_perf, te_cutoff_perf=te_cutoff_perf)
 	
 	return(ret)	
 }
@@ -96,7 +98,8 @@ buildClassifier <- function(classifier, tr_data, te_data, fmla, eval_metrics){
 #		> you may want to change the code to trun off "collapse" by yourself.
 	}else if (classifier == 3){ #SVM
 		classifier_func = SMO
-		weka_params = Weka_control(M = TRUE) #Fits Logistic Regression model for better probability estimate
+		weka_params = Weka_control(#K = list("weka.classifiers.functions.supportVector.RBFKernel", G = .1),
+				M = TRUE) #Fits Logistic Regression model for better probability estimate
 	}else if (classifier == 4){ #NaiveBayes
 		classifier_func = NaiveBayes
 	}else if (classifier == 0){ #R Logistic Regression
@@ -173,12 +176,31 @@ load_features <- function(file){
 	categories <- levels(adoption_feat$adopted_ihe)
 	adoption_feat$cat_label <- factor(adoption_feat$adopted_ihe, levels = categories, labels = c('No', 'Yes'))
 
+	adoption_feat <- feature_scaling(adoption_feat,
+			c('inv_count_ihe', 'inviter_count_ihe', 'inv_elapsed_hr_ihe', 'gift_veriety_ihe',
+					'chosen_inviter_sent_ARs_ihe', 'chosen_inviter_active_children_ihe',
+					'inviters_avg_sent_ARs_ihe', 'inviters_avg_active_children_ihe', 
+					'chosen_inviter_inv_count_ihe', 'inviters_avg_inv_count_ihe', 
+					'inv_count_hug', 'inviter_count_hug', 'inv_elapsed_hr_hug', 'gift_veriety_hug',
+					'inv_count_ism', 'inviter_count_ism', 'inv_elapsed_hr_ism', 'gift_veriety_ism',
+					'chosen_inviter_sent_ARs_hug', 'chosen_inviter_active_children_hug',
+					'chosen_inviter_sent_ARs_ism', 'chosen_inviter_active_children_ism',
+					'inviters_avg_sent_ARs_hug', 'inviters_avg_active_children_hug',
+					'inviters_avg_sent_ARs_ism', 'inviters_avg_active_children_ism',
+					LHF, LHAF))
 	splitted_data <- split(adoption_feat, sample(1:2, nrow(adoption_feat), replace=TRUE, prob=c(1,2)))
 	training <- splitted_data[[2]]
 	test <- splitted_data[[1]]
 #	training$adopted_ihe <- factor(training$adopted_ihe)
 #	test$adopted_ihe <- factor(test$adopted_ihe)
 	return(list(training = training, test = test, chi=chi_test))
+}
+
+feature_scaling <- function(feat, feat_col_list){
+	for (a_feat_col in feat_col_list){
+		feat[[a_feat_col]] <- scale(feat[[a_feat_col]], center = TRUE, scale = TRUE)
+	}
+	return(feat)
 }
 
 model_names <- c(
@@ -188,7 +210,7 @@ model_names <- c(
 		'NS+SD+NR+RD+LD', 'NAS+ASD+NR+RD+LAD'
 		)
 
-adoption_logit_model <- function(feat){
+adoption_logit_model <- function(feat, model_id){
 	# Invitee's properties
 	NR <- c('inv_count_ihe', 'inviter_count_ihe', 'recep_burst_ihe', 'inv_elapsed_hr_ihe', 'gift_veriety_ihe')
 	# Inviter's properties
@@ -220,21 +242,21 @@ adoption_logit_model <- function(feat){
 	LHAF <- c('inviters_avg_inv_count_hug', 'inviters_avg_inv_count_ism')
 	
 	fmla <- c(
-			paste("adopted_ihe~", paste(NR, collapse= "+")),
-			paste("adopted_ihe~", paste(NS, collapse= "+")),
-			paste("adopted_ihe~", paste(NAS, collapse= "+")),
-	
-#			paste("adopted_ihe~", paste(c(NR, RD), collapse= "+")),
-#			paste("adopted_ihe~", paste(c(NS, SD), collapse= "+")),
-#			paste("adopted_ihe~", paste(c(NAS, ASD), collapse= "+")),
-	
-#			paste("adopted_ihe~", paste(LF, collapse= "+")),
-#			paste("adopted_ihe~", paste(LAF, collapse= "+")),
-#			
-			paste("adopted_ihe~", paste(c(NS, NR, LF), collapse= "+")),
-			paste("adopted_ihe~", paste(c(NAS, NR, LAF), collapse= "+")),
-
-			paste("adopted_ihe~", paste(c(NS, NR, LF, ADH, NHS, NHR, LHF), collapse= "+")),
+#			paste("adopted_ihe~", paste(NR, collapse= "+")),
+#			paste("adopted_ihe~", paste(NS, collapse= "+")),
+#			paste("adopted_ihe~", paste(NAS, collapse= "+")),
+#	
+##			paste("adopted_ihe~", paste(c(NR, RD), collapse= "+")),
+##			paste("adopted_ihe~", paste(c(NS, SD), collapse= "+")),
+##			paste("adopted_ihe~", paste(c(NAS, ASD), collapse= "+")),
+#	
+##			paste("adopted_ihe~", paste(LF, collapse= "+")),
+##			paste("adopted_ihe~", paste(LAF, collapse= "+")),
+##			
+#			paste("adopted_ihe~", paste(c(NS, NR, LF), collapse= "+")),
+#			paste("adopted_ihe~", paste(c(NAS, NR, LAF), collapse= "+")),
+#
+#			paste("adopted_ihe~", paste(c(NS, NR, LF, ADH, NHS, NHR, LHF), collapse= "+")),
 			paste("adopted_ihe~", paste(c(NAS, NR, LAF, ADH, NHAS, NHR, LHAF), collapse= "+"))
 			
 #			paste("adopted_ihe~", paste(c(NS, SD, NR, RD, LF, LD), collapse= "+")),
@@ -242,13 +264,11 @@ adoption_logit_model <- function(feat){
 	)
 	models <- c()
 	for (i in 1:length(fmla)){
-		models[[i]] <- buildClassifier(0, feat$training, feat$test, as.formula(fmla[i]), NULL)
+		print(fmla[i])
+		models[[i]] <- buildClassifier(model_id, feat$training, feat$test, as.formula(fmla[i]), NULL)
 	}
 	return(models)
 }
-
-#feat <- load_features('iheart_gift/succ_adoption_features.csv')
-#logistic_model <- adoption_logit_model(feat)
 
 feature_selction <- function(df, cat, features){
 	chi_vals <- c()
@@ -322,3 +342,9 @@ latex_result <- function(result){
 	print(xtable(models,digits=c(3)), include.rownames=FALSE)
 	return (models)
 }
+
+#feat <- load_features('iheart_gift/adoption_features_test.csv')
+#logistic_model <- adoption_logit_model(feat,0)
+#J48_model <- adoption_logit_model(feat, 2)
+#svm_model <- adoption_logit_model(feat, 3)
+#NB_model <- adoption_logit_model(feat, 4)
