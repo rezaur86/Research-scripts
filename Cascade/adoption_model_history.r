@@ -212,7 +212,7 @@ model_names <- c(
 
 adoption_logit_model <- function(feat, model_id){
 	# Invitee's properties
-	NR <- c('inv_count_ihe', 'inviter_count_ihe', 'recep_burst_ihe', 'inv_elapsed_hr_ihe', 'gift_veriety_ihe')
+	NR <- c('inv_count_ihe', 'recep_burst_ihe', 'inv_elapsed_hr_ihe', 'gift_veriety_ihe')#, 'inviter_count_ihe'
 	# Inviter's properties
 	NS <- c('chosen_inviter_succ_ratio_ihe', 'chosen_inviter_sent_ARs_ihe', 'chosen_inviter_active_children_ihe')
 	# Average inviters' properties
@@ -232,8 +232,8 @@ adoption_logit_model <- function(feat, model_id){
 	LAF <- c('inviters_avg_inv_count_ihe')
 	
 	ADH <- c('adopted_hug', 'adopted_ism')
-	NHR <- c('inv_count_hug', 'inviter_count_hug', 'recep_burst_hug', 'inv_elapsed_hr_hug', 'gift_veriety_hug',
-			'inv_count_ism', 'inviter_count_ism', 'recep_burst_ism', 'inv_elapsed_hr_ism', 'gift_veriety_ism')
+	NHR <- c('inv_count_hug', 'recep_burst_hug', 'inv_elapsed_hr_hug', 'gift_veriety_hug',#, 'inviter_count_hug'
+			'inv_count_ism', 'recep_burst_ism', 'inv_elapsed_hr_ism', 'gift_veriety_ism')#, 'inviter_count_ism'
 	NHS <- c('chosen_inviter_succ_ratio_hug', 'chosen_inviter_sent_ARs_hug', 'chosen_inviter_active_children_hug',
 			'chosen_inviter_succ_ratio_ism', 'chosen_inviter_sent_ARs_ism', 'chosen_inviter_active_children_ism')
 	NHAS <- c('inviters_avg_sent_ARs_hug', 'inviters_avg_active_children_hug', 'inviters_avg_success_ratio_hug',
@@ -256,7 +256,7 @@ adoption_logit_model <- function(feat, model_id){
 #			paste("adopted_ihe~", paste(c(NS, NR, LF), collapse= "+")),
 #			paste("adopted_ihe~", paste(c(NAS, NR, LAF), collapse= "+")),
 #
-#			paste("adopted_ihe~", paste(c(NS, NR, LF, ADH, NHS, NHR, LHF), collapse= "+")),
+			paste("adopted_ihe~", paste(c(NS, NR, LF, ADH, NHS, NHR, LHF), collapse= "+")),
 			paste("adopted_ihe~", paste(c(NAS, NR, LAF, ADH, NHAS, NHR, LHAF), collapse= "+"))
 			
 #			paste("adopted_ihe~", paste(c(NS, SD, NR, RD, LF, LD), collapse= "+")),
