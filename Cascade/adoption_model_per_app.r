@@ -378,13 +378,13 @@ IMP_8 <- c('avg_inviter_succ_ratio', 'inv_elapsed_hr', 'recep_burst', 'inviters_
 
 adoption_logit_model <- function(feat){
 	# Invitee's properties
-	NR <- c('gender', 'locale',
+	NR <- c(#'gender', 'locale',
 			'inv_count', 'recep_burst', 'inv_elapsed_hr', 'gift_veriety') #, 'inviter_count' 
 	# Inviter's properties
 	NS <- c('chosen_inv_gender', 'chosen_inv_locale',
 			'succ_ratio', 'chosen_inv_sent_ARs', 'chosen_inv_children_count', 'chosen_inv_active_children')
 	# Average inviters' properties
-	NAS <- c('male_inviters', 'female_inviters', 'inviters_locale_popularity',
+	NAS <- c(#'male_inviters', 'female_inviters', 'inviters_locale_popularity',
 			'inviters_avg_sent_ARs', 'inviters_avg_active_children',
 			'inviters_avg_children_count', 'avg_inviter_succ_ratio', 'grand_parent_avg_succ', 'grand_parent_max_succ')
 #	RD <- c('gender', 'locale')
@@ -397,7 +397,7 @@ adoption_logit_model <- function(feat){
 	# Demographics
 	LSR <- c('chosen_int_gender', 'chosen_int_locale',
 			'chosen_inv_invitation_count', 'chosen_inv_fav_gift')
-	LASR <- c('int_gender', 'int_locale',
+	LASR <- c(#'int_gender', 'int_locale',
 			'inviters_avg_invitation_count')
 	
 #	LF <- c('chosen_inv_invitation_count', 'chosen_inv_fav_gift')
@@ -420,7 +420,7 @@ adoption_logit_model <- function(feat){
 #			
 #			paste("adopted~", paste(c(NS, SD, NR, RD, LF, LD), collapse= "+")),
 #			paste("adopted~", paste(c(NAS, ASD, NR, RD, LAF, LAD), collapse= "+"))
-			paste("adopted~", paste(c(NS, NR, LSR), collapse= "+")),
+#			paste("adopted~", paste(c(NS, NR, LSR), collapse= "+")),
 			paste("adopted~", paste(c(NAS, NR, LASR), collapse= "+"))
 	)
 	models <- c()

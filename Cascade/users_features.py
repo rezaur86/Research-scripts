@@ -3,7 +3,7 @@ import array
 from bitarray import bitarray
 import operator
 from sets import Set
-from random import choice
+from random import choice, sample
 import numpy as np
 
 NEVER = 2**16 - 1
@@ -99,19 +99,25 @@ try:
 except:
     BURSTINESS_ON = 1
 
-f = open(sys.argv[2], "r")
-for line in f:
-    element = line.split(',')
-    app_user_seq = int(element[app_id_pos].strip())
-    if app_user_seq != -1 and app_user_seq < MAX_USERS:
+try:
+    f = open(sys.argv[2], "r")
+    for line in f:
+        element = line.split(',')
+        app_user_seq = int(element[app_id_pos].strip())
+        if app_user_seq != -1 and app_user_seq < MAX_USERS:
+            users[app_user_seq] = True
+            if element[4].strip() == 'female':
+                genders[app_user_seq] = False
+            if element[6].strip() not in locale_ids:
+                locale_ids[element[6].strip()] = locale_idx
+                locale_idx += 1
+            locales[app_user_seq] = locale_ids[element[6].strip()]
+except:
+    random_number_of_any_users = int(sys.argv[2]) #79589301
+    for app_user_seq in sample(xrange(MAX_USERS), random_number_of_any_users):
         users[app_user_seq] = True
-        if element[4].strip() == 'female':
-            genders[app_user_seq] = False
-        if element[6].strip() not in locale_ids:
-            locale_ids[element[6].strip()] = locale_idx
-            locale_idx += 1
-        locales[app_user_seq] = locale_ids[element[6].strip()]
-
+        
+    
 count = 0
 f = open(sys.argv[1], "r")
 for line in f:
