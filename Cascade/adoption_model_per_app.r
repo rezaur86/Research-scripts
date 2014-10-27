@@ -379,7 +379,7 @@ IMP_8 <- c('avg_inviter_succ_ratio', 'inv_elapsed_hr', 'recep_burst', 'inviters_
 adoption_logit_model <- function(feat){
 	# Invitee's properties
 	NR <- c(#'gender', 'locale',
-			'inv_count', 'recep_burst', 'inv_elapsed_hr', 'gift_veriety') #, 'inviter_count' 
+			'id', 'inv_count', 'recep_burst', 'inv_elapsed_hr', 'gift_veriety') #, 'inviter_count' 
 	# Inviter's properties
 	NS <- c('chosen_inv_gender', 'chosen_inv_locale',
 			'succ_ratio', 'chosen_inv_sent_ARs', 'chosen_inv_children_count', 'chosen_inv_active_children')

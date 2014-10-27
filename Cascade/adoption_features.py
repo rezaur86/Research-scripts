@@ -16,9 +16,9 @@ users = bitarray(MAX_USERS)
 users.setall(False)
 locale_ids = {}
 locale_idx = 0
-genders = bitarray(MAX_USERS)
-genders.setall(True) #True/1 is for Male
-locales = array.array('B', (0,)*MAX_USERS)
+genders = array.array('b', (0,)*MAX_USERS) # bitarray(MAX_USERS)
+# genders.setall(True) #True/1 is for Male
+locales = array.array('b', (0,)*MAX_USERS)
 has_adopted = bitarray(MAX_USERS)
 has_adopted.setall(False)
 inv_count = array.array('I', (0,)*MAX_USERS)
@@ -35,9 +35,9 @@ act_lifespan = array.array('H', (NEVER,)*MAX_USERS)
 children_count = array.array('i', (-1,)*MAX_USERS)
 active_children = array.array('i', (-1,)*MAX_USERS)
 
-chosen_inviter_gender = bitarray(MAX_USERS)
-chosen_inviter_gender.setall(True) #True/1 is for Male
-chosen_inviter_locale = array.array('B', (0,)*MAX_USERS)
+chosen_inviter_gender = array.array('b', (0,)*MAX_USERS) #bitarray(MAX_USERS)
+# chosen_inviter_gender.setall(True) #True/1 is for Male
+chosen_inviter_locale = array.array('b', (0,)*MAX_USERS)
 chosen_inviter_for_users = array.array('I', (0,)*MAX_USERS)
 chosen_inviter_inv_count = array.array('I', (0,)*MAX_USERS)
 chosen_inviter_fav_gift = array.array('H', (0,)*MAX_USERS)
@@ -47,11 +47,11 @@ chosen_inviter_active_children = array.array('I', (0,)*MAX_USERS)
 grand_parent_max_succ = array.array('f', (-1,)*MAX_USERS)
 grand_parent_avg_succ = array.array('f', (-1,)*MAX_USERS)
 
-inviters_gender_popularity = bitarray(MAX_USERS)
-inviters_gender_popularity.setall(True) #True/1 is for Male
+inviters_gender_popularity = array.array('b', (0,)*MAX_USERS) # bitarray(MAX_USERS)
+# inviters_gender_popularity.setall(True) #True/1 is for Male
 inviters_male_count = array.array('I', (0,)*MAX_USERS)
 inviters_female_count = array.array('I', (0,)*MAX_USERS)
-inviters_locale_popularity = array.array('B', (0,)*MAX_USERS)
+inviters_locale_popularity = array.array('b', (0,)*MAX_USERS)
 inviters_avg_invitation_count = array.array('f', (0,)*MAX_USERS)
 inviters_avg_sent_ARs = array.array('f', (0,)*MAX_USERS)
 inviters_avg_active_children = array.array('f', (0,)*MAX_USERS)
@@ -226,7 +226,7 @@ for line in f:
     if user_id != -1 and user_id < MAX_USERS:
         users[user_id] = True
     has_adopted[user_id] = bool(int(element[1].strip()))
-    genders[user_id] = bool(int(element[2].strip()))
+    genders[user_id] = int(element[2].strip())
     locales[user_id] = int(element[3].strip())
     inv_count[user_id] = int(element[4].strip())
     inviter_count[user_id] = int(element[5].strip())

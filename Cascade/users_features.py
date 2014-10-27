@@ -49,8 +49,8 @@ def reg_children(user_id, parent_list, is_leaf, activation_time):
         else:
             invitations[invitation_hour] = 1
         parent = int(u_p[0])
-        if users[parent] == False:
-            continue
+#         if users[parent] == False:
+#             continue
         if sent_ARs[parent] == -1:
             sent_ARs[parent] = 0
         sent_ARs[parent] += 1
@@ -134,12 +134,12 @@ for line in f:
         has_adopted[node_id] = True
         act_lifespan_hr = (last_act_time/3600) - (activation_time/3600) + 1
         act_lifespan[node_id] = act_lifespan_hr
-    default_burstiness = BURSTINESS_ON
-    if users[node_id] == False:
-        BURSTINESS_ON = 0
-    else:
-        reg_children(node_id, parent_list, is_leaf, activation_time)
-    BURSTINESS_ON = default_burstiness
+#     default_burstiness = BURSTINESS_ON
+#     if users[node_id] == False:
+#         BURSTINESS_ON = 0
+#     else:
+    reg_children(node_id, parent_list, is_leaf, activation_time)
+#     BURSTINESS_ON = default_burstiness
     count = count+1
     if (count % (CLR_THRESHOLD/10)) == 0:
         print count
@@ -147,10 +147,13 @@ f.close()
 
 user_features_file = open(sys.argv[3]+"user_features.csv", "w")
 for i in range(0,MAX_USERS):
-    if users[i] == False:
-        continue
+#     if users[i] == False:
+#         continue
     user_features_file.write('%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n' %(
-                            i, int(has_adopted[i]), int(genders[i]), locales[i], inv_count[i], inviter_count[i], 
+                            i, int(has_adopted[i]),
+                            int(genders[i]) if users[i] == True else -1, 
+                            locales[i] if  users[i] == True else -1,
+                            inv_count[i], inviter_count[i], 
                             round(recep_burst[i], 3), inv_elapsed_hr[i],
                             hr_delay_from_first_inv[i], hr_delay_from_last_inv[i], gift_veriety[i],
                             sent_ARs[i], act_lifespan[i], children_count[i], active_children[i]))
