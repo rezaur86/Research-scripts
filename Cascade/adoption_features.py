@@ -266,18 +266,25 @@ for i in range(0,MAX_USERS):
         continue
     if inviters_avg_success_ratio[i] < 0:
         continue
-    user_features_file.write('%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n' %(
-                            i, int(has_adopted[i]), int(genders[i]), locales[i], inv_count[i], inviter_count[i],
+    user_features_file.write('%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n' %(
+                            i, int(has_adopted[i]), inv_count[i],
                             round(recep_burst[i],3), inv_elapsed_hr[i], gift_veriety[i],
-                            chosen_inviter_for_users[i], int(chosen_inviter_gender[i]), chosen_inviter_locale[i],
-                            chosen_inviter_inv_count[i], chosen_inviter_fav_gift[i],
-                            chosen_inviter_sent_ARs[i], chosen_inviter_children_count[i], chosen_inviter_active_children[i],
-                            grand_parent_avg_succ[i], grand_parent_max_succ[i],
-                            inviters_male_count[i], inviters_female_count[i], inviters_locale_popularity[i],
                             round(inviters_avg_invitation_count[i],3), round(inviters_avg_sent_ARs[i],3),
-                            round(inviters_avg_active_children[i],3), round(inviters_avg_children_count[i],3),
+                            round(inviters_avg_active_children[i],3),
                             round(inviters_avg_success_ratio[i],3)
                             ))
+#     user_features_file.write('%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n' %(
+#                             i, int(has_adopted[i]), int(genders[i]), locales[i], inv_count[i], inviter_count[i],
+#                             round(recep_burst[i],3), inv_elapsed_hr[i], gift_veriety[i],
+#                             chosen_inviter_for_users[i], int(chosen_inviter_gender[i]), chosen_inviter_locale[i],
+#                             chosen_inviter_inv_count[i], chosen_inviter_fav_gift[i],
+#                             chosen_inviter_sent_ARs[i], chosen_inviter_children_count[i], chosen_inviter_active_children[i],
+#                             grand_parent_avg_succ[i], grand_parent_max_succ[i],
+#                             inviters_male_count[i], inviters_female_count[i], inviters_locale_popularity[i],
+#                             round(inviters_avg_invitation_count[i],3), round(inviters_avg_sent_ARs[i],3),
+#                             round(inviters_avg_active_children[i],3), round(inviters_avg_children_count[i],3),
+#                             round(inviters_avg_success_ratio[i],3)
+#                             ))
 #     user_features_file.write('%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n' %(
 #                             i, int(has_adopted[i]), int(genders[i]), locales[i], inv_count[i], inviter_count[i],
 #                             round(recep_burst[i],3), inv_elapsed_hr[i], gift_veriety[i],

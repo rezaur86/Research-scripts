@@ -1,5 +1,5 @@
-#options( java.parameters = "-Xmx32g" )
-#library( "RWeka" )
+options( java.parameters = "-Xmx32g" )
+library( "RWeka" )
 source('~/scripts/Cascade/tools.r')
 #source('~/scripts/Cascade/plfit.r')
 library(ggplot2)

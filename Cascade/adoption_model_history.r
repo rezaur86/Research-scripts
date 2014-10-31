@@ -20,6 +20,23 @@ library('glmulti', quietly = TRUE, warn.conflicts = FALSE)
 library('car', quietly = TRUE, warn.conflicts = FALSE)
 
 NaiveBayes <- make_Weka_classifier("weka/classifiers/bayes/NaiveBayes")
+IMP_5 <- c('id', 'recep_burst_ihe', 'inv_elapsed_hr_ihe', 'gift_veriety_ihe',
+		'inviters_avg_inv_count_ihe',
+		'inviters_avg_sent_ARs_ihe',
+		'inviters_avg_active_children_ihe',
+		'inviters_avg_success_ratio_ihe'
+)
+IMP_5_history <- c(
+		'id', 'adopted_hug', 'adopted_ism',
+		'inv_count_hug', 'inv_count_ism', 'inv_count_ihe',
+		'recep_burst_hug', 'recep_burst_ism', 'recep_burst_ihe', 
+		'inv_elapsed_hr_hug', 'inv_elapsed_hr_ism', 'inv_elapsed_hr_ihe',
+		'gift_veriety_hug', 'gift_veriety_ism', 'gift_veriety_ihe',
+		'inviters_avg_inv_count_hug', 'inviters_avg_inv_count_ism', 'inviters_avg_inv_count_ihe',
+		'inviters_avg_sent_ARs_hug', 'inviters_avg_sent_ARs_ism', 'inviters_avg_sent_ARs_ihe',
+		'inviters_avg_active_children_hug', 'inviters_avg_active_children_ism', 'inviters_avg_active_children_ihe',
+		'inviters_avg_success_ratio_hug', 'inviters_avg_success_ratio_ism', 'inviters_avg_success_ratio_ihe'
+)
 
 getPerformanceAt <- function(pred, prec, rec, fpr, f, cutoff_idx){
 	return(c(f@x.values[[1]][cutoff_idx], prec@y.values[[1]][cutoff_idx], rec@y.values[[1]][cutoff_idx], 
@@ -171,23 +188,23 @@ load_features <- function(file){
 	LHF <- c('chosen_inviter_inv_count_hug', 'chosen_inviter_inv_count_ism')
 	LHAF <- c('inviters_avg_inv_count_hug', 'inviters_avg_inv_count_ism')
 	
-	chi_test <- feature_selction(adoption_feat, 'adopted_ihe', c(NR, NS, NAS, RD, LF, LAF, ADH, NHR, NHS, NHAS, LHF, LHAF))
-	adoption_feat$adopted_ihe <- factor(adoption_feat$adopted_ihe)
-	categories <- levels(adoption_feat$adopted_ihe)
-	adoption_feat$cat_label <- factor(adoption_feat$adopted_ihe, levels = categories, labels = c('No', 'Yes'))
-
-	adoption_feat <- feature_scaling(adoption_feat,
-			c('inv_count_ihe', 'inviter_count_ihe', 'inv_elapsed_hr_ihe', 'gift_veriety_ihe',
-					'chosen_inviter_sent_ARs_ihe', 'chosen_inviter_active_children_ihe',
-					'inviters_avg_sent_ARs_ihe', 'inviters_avg_active_children_ihe', 
-					'chosen_inviter_inv_count_ihe', 'inviters_avg_inv_count_ihe', 
-					'inv_count_hug', 'inviter_count_hug', 'inv_elapsed_hr_hug', 'gift_veriety_hug',
-					'inv_count_ism', 'inviter_count_ism', 'inv_elapsed_hr_ism', 'gift_veriety_ism',
-					'chosen_inviter_sent_ARs_hug', 'chosen_inviter_active_children_hug',
-					'chosen_inviter_sent_ARs_ism', 'chosen_inviter_active_children_ism',
-					'inviters_avg_sent_ARs_hug', 'inviters_avg_active_children_hug',
-					'inviters_avg_sent_ARs_ism', 'inviters_avg_active_children_ism',
-					LHF, LHAF))
+#	chi_test <- feature_selction(adoption_feat, 'adopted_ihe', c(NR, NS, NAS, RD, LF, LAF, ADH, NHR, NHS, NHAS, LHF, LHAF))
+#	adoption_feat$adopted_ihe <- factor(adoption_feat$adopted_ihe)
+#	categories <- levels(adoption_feat$adopted_ihe)
+#	adoption_feat$cat_label <- factor(adoption_feat$adopted_ihe, levels = categories, labels = c('No', 'Yes'))
+#
+#	adoption_feat <- feature_scaling(adoption_feat,
+#			c('inv_count_ihe', 'inviter_count_ihe', 'inv_elapsed_hr_ihe', 'gift_veriety_ihe',
+#					'chosen_inviter_sent_ARs_ihe', 'chosen_inviter_active_children_ihe',
+#					'inviters_avg_sent_ARs_ihe', 'inviters_avg_active_children_ihe', 
+#					'chosen_inviter_inv_count_ihe', 'inviters_avg_inv_count_ihe', 
+#					'inv_count_hug', 'inviter_count_hug', 'inv_elapsed_hr_hug', 'gift_veriety_hug',
+#					'inv_count_ism', 'inviter_count_ism', 'inv_elapsed_hr_ism', 'gift_veriety_ism',
+#					'chosen_inviter_sent_ARs_hug', 'chosen_inviter_active_children_hug',
+#					'chosen_inviter_sent_ARs_ism', 'chosen_inviter_active_children_ism',
+#					'inviters_avg_sent_ARs_hug', 'inviters_avg_active_children_hug',
+#					'inviters_avg_sent_ARs_ism', 'inviters_avg_active_children_ism',
+#					LHF, LHAF))
 	splitted_data <- split(adoption_feat, sample(1:2, nrow(adoption_feat), replace=TRUE, prob=c(1,2)))
 	training <- splitted_data[[2]]
 	test <- splitted_data[[1]]
@@ -256,9 +273,10 @@ adoption_logit_model <- function(feat, model_id){
 #			paste("adopted_ihe~", paste(c(NS, NR, LF), collapse= "+")),
 #			paste("adopted_ihe~", paste(c(NAS, NR, LAF), collapse= "+")),
 #
-			paste("adopted_ihe~", paste(c(NS, NR, LF, ADH, NHS, NHR, LHF), collapse= "+")),
-			paste("adopted_ihe~", paste(c(NAS, NR, LAF, ADH, NHAS, NHR, LHAF), collapse= "+"))
-			
+#			paste("adopted_ihe~", paste(c(NS, NR, LF, ADH, NHS, NHR, LHF), collapse= "+")),
+#			paste("adopted_ihe~", paste(c(NAS, NR, LAF, ADH, NHAS, NHR, LHAF), collapse= "+"))
+			paste("adopted_ihe~", paste(IMP_5, collapse= "+")),
+			paste("adopted_ihe~", paste(IMP_5_history, collapse= "+"))
 #			paste("adopted_ihe~", paste(c(NS, SD, NR, RD, LF, LD), collapse= "+")),
 #			paste("adopted_ihe~", paste(c(NAS, ASD, NR, RD, LAF, LAD), collapse= "+"))
 	)
