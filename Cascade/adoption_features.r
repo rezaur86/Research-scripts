@@ -189,29 +189,4 @@ inviter_details <- function(file){
 	return (inviters)
 }
 
-latex_result <- function(result){
-	models <- as.data.frame(c('Nodes only', '','', 'Nodes with dem.','','', 
-					'Linked nodes', '', 'Linked nodes with dem.',''))
-	colnames(models) <- c('Features')
-#	models$measures <- c('Precision','TPR','FPR','AUC')
-	prec <- c()
-	TPR <- c()
-	FPR <- c()
-	AUC <- c()
-	for (i in 1:length(result)){
-		AUC <- c(AUC, result[[i]]$auc)
-		prec <- c(prec, result[[i]]$te_50_perf[2])
-		TPR <- c(TPR, result[[i]]$te_50_perf[3])
-		FPR <- c(FPR, result[[i]]$te_50_perf[4])
-		f1 <- result[[i]]$te_50_perf[5]
-	}
-	models$Models <- model_names
-	models$Precision <- prec
-	models$TPR <- TPR
-	models$FPR <- FPR
-	models$AUC <- AUC
-	print(xtable(models,digits=c(3)), include.rownames=FALSE)
-	return (models)
-}
-
 feat_all <- load_features_and_plot('iheart_gift/imp_all_adoption_features.csv')

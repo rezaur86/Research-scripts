@@ -148,7 +148,7 @@ for line in f:
         print count
 f.close()
 
-user_features_file = open(sys.argv[3]+"feature_history.csv", "w")
+user_features_file = open(sys.argv[3]+"user_features_history.csv", "w")
 for i in range(0,MAX_USERS):
     if users[i] == False:
         continue

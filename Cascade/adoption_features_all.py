@@ -77,7 +77,7 @@ for i in (0,1,2):
             print i
             print count
 
-adoption_features_all_file = open(sys.argv[4]+"adoption_features_all.csv", "w")
+adoption_features_all_file = open(sys.argv[4]+"adoption_features_history.csv", "w")
 for i in range(0,MAX_USERS):
     if iheart_seq[3*i] == -1 or iheart_seq[3*i + 1] == -1 or iheart_seq[3*i + 2] == -1:
         continue

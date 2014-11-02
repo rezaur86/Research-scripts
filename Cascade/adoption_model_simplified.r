@@ -1,7 +1,5 @@
-options( java.parameters = "-Xmx32g" )
-library( "RWeka" )
+source('~/scripts/Cascade/buildClassifier.r')
 source('~/scripts/Cascade/tools.r')
-#source('~/scripts/Cascade/plfit.r')
 library(ggplot2)
 library(gtable)
 library(reshape)
@@ -11,110 +9,19 @@ library(Hmisc)
 library(gridExtra) 
 library(nnet)
 library(pROC)
-library('ROCR', quietly = TRUE, warn.conflicts = FALSE)
-library('zoo', quietly = TRUE, warn.conflicts = FALSE) 
-#For calculating area under a curve using trapezium figures (rollmean function is used for that)
-library('RWeka', quietly = TRUE, warn.conflicts = FALSE)
-library('leaps', quietly = TRUE, warn.conflicts = FALSE)
-library('glmulti', quietly = TRUE, warn.conflicts = FALSE)
-library('car', quietly = TRUE, warn.conflicts = FALSE)
 library('FSelector')
 library(xtable)
 
 # Invitees' properties
-NR <- c('id', 'inv_count', 'recep_burst', 'inv_elapsed_hr', 'gift_veriety', 'inviters_avg_invitation_count')
+NR <- c('inv_count', 'recep_burst', 'inv_elapsed_hr', 'gift_veriety', 'inviters_avg_invitation_count')
 # Average inviters' properties
 NAS <- c('inviters_avg_sent_ARs', 'inviters_avg_active_children', 'avg_inviter_succ_ratio')
 
-NaiveBayes <- make_Weka_classifier("weka/classifiers/bayes/NaiveBayes")
+IMP <- c('avg_inviter_succ_ratio', 'inviters_avg_active_children', 'inv_elapsed_hr', 'recep_burst', 'id',
+		'gift_veriety', 'inv_count', 'inviters_avg_invitation_count', 'inviters_avg_sent_ARs')
 
-getPerformanceAt <- function(pred, prec, rec, fpr, f, acc, cutoff_idx){
-	return(c(f@x.values[[1]][cutoff_idx], prec@y.values[[1]][cutoff_idx], rec@y.values[[1]][cutoff_idx], 
-					fpr@y.values[[1]][cutoff_idx], f@y.values[[1]][cutoff_idx], acc@y.values[[1]][cutoff_idx]))
-}
-
-myRLogisticRegression <- function(fmla, data, control = NULL){ #control is to make our function signature compatible with WEKA
-	tr_m=glm(fmla,data=data,family="binomial")
-	return(tr_m)
-}
-
-buildUniversalModel <- function(classifier_func, tr_data, te_data, fmla, is_weka, weka_params, eval_metrics){
-	tr_m = classifier_func(fmla, data=tr_data, control = weka_params)#, options=c('model' = TRUE, 'instances' = TRUE))
-	
-	############################### Training set performance, along with maximum f-cutoff on training set
-	if (is_weka){
-		tr_pred <- predict(tr_m, newdata = tr_data, type='probability')
-		if (!is.null(ncol(tr_pred)) && ncol(tr_pred) > 1) tr_pred = tr_pred[, 2]
-	}else{ #R Logistic Regression
-		tr_pred = tr_m$fitted.values
-	}
-	
-	tr_pred = prediction(tr_pred,tr_data$adopted)
-	tr_f = performance(tr_pred,measure="f")
-	tr_max_f_idx = which.max(tr_f@y.values[[1]])
-	#tr_max_f_measure = tr_f@y.values[[1]][tr_max_f_idx]
-	tr_max_cutoff = tr_f@x.values[[1]][tr_max_f_idx]
-	#auc= performance(tr_pred,measure="auc")@y.values[[1]][1]	
-	###########	####################
-	
-#	te_perf = getPerformanceROCR(eval_metrics, tr_m, is_weka,tr_max_cutoff, te_data)
-#	wcre_evol = calculateWCREEvolution(eval_metrics, tr_prj, tr_data, tr_te_pred, te_prj, te_data, te_perf$p_buggy)
-#	hypothesis_test = calculateHypothesisTest(eval_metrics, tr_m)
-#	
-#	te_perf$performance = c(te_perf$performance, wcre_evol, hypothesis_test)
-	
-	te_pred<-predict(tr_m,te_data,type=ifelse(is_weka, 'probability', 'response'))
-	if (!is.null(ncol(te_pred)) && ncol(te_pred) > 1) te_pred = te_pred[, 2]
-	pred = prediction(te_pred,te_data$adopted)
-	
-	auc = performance(pred,measure="auc")@y.values[[1]][1]
-	acc = performance(pred,measure="acc")
-	prec = performance(pred,measure="prec")
-	rec = performance(pred,measure="rec")
-	fpr = performance(pred,measure="fpr")
-	f = performance(pred,measure="f")
-
-	tr_cutoff <- tr_max_cutoff
-	
-	tr_max_f_idx = which.min(abs(f@x.values[[1]] - tr_cutoff))
-	tr_cutoff_perf = getPerformanceAt(pred, prec, rec, fpr, f, acc, tr_max_f_idx)
-	
-	te_max_f_idx = which.max(f@y.values[[1]]) #We are only returning metrics values at MAXIMUM F-score
-	te_cutoff_perf = getPerformanceAt(pred, prec, rec, fpr, f, acc, te_max_f_idx)
-	
-	te_50_idx = which.min(abs(f@x.values[[1]] - 0.5))
-	te_50_perf = getPerformanceAt(pred, prec, rec, fpr, f, acc, te_50_idx)
-	
-	ret = list(model=tr_m, auc=auc, te_50_perf=te_50_perf, tr_cutoff_perf=tr_cutoff_perf, te_cutoff_perf=te_cutoff_perf)
-	
-	return(ret)	
-}
-
-buildClassifier <- function(classifier, tr_data, te_data, fmla, eval_metrics){
-	weka_params = Weka_control()
-	if (classifier == 1){
-		classifier_func = Logistic
-	}else if (classifier == 2){ #J48
-		classifier_func = J48
-		weka_params = Weka_control(U = TRUE, A = TRUE)
-#		Use unpruned tree and use laplace smoothing for probabilities. 
-#       Ref: https://list.scms.waikato.ac.nz/pipermail/wekalist/2007-September/037750.html
-#		The so-called probability estimation tree is just a C4.5 without pruning
-#		> and Laplace smoothing. The two options have been implemented in WEKA.
-#		> However,
-#		> you may want to change the code to trun off "collapse" by yourself.
-	}else if (classifier == 3){ #SVM
-		classifier_func = SMO
-		weka_params = Weka_control(M = TRUE) #Fits Logistic Regression model for better probability estimate
-	}else if (classifier == 4){ #NaiveBayes
-		classifier_func = NaiveBayes
-	}else if (classifier == 0){ #R Logistic Regression
-		classifier_func = myRLogisticRegression
-	}else{
-		stop("Not a valid classifier!")
-	}
-	return(buildUniversalModel(classifier_func, tr_data, te_data, fmla, classifier != 0, weka_params, eval_metrics))
-}
+#training <- c()
+#testing <- c()
 
 feature_scaling <- function(feat, feat_col_list){
 	for (a_feat_col in feat_col_list){
@@ -135,6 +42,32 @@ load_features <- function(file){
 	return(adoption_feat)
 }
 
+load_training_sets <- function(training_sets, names){
+	for (i in 1:length(names)){
+		training[[names[i]]] <<- load_features(training_sets[i])
+	}
+}
+
+load_testing_sets <- function(testing_sets, names){
+	for (i in 1:length(names)){
+		testing[[names[i]]] <<- load_features(testing_sets[i])
+	}
+}
+
+feature_selection <- function(){
+	feat_imp <- data.frame(row.names=c(NR,NAS))
+	for (each_training in names(training)){
+		each_chi_imp <- chi.squared(as.simple.formula(c(NR,NAS), "adopted"), training[[each_training]])
+		feat_imp[[each_training]] <- each_chi_imp
+	}
+	return(feat_imp)
+}
+
+#feat_imp <- feature_selection()
+get_top_k_features <- function(training_name, k){
+	return(rownames(feat_imp[order(-feat_imp[[training_name]]),][1:k,]))
+}
+	
 process_features <- function(app1, app2=NA){
 	training <- load_features(app1)	
 	chi_test <- 0# feature_selction(adoption_feat, 'adopted', c(NR, NS, NAS, RD, SD, ASD, LD, LAD, LF, LAF))
@@ -147,40 +80,48 @@ process_features <- function(app1, app2=NA){
 	return(list(training = training, test = test, chi_test = chi_test))
 }
 
-IMP_5 <- c('avg_inviter_succ_ratio', 'inviters_avg_active_children', 'inv_elapsed_hr', 'recep_burst', 'id')
-comb_all <- combn(IMP_5, 2)
-comb_feat <- c()
-for (i in 1:(length(comb_all)/2)){
-	comb_feat <- c(comb_feat, paste(c(comb_all[i], comb_all[2*i]), collapse= ":"))
-}	
+get_2nd_level_interactions <- function(feature_set){
+	comb_all <- combn(feature_set, 2)
+	comb_feat <- c()
+	for (i in 1:(length(comb_all)/2)){
+		comb_feat <- c(comb_feat, paste(c(comb_all[i], comb_all[2*i]), collapse= ":"))
+	}
+	return(comb_feat)
+}
 
-adoption_logit_model <- function(feat){
+build_adoption_model <- function(training_name, testing_names, top_k_feat, interaction_terms = FALSE){
 	fmla <- c(
+#			paste("adopted~", paste(c(NAS,NR,'id'), collapse= "+"))
 #			paste("adopted~", paste(NR, collapse= "+")),
-#			paste("adopted~", paste(NS, collapse= "+")),
 #			paste("adopted~", paste(NAS, collapse= "+")),
-	
-#			paste("adopted~", paste(c(NR, RD), collapse= "+")),
-#			paste("adopted~", paste(c(NS, SD), collapse= "+")),
-#			paste("adopted~", paste(c(NAS, ASD), collapse= "+")),
-#	
-##			paste("adopted~", paste(LF, collapse= "+")),
-##			paste("adopted~", paste(LAF, collapse= "+")),
-##			
-#			paste("adopted~", paste(c(NS, NR, LF), collapse= "+")),
-#			paste("adopted~", paste(c(NAS, NR, LAF), collapse= "+")),
-#			
-#			paste("adopted~", paste(c(NS, SD, NR, RD, LF, LD), collapse= "+")),
-#			paste("adopted~", paste(c(NAS, ASD, NR, RD, LAF, LAD), collapse= "+"))
-#			paste("adopted~", paste(c(NS, NR, LSR), collapse= "+")),
-			paste("adopted~", paste(c(NAS, NR), collapse= "+"))
-#			paste("adopted~", paste(IMP_5, collapse= "+"))
+#			paste("adopted~", paste(c(NAS, NR), collapse= "+"))
 #			paste("adopted~", paste(c(IMP_5, comb_feat), collapse= "+"))
 	)
+	for (k in top_k_feat){
+		top_k <- get_top_k_features(training_name, k)
+		fmla <- c(fmla, paste("adopted~", paste(top_k, collapse= "+")))
+		if(interaction_terms)
+			fmla <- c(fmla, paste("adopted~", paste(c(top_k, get_2nd_level_interactions(top_k)), collapse= "+")))
+	}
 	models <- c()
 	for (i in 1:length(fmla)){
-		models[[i]] <- buildClassifier(0, feat$training, feat$test, as.formula(fmla[i]), NULL)
+		print(fmla[i])
+		models[[i]] <- list()
+		for(testing_name in testing_names){
+			print(testing_name)
+			models[[i]][[testing_name]] <- buildClassifier(0, 'adopted', 
+					training[[training_name]], testing[[testing_name]], 
+					as.formula(fmla[i]), NULL)
+		}
 	}
+#	if (length(testing_names) == 1){
+#		for (i in 1:length(fmla)){
+#			print(fmla[i])
+#			models[[i]] <- buildClassifier(0, 'adopted', 
+#					training[[training_name]], testing[[testing_names[1]]], 
+#					as.formula(fmla[i]), NULL)
+#		}
+#	}
 	return(models)
 }
 
@@ -199,32 +140,31 @@ evaluator <- function(subset) {
 #m_IMP_8 <- buildClassifier(0, feat_ihe_3M$training, feat_ihe_3M$test,
 #		as.formula(paste("adopted~", paste(IMP_8, collapse= "+"))), NULL)
 
-feature_selction <- function(df, cat, features){
-	chi_vals <- c()
-	for (feature in features){
-		chi_table <- table(df[[cat]], round(df[[feature]],2))
-		chi <- chisq.test(chi_table)
-		chi_vals <- c(chi_vals, chi$statistic)
-	}
-	normalized_chi_vals <- (chi_vals)/(max(chi_vals))
-	chi_result <- as.data.frame(features)
-	colnames(chi_result) <- c('Features')
-	chi_result$chi_vals <- chi_vals
-	chi_result$norm_chi_vals <- normalized_chi_vals
-	return(chi_result)
-}
+#feature_selction <- function(df, cat, features){
+#	chi_vals <- c()
+#	for (feature in features){
+#		chi_table <- table(df[[cat]], round(df[[feature]],2))
+#		chi <- chisq.test(chi_table)
+#		chi_vals <- c(chi_vals, chi$statistic)
+#	}
+#	normalized_chi_vals <- (chi_vals)/(max(chi_vals))
+#	chi_result <- as.data.frame(features)
+#	colnames(chi_result) <- c('Features')
+#	chi_result$chi_vals <- chi_vals
+#	chi_result$norm_chi_vals <- normalized_chi_vals
+#	return(chi_result)
+#}
 
-model_names = c('Invitee', 'Inviters', 'All', 'Top 5', 'Top 5 and their interactions')
+model_names = c('Growth', 'Peak', 'Decline', 'Any')
 latex_result <- function(result, model_names){
 	models <- as.data.frame(model_names)
-	colnames(models) <- c('Features')
+	colnames(models) <- c('Phases')
 	prec <- c()
 	TPR <- c()
 	FPR <- c()
 	ACC <- c()
 	F1 <- c()
 	AUC <- c()
-	print(models)
 	for (i in 1:length(result)){
 		AUC <- c(AUC, result[[i]]$auc)
 		prec <- c(prec, result[[i]]$te_50_perf[2])
@@ -240,4 +180,38 @@ latex_result <- function(result, model_names){
 	models$AUC <- AUC
 	print(xtable(models,digits=c(3)), include.rownames=FALSE)
 	return (models)
+}
+
+draw_performance <- function(models){
+	prec <- c()
+	TPR <- c()
+	FPR <- c()
+	ACC <- c()
+	F1 <- c()
+	AUC <- c()
+	for (i in 1:length(models)){
+		AUC <- c(AUC, models[[i]]$auc)
+		prec <- c(prec, models[[i]]$te_50_perf[2])
+		TPR <- c(TPR, models[[i]]$te_50_perf[3])
+		FPR <- c(FPR, models[[i]]$te_50_perf[4])
+		F1 <- c(F1, models[[i]]$te_50_perf[5])
+		ACC <- c(ACC, models[[i]]$te_50_perf[6])
+	}
+	models.perform <- data.frame(value = c(prec, TPR, FPR, ACC, AUC),
+			PM=c(rep('Prec', length(prec)),
+					rep('TPR', length(TPR)),
+					rep('FPR', length(FPR)),
+					rep('ACC', length(ACC)),
+					rep('AUC', length(AUC))),
+			top=c(rep(c(1,2,3,4,5,6,7,8,9),5))
+	)
+	print(models.perform)
+	models.perform$PM <- factor(models.perform$PM)
+	plot <- ggplot(data=models.perform, aes(x=top, y=value)) +
+			geom_line(aes(linetype=PM)) +
+			scale_x_discrete(breaks=1:9)+
+			scale_y_continuous(breaks=seq(0,1,0.1))+
+			xlab('# of top features') + ylab('Performance value')
+	save_ggplot(plot, 'iheart_gift/model_perf.pdf', 24, opts(legend.position=c(.7, .2)))
+	return (models.perform)
 }
