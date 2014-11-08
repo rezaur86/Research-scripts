@@ -98,6 +98,11 @@ adoption_historical_model <- function(feat, model_id){
 	return(models)
 }
 
+#m_his_2mo_G <- adoption_historical_model(f_his_2mo_G, 0)
+#m_his_2mo_P <- adoption_historical_model(f_his_2mo_P, 0)
+#m_his_2mo_D <- adoption_historical_model(f_his_2mo_D, 0)
+#m_his_2mo_A <- adoption_historical_model(f_his_2mo_A, 0)
+
 model_names = c('W/o history', 'W/ history')
 latex_result <- function(result, model_names){
 	models <- as.data.frame(model_names)
@@ -117,7 +122,7 @@ latex_result <- function(result, model_names){
 		F1 <- c(F1, result[[i]]$te_50_perf[5])
 		ACC <- c(ACC, result[[i]]$te_50_perf[6])
 	}
-	models$Precision <- prec
+	models$Prec <- prec
 	models$TPR <- TPR
 	models$FPR <- FPR
 	models$ACC <- ACC

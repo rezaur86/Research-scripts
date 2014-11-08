@@ -2,6 +2,55 @@ source('~/scripts/Cascade/tools.r')
 library(plyr)
 require(scales)
 
+temporal_analysis_weekly <- function (
+		daily_activation = 'raw_stat_v2/daily_activation.csv',
+		daily_activities = 'iheart_cascade/activities_stat.txt'){
+	daily_activation <- as.data.frame(read.csv(daily_activation, header=FALSE))
+	daily_activation[,6] <- 1
+	colnames(daily_activation) <- c('year', 'week', 'day', 'hour', 'count', 'activity_type')
+	daily_act <- as.data.frame(read.csv(daily_activities, header=FALSE))
+	daily_act[,6] <- 0
+	colnames(daily_act) <- c('year', 'week', 'day', 'hour', 'count', 'activity_type')
+	activities <- rbind(daily_activation, daily_act)
+	activities[activities$year==2010 & activities$week==00 & activities$day>=5, c('year','week')] <- data.frame(year=2009,week=52)
+	print(activities[activities$year==2009 & activities$week==52 & activities$day>=5,])
+	activities.weekly <- ddply(activities, c('activity_type', 'year', 'week'), summarise, weekly_count = sum (count))
+	print(tail(activities.weekly))
+	activities.df <- ddply(activities.weekly, c('activity_type'), function(one_partition){
+				one_partition$week = do.call(paste, c(as.data.frame(cbind(one_partition$year, one_partition$week, 1)), sep="-"))
+				one_partition$rtime = as.POSIXct(strptime(one_partition$week, format = "%Y-%U-%w"))
+				one_partition = one_partition[order(one_partition$rtime),]
+#				one_partition$cum_count = cumsum(one_partition$daily_count)
+#				one_partition$cdf_val = one_partition$cum_count / max(one_partition$cum_count)
+#				one_partition$pdf_val = one_partition$daily_count / max(one_partition$cum_count)
+				one_partition
+			})
+	print(head(activities.df))
+	activities.df$activity_type <- factor(activities.df$activity_type)
+	plot <- ggplot(activities.df[activities.df$activity_type==1,], aes(x = (rtime+7*86400), y = (weekly_count))) +
+			geom_line(size=1) +
+			geom_point() +
+#			scale_y_log10() +
+			scale_y_continuous(label=scientific_format())+
+			scale_x_datetime(breaks = date_breaks("3 week"), minor_breaks = date_breaks("1 week"),
+					labels = date_format("%Y-%U"))+
+			xlab('') + ylab('Number of new adoptions')
+	
+#	plot <- ggplot(activities.df, aes(x = (rtime+7*86400), y = (weekly_count))) +
+#			geom_line(aes(group = activity_type, linetype = activity_type, colour = activity_type), size=1) +
+#			geom_point() +
+##			scale_y_log10() +
+#			scale_x_datetime(breaks = date_breaks("3 week"),
+#					labels = date_format("%Y-%U"))+
+#			scale_linetype_manual(values=c(1,6), name='', breaks=0:1,
+#					labels=c( 'Total number of gifting activities','Number of new activations/adoptions')) +
+#			scale_colour_manual(values=c("black", "black"), name='', breaks=0:1,
+#					labels=c( 'Total number of gifting activities','Number of new activations/adoptions'))+
+#			xlab('') + ylab('Count')
+	save_ggplot(plot, 'raw_stat_v2/overall_activities_weekly.pdf', 24,
+			opts(axis.text.x = element_text(angle = 90, hjust = 0), legend.position=c(.45, .2)), 10)
+}
+
 temporal_analysis <- function (daily_born = 'raw_stat_v2/daily_born.csv',
 		daily_activation = 'raw_stat_v2/daily_activation.csv',
 		daily_activities = 'iheart_cascade/activities_stat.txt'){

@@ -32,13 +32,13 @@ feature_scaling <- function(feat, feat_col_list){
 
 load_features <- function(file){
 	adoption_feat <- as.data.frame(read.csv(file, header=FALSE))
-	colnames(adoption_feat) <- c('id', 'adopted', 'inv_count', 'recep_burst',
-			'inv_elapsed_hr', 'gift_veriety',
-			'inviters_avg_invitation_count','inviters_avg_sent_ARs',
+	colnames(adoption_feat) <- c('id', 'adopted', 'inv_count', 'inviter_count', 'recep_burst',
+			'inv_elapsed_hr', 'hr_delay_from_first_inv', 'gift_veriety',
+			'inviters_avg_invitation_count','inviters_avg_sent_ARs', 'inviters_avg_children_count',
 			'inviters_avg_active_children', 'avg_inviter_succ_ratio'
 	)
 	adoption_feat <- adoption_feat[adoption_feat$inv_count > 0, ] # & adoption_feat$avg_inviter_succ_ratio >= 0
-#	adoption_feat <- feature_scaling(adoption_feat, c(NR, NAS))
+	adoption_feat <- feature_scaling(adoption_feat, c(NR, NAS))
 	return(adoption_feat)
 }
 
@@ -54,9 +54,9 @@ load_testing_sets <- function(testing_sets, names){
 	}
 }
 
-feature_selection <- function(){
+feature_selection <- function(training_names){
 	feat_imp <- data.frame(row.names=c(NR,NAS))
-	for (each_training in names(training)){
+	for (each_training in training_names){
 		each_chi_imp <- chi.squared(as.simple.formula(c(NR,NAS), "adopted"), training[[each_training]])
 		feat_imp[[each_training]] <- each_chi_imp
 	}
@@ -89,12 +89,12 @@ get_2nd_level_interactions <- function(feature_set){
 	return(comb_feat)
 }
 
-build_adoption_model <- function(training_name, testing_names, top_k_feat, interaction_terms = FALSE){
+build_adoption_model <- function(training_names, testing_names, top_k_feat=c(), interaction_terms = FALSE){
 	fmla <- c(
 #			paste("adopted~", paste(c(NAS,NR,'id'), collapse= "+"))
 #			paste("adopted~", paste(NR, collapse= "+")),
 #			paste("adopted~", paste(NAS, collapse= "+")),
-#			paste("adopted~", paste(c(NAS, NR), collapse= "+"))
+			paste("adopted~", paste(c(NAS, NR), collapse= "+"))
 #			paste("adopted~", paste(c(IMP_5, comb_feat), collapse= "+"))
 	)
 	for (k in top_k_feat){
@@ -107,8 +107,11 @@ build_adoption_model <- function(training_name, testing_names, top_k_feat, inter
 	for (i in 1:length(fmla)){
 		print(fmla[i])
 		models[[i]] <- list()
-		for(testing_name in testing_names){
-			print(testing_name)
+		for(j in 1:length(testing_names)){
+			training_name = training_names[min(j,length(training_names))]
+			testing_name = testing_names[j]
+			model_name <- paste(c(training_name,testing_name),collapse= "_")
+			print(model_name)
 			models[[i]][[testing_name]] <- buildClassifier(0, 'adopted', 
 					training[[training_name]], testing[[testing_name]], 
 					as.formula(fmla[i]), NULL)
@@ -124,6 +127,12 @@ build_adoption_model <- function(training_name, testing_names, top_k_feat, inter
 #	}
 	return(models)
 }
+
+#m_ism_1mo <- build_adoption_model('ismile_1month',c('Growth','Peak','Decline','Any'),c(8))
+#m_ihe_1mo <- build_adoption_model('first_month',c('Growth','Peak','Decline','Any'),c(8))
+#m_ism_2mo <- build_adoption_model('ismile_2month',c('Growth_2mo','Peak','Decline','Any_2mo'),c(8))
+#m_ihe_2mo <- build_adoption_model('2month',c('Growth_2mo','Peak','Decline','Any_2mo'),c(8))
+#m_hug <- build_adoption_model('hugged',c('Growth','Growth_2mo','Peak','Decline','Any','Any_2mo'),c(8))
 
 evaluator <- function(subset) {
 	m <- buildClassifier(0, feat_ihe_3M$training, feat_ihe_3M$test, as.simple.formula(subset, "adopted"), NULL)
@@ -173,7 +182,7 @@ latex_result <- function(result, model_names){
 		F1 <- c(F1, result[[i]]$te_50_perf[5])
 		ACC <- c(ACC, result[[i]]$te_50_perf[6])
 	}
-	models$Precision <- prec
+	models$Prec <- prec
 	models$TPR <- TPR
 	models$FPR <- FPR
 	models$ACC <- ACC
@@ -182,7 +191,7 @@ latex_result <- function(result, model_names){
 	return (models)
 }
 
-draw_performance <- function(models){
+draw_performance <- function(models,weeks){
 	prec <- c()
 	TPR <- c()
 	FPR <- c()
@@ -203,15 +212,22 @@ draw_performance <- function(models){
 					rep('FPR', length(FPR)),
 					rep('ACC', length(ACC)),
 					rep('AUC', length(AUC))),
-			top=c(rep(c(1,2,3,4,5,6,7,8,9),5))
+			top=c(rep(weeks,5))
 	)
 	print(models.perform)
 	models.perform$PM <- factor(models.perform$PM)
 	plot <- ggplot(data=models.perform, aes(x=top, y=value)) +
-			geom_line(aes(linetype=PM)) +
-			scale_x_discrete(breaks=1:9)+
+			geom_line(aes(group = PM, linetype = PM)) +
+			geom_point(aes(shape=PM)) +
+			scale_x_discrete(breaks=weeks)+
 			scale_y_continuous(breaks=seq(0,1,0.1))+
-			xlab('# of top features') + ylab('Performance value')
-	save_ggplot(plot, 'iheart_gift/model_perf.pdf', 24, opts(legend.position=c(.7, .2)))
+			scale_linetype_manual(values=c(1,2,3,1,2), name='',
+					breaks=c('Prec','TPR','FPR','ACC','AUC'),
+					labels=c('Prec','TPR','FPR','ACC','AUC')) +
+			scale_shape_manual(values=0:4, name='',
+					breaks=c('Prec','TPR','FPR','ACC','AUC'),
+					labels=c('Prec','TPR','FPR','ACC','AUC'))+
+			xlab('# of weeks trained') + ylab('Performance')
+	save_ggplot(plot, 'iheart_gift/weekly_perf.pdf', 24, opts(legend.position=c(.7, .3)))
 	return (models.perform)
 }

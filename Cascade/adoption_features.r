@@ -46,11 +46,11 @@ load_features_and_plot <- function(file){
 
 		avg_invitation_per_inviter = feature_boxplot(adoption_feat, 'inviters_avg_invitation_count', 
 				'Adopted by invitee', 'Average invitations per inviter', 'iheart_gift/avg_inviters_invitation.pdf'),
-		users_recep_burst = feature_boxplot(adoption_feat, 'inviters_avg_sent_ARs', 
+		avg_inviters_sent_ARs = feature_boxplot(adoption_feat, 'inviters_avg_sent_ARs', 
 				'Adopted by invitee', 'Inviters\' average sent ARs', 'iheart_gift/avg_inviters_sent_ARs.pdf'),
-		users_inv_elapsed_hr = feature_boxplot(adoption_feat, 'inviters_avg_active_children', 
+		avg_inviters_active_children = feature_boxplot(adoption_feat, 'inviters_avg_active_children', 
 				'Adopted by invitee', 'Inviters\' average active children count', 'iheart_gift/avg_inviters_active_children.pdf'),
-		users_gift_veriety= feature_boxplot(adoption_feat, 'avg_inviter_succ_ratio', 
+		avg_inviter_succ_ratio= feature_boxplot(adoption_feat, 'avg_inviter_succ_ratio', 
 				'Adopted by invitee', 'Inviters\' average success ratio', 'iheart_gift/avg_inviter_succ_ratio.pdf')	
 	)
 	return(list(feat_summary = feature_summary, chi_test = chi_test))
@@ -189,4 +189,4 @@ inviter_details <- function(file){
 	return (inviters)
 }
 
-feat_all <- load_features_and_plot('iheart_gift/imp_all_adoption_features.csv')
+feat_all <- load_features_and_plot('iheart_gift/imp_all_adoption_features_10M.csv')
