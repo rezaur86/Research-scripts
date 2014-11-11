@@ -29,16 +29,16 @@ load_features_and_plot <- function(file){
 	# Average inviters' properties
 	NAS <- c('inviters_avg_sent_ARs', 'inviters_avg_active_children', 'avg_inviter_succ_ratio')
 
-	chi_test <- feature_selction(adoption_feat, 'adopted', c(NR, NAS))
+	chi_test <- 0 #feature_selction(adoption_feat, 'adopted', c(NR, NAS))
 	
 	adoption_feat$adopted <- factor(adoption_feat$adopted)
 	categories <- levels(adoption_feat$adopted)
 	adoption_feat$cat_label <- factor(adoption_feat$adopted, levels = categories, labels = c('No', 'Yes'))
 	feature_summary <- list(
 		users_inv_count = feature_boxplot(adoption_feat, 'inv_count', 
-			'Adopted by invitee', 'Invitation count', 'iheart_gift/users_inv_count.pdf'),
+			'Adopted by invitee', 'Total number of received ARs', 'iheart_gift/users_inv_count.pdf'),
 		users_inv_elapsed_hr = feature_boxplot(adoption_feat, 'inv_elapsed_hr', 
-			'Adopted by invitee', 'Invitation elapsed hour', 'iheart_gift/users_inv_elapsed_hr.pdf'),
+			'Adopted by invitee', 'Elapsed time in for receiving ARs (days)', 'iheart_gift/users_inv_elapsed_hr.pdf'),
 		users_recep_burst = feature_boxplot(adoption_feat, 'recep_burst', 
 			'Adopted by invitee', 'Reception burstiness', 'iheart_gift/users_recep_burst.pdf'),
 		users_gift_veriety= feature_boxplot(adoption_feat, 'gift_veriety', 
@@ -47,9 +47,9 @@ load_features_and_plot <- function(file){
 		avg_invitation_per_inviter = feature_boxplot(adoption_feat, 'inviters_avg_invitation_count', 
 				'Adopted by invitee', 'Average invitations per inviter', 'iheart_gift/avg_inviters_invitation.pdf'),
 		avg_inviters_sent_ARs = feature_boxplot(adoption_feat, 'inviters_avg_sent_ARs', 
-				'Adopted by invitee', 'Inviters\' average sent ARs', 'iheart_gift/avg_inviters_sent_ARs.pdf'),
+				'Adopted by invitee', 'Inviters\' average number of sent ARs', 'iheart_gift/avg_inviters_sent_ARs.pdf'),
 		avg_inviters_active_children = feature_boxplot(adoption_feat, 'inviters_avg_active_children', 
-				'Adopted by invitee', 'Inviters\' average active children count', 'iheart_gift/avg_inviters_active_children.pdf'),
+				'Adopted by invitee', 'Inviters\' average number of activated users', 'iheart_gift/avg_inviters_active_children.pdf'),
 		avg_inviter_succ_ratio= feature_boxplot(adoption_feat, 'avg_inviter_succ_ratio', 
 				'Adopted by invitee', 'Inviters\' average success ratio', 'iheart_gift/avg_inviter_succ_ratio.pdf')	
 	)
@@ -71,6 +71,7 @@ feature_boxplot <- function(features, a_feature, label_x, label_y, figure_name){
 	plot <- ggplot(features.a_feature, aes(x=cat_label, lower=lower, upper=upper, middle=middle, ymin=ymin, ymax=ymax)) + 
 			geom_boxplot(stat="identity") +
 			geom_point(data = features.a_feature, aes(x=cat_label, y=mean), shape = 8, size = 3)+
+#			scale_y_continuous(breaks=seq(0,7200,720*2), labels=seq(0,300,30*2))+
 			xlab(label_x) + ylab(label_y) 
 	save_ggplot(plot, figure_name)
 	return(features.a_feature)

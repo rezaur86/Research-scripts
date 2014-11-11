@@ -32,9 +32,14 @@ feature_scaling <- function(feat, feat_col_list){
 
 load_features <- function(file){
 	adoption_feat <- as.data.frame(read.csv(file, header=FALSE))
-	colnames(adoption_feat) <- c('id', 'adopted', 'inv_count', 'inviter_count', 'recep_burst',
-			'inv_elapsed_hr', 'hr_delay_from_first_inv', 'gift_veriety',
-			'inviters_avg_invitation_count','inviters_avg_sent_ARs', 'inviters_avg_children_count',
+#	colnames(adoption_feat) <- c('id', 'adopted', 'inv_count', 'inviter_count', 'recep_burst',
+#			'inv_elapsed_hr', 'hr_delay_from_first_inv', 'gift_veriety',
+#			'inviters_avg_invitation_count','inviters_avg_sent_ARs', 'inviters_avg_children_count',
+#			'inviters_avg_active_children', 'avg_inviter_succ_ratio'
+#	)
+	colnames(adoption_feat) <- c('id', 'adopted', 'inv_count', 'recep_burst',
+			'inv_elapsed_hr', 'gift_veriety',
+			'inviters_avg_invitation_count','inviters_avg_sent_ARs',
 			'inviters_avg_active_children', 'avg_inviter_succ_ratio'
 	)
 	adoption_feat <- adoption_feat[adoption_feat$inv_count > 0, ] # & adoption_feat$avg_inviter_succ_ratio >= 0
@@ -80,6 +85,22 @@ process_features <- function(app1, app2=NA){
 	return(list(training = training, test = test, chi_test = chi_test))
 }
 
+divide_training_testing <- function(data_file, name){
+	loaded_data <- load_features(data_file)
+	splitted_data <- split(loaded_data, sample(1:2, nrow(loaded_data), replace=TRUE, prob=c(1,9)))
+	test_size <- nrow(splitted_data[[1]])
+	growth_rows <- which(splitted_data[[1]]$id <= 116509751)
+	peak_rows <- which(splitted_data[[1]]$id > 116509751 & splitted_data[[1]]$id <= 139102463)
+	declining_rows <- which(splitted_data[[1]]$id > 139102463)
+	min_rows <- min(length(growth_rows), length(peak_rows), length(declining_rows))
+	training[[paste(c(name,'any'), collapse= "_")]] <<- splitted_data[[2]]
+	testing[[paste(c(name,'any'), collapse= "_")]] <<- splitted_data[[1]][sample(test_size, min_rows),]
+	testing[[paste(c(name,'growth'), collapse= "_")]] <<- splitted_data[[1]][sample(growth_rows, min_rows),]
+	testing[[paste(c(name,'peak'), collapse= "_")]] <<- splitted_data[[1]][sample(peak_rows, min_rows),]
+	testing[[paste(c(name,'decline'), collapse= "_")]] <<- splitted_data[[1]][sample(declining_rows, min_rows),]
+#	return(list(training = training, test = test, test_growth = test_growth, test_peak = test_peak, test_decline = test_decline))
+}
+
 get_2nd_level_interactions <- function(feature_set){
 	comb_all <- combn(feature_set, 2)
 	comb_feat <- c()
@@ -98,7 +119,7 @@ build_adoption_model <- function(training_names, testing_names, top_k_feat=c(), 
 #			paste("adopted~", paste(c(IMP_5, comb_feat), collapse= "+"))
 	)
 	for (k in top_k_feat){
-		top_k <- get_top_k_features(training_name, k)
+		top_k <- get_top_k_features(training_names[1], k)
 		fmla <- c(fmla, paste("adopted~", paste(top_k, collapse= "+")))
 		if(interaction_terms)
 			fmla <- c(fmla, paste("adopted~", paste(c(top_k, get_2nd_level_interactions(top_k)), collapse= "+")))
@@ -112,7 +133,7 @@ build_adoption_model <- function(training_names, testing_names, top_k_feat=c(), 
 			testing_name = testing_names[j]
 			model_name <- paste(c(training_name,testing_name),collapse= "_")
 			print(model_name)
-			models[[i]][[testing_name]] <- buildClassifier(0, 'adopted', 
+			models[[i]][[model_name]] <- buildClassifier(0, 'adopted', 
 					training[[training_name]], testing[[testing_name]], 
 					as.formula(fmla[i]), NULL)
 		}
@@ -229,5 +250,52 @@ draw_performance <- function(models,weeks){
 					labels=c('Prec','TPR','FPR','ACC','AUC'))+
 			xlab('# of weeks trained') + ylab('Performance')
 	save_ggplot(plot, 'iheart_gift/weekly_perf.pdf', 24, opts(legend.position=c(.7, .3)))
+	return (models.perform)
+}
+
+draw_feature_performance <- function(models, name, top_k){
+	prec <- c()
+	TPR <- c()
+	FPR <- c()
+	ACC <- c()
+	F1 <- c()
+	AUC <- c()
+	for (i in 1:length(models)){
+		AUC <- c(AUC, models[[i]][[name]]$auc)
+		prec <- c(prec, models[[i]][[name]]$te_50_perf[2])
+		TPR <- c(TPR, models[[i]][[name]]$te_50_perf[3])
+		FPR <- c(FPR, models[[i]][[name]]$te_50_perf[4])
+		F1 <- c(F1, models[[i]][[name]]$te_50_perf[5])
+		ACC <- c(ACC, models[[i]][[name]]$te_50_perf[6])
+	}
+	models.perform <- data.frame(value = c(prec, TPR, FPR, ACC, AUC),
+			PM=c(rep('Prec', length(prec)),
+					rep('TPR', length(TPR)),
+					rep('FPR', length(FPR)),
+					rep('ACC', length(ACC)),
+					rep('AUC', length(AUC))),
+			top=c(rep(top_k,5))
+	)
+	print(models.perform)
+	models.perform$PM <- factor(models.perform$PM, levels = c("Prec", "TPR", "FPR", 'ACC', 'AUC'))
+	models.perform$top <- factor(models.perform$top)
+	plot <- ggplot(data=models.perform, aes(x=PM, y=value, fill=top)) +
+			geom_bar(stat="identity", position=position_dodge())+	
+			geom_text(aes(label = paste(sprintf("%.1f", value*100), "%", sep=""),
+							y = value+0.015, group=top),
+					size = 3, position = position_dodge(width=0.9)) +
+#			geom_line(aes(group = PM, linetype = PM)) +
+#			geom_point(aes(shape=PM)) +
+#			scale_x_discrete(breaks=top_k)+
+			scale_y_continuous(breaks=seq(0,1,0.1))+
+#			scale_linetype_manual(values=c(1,2,3,1,2), name='',
+#					breaks=c('Prec','TPR','FPR','ACC','AUC'),
+#					labels=c('Prec','TPR','FPR','ACC','AUC')) +
+#			scale_shape_manual(values=0:4, name='',
+#					breaks=c('Prec','TPR','FPR','ACC','AUC'),
+#					labels=c('Prec','TPR','FPR','ACC','AUC'))+
+			scale_fill_manual(values=c("gray40", "gray65", "gray85"), name = 'Features of', breaks=1:3, labels=c('Invitee','Inviters','All'))+
+			xlab(NULL) + ylab('Performance')
+	save_ggplot(plot, paste(c('iheart_gift/feature_perf', name, '.pdf'), collapse= "_") , 24, opts(legend.position='bottom'))
 	return (models.perform)
 }

@@ -11,23 +11,27 @@ library(gridExtra)
 library(nnet)
 library(pROC)
 
-IMP_5 <- c('id', 'recep_burst_ihe', 'inv_elapsed_hr_ihe', 'gift_veriety_ihe',
-		'inviters_avg_inv_count_ihe',
-		'inviters_avg_sent_ARs_ihe',
-		'inviters_avg_active_children_ihe',
-		'inviters_avg_success_ratio_ihe'
+IMP_4 <- c(
+		'inviters_avg_success_ratio_ihe', 'inviters_avg_active_children_ihe', 'recep_burst_ihe', 'inv_elapsed_hr_ihe'
 )
-IMP_5_history <- c(
-		'id', 'adopted_hug', 'adopted_ism',
-		'inv_count_hug', 'inv_count_ism', 'inv_count_ihe',
-		'recep_burst_hug', 'recep_burst_ism', 'recep_burst_ihe', 
-		'inv_elapsed_hr_hug', 'inv_elapsed_hr_ism', 'inv_elapsed_hr_ihe',
-		'gift_veriety_hug', 'gift_veriety_ism', 'gift_veriety_ihe',
-		'inviters_avg_inv_count_hug', 'inviters_avg_inv_count_ism', 'inviters_avg_inv_count_ihe',
-		'inviters_avg_sent_ARs_hug', 'inviters_avg_sent_ARs_ism', 'inviters_avg_sent_ARs_ihe',
-		'inviters_avg_active_children_hug', 'inviters_avg_active_children_ism', 'inviters_avg_active_children_ihe',
-		'inviters_avg_success_ratio_hug', 'inviters_avg_success_ratio_ism', 'inviters_avg_success_ratio_ihe'
+IMP_4_history <- c(
+		'inviters_avg_success_ratio_hug', 'inviters_avg_success_ratio_ism',
+		'inviters_avg_active_children_hug', 'inviters_avg_active_children_ism',
+		'inv_elapsed_hr_hug', 'inv_elapsed_hr_ism',
+		'recep_burst_hug', 'recep_burst_ism'
 )
+
+# Invitee's properties
+NR <- c('inv_count_ihe', 'recep_burst_ihe', 'inv_elapsed_hr_ihe', 'gift_veriety_ihe', 'inviters_avg_inv_count_ihe')
+# Average inviters' properties
+NAS <- c('inviters_avg_sent_ARs_ihe', 'inviters_avg_active_children_ihe', 'inviters_avg_success_ratio_ihe')
+
+ADH <- c('adopted_hug', 'adopted_ism')
+NHR <- c('inv_count_hug', 'recep_burst_hug', 'inv_elapsed_hr_hug', 'gift_veriety_hug',
+		'inv_count_ism', 'recep_burst_ism', 'inv_elapsed_hr_ism', 'gift_veriety_ism',
+		'inviters_avg_inv_count_hug', 'inviters_avg_inv_count_ism')#, 'inviter_count_ism'
+NHAS <- c('inviters_avg_sent_ARs_hug', 'inviters_avg_active_children_hug', 'inviters_avg_success_ratio_hug',
+		'inviters_avg_sent_ARs_ism', 'inviters_avg_active_children_ism', 'inviters_avg_success_ratio_ism')
 
 feature_scaling <- function(feat, feat_col_list){
 	for (a_feat_col in feat_col_list){
@@ -54,7 +58,7 @@ load_historical_features <- function(file){
 			'inviters_avg_active_children_hug', 'inviters_avg_active_children_ism', 'inviters_avg_active_children_ihe',
 			'inviters_avg_success_ratio_hug', 'inviters_avg_success_ratio_ism', 'inviters_avg_success_ratio_ihe'
 	)
-#	adoption_feat <- feature_scaling(adoption_feat, c(NR, NAS))
+	adoption_feat <- feature_scaling(adoption_feat, c(NAS, NR, ADH, NHR, NHAS))
 	return(adoption_feat)
 }
 
@@ -71,29 +75,20 @@ process_features <- function(app1, app2=NA){
 }
 
 
-adoption_historical_model <- function(feat, model_id){
-	# Invitee's properties
-	NR <- c('inv_count_ihe', 'recep_burst_ihe', 'inv_elapsed_hr_ihe', 'gift_veriety_ihe', 'inviters_avg_inv_count_ihe')
-	# Average inviters' properties
-	NAS <- c('inviters_avg_sent_ARs_ihe', 'inviters_avg_active_children_ihe', 'inviters_avg_success_ratio_ihe')
-	
-	ADH <- c('adopted_hug', 'adopted_ism')
-	NHR <- c('inv_count_hug', 'recep_burst_hug', 'inv_elapsed_hr_hug', 'gift_veriety_hug',
-			'inv_count_ism', 'recep_burst_ism', 'inv_elapsed_hr_ism', 'gift_veriety_ism',
-			'inviters_avg_inv_count_hug', 'inviters_avg_inv_count_ism')#, 'inviter_count_ism'
-	NHAS <- c('inviters_avg_sent_ARs_hug', 'inviters_avg_active_children_hug', 'inviters_avg_success_ratio_hug',
-			'inviters_avg_sent_ARs_ism', 'inviters_avg_active_children_ism', 'inviters_avg_success_ratio_ism')
-	
+adoption_historical_model <- function(feat, training_name, testing_name, model_id=0){
 	fmla <- c(
-#			paste("adopted_ihe~", paste(IMP_5, collapse= "+")),
-#			paste("adopted_ihe~", paste(IMP_5_history, collapse= "+")),
-			paste("adopted_ihe~", paste(c(NAS, NR), collapse= "+")),
+#			paste("adopted_ihe~", paste(IMP_4, collapse= "+")),
+#			paste("adopted_ihe~", paste(c(IMP_4, ADH), collapse= "+")),
+#			paste("adopted_ihe~", paste(c(IMP_4, ADH, IMP_4_history), collapse= "+"))
+#			paste("adopted_ihe~", paste(c(NAS, NR), collapse= "+")),
+#			paste("adopted_ihe~", paste(c(NAS, NR,'adopted_hug'), collapse= "+")),
+#			paste("adopted_ihe~", paste(c(NAS, NR, ADH), collapse= "+")),
 			paste("adopted_ihe~", paste(c(NAS, NR, ADH, NHR, NHAS), collapse= "+"))
 	)
 	models <- c()
 	for (i in 1:length(fmla)){
 		print(fmla[i])
-		models[[i]] <- buildClassifier(model_id, 'adopted_ihe', feat$training, feat$test, as.formula(fmla[i]), NULL)
+		models[[i]] <- buildClassifier(model_id, 'adopted_ihe', feat[[training_name]], feat[[testing_name]], as.formula(fmla[i]), NULL)
 	}
 	return(models)
 }
@@ -103,7 +98,7 @@ adoption_historical_model <- function(feat, model_id){
 #m_his_2mo_D <- adoption_historical_model(f_his_2mo_D, 0)
 #m_his_2mo_A <- adoption_historical_model(f_his_2mo_A, 0)
 
-model_names = c('W/o history', 'W/ history')
+model_names = c('W/o history', 'W/ history (labels)', 'W/ history')
 latex_result <- function(result, model_names){
 	models <- as.data.frame(model_names)
 	colnames(models) <- c('Features')
