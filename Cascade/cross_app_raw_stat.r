@@ -39,8 +39,8 @@ total_activities <- function (iheart_activities = 'iheart_cascade/activities_sta
 			scale_colour_manual(values=c("black", "gray55", "black"), name='', breaks=0:2,
 					labels=c('Hugged', 'iHeart', 'iSmile'))+
 			xlab('Months') + ylab('Count')
-	save_ggplot(plot, 'raw_stat_apps/all_activities.pdf', 24,
-			opts(axis.text.x = element_text(angle = 90), legend.position=c(.2, .9)), 10)
+	save_ggplot(plot, 'raw_stat_apps/all_activities.pdf', 10,
+			opts(axis.text.x = element_text(angle = 90), legend.position=c(.2, .9)))
 }
 
 born_activities <- function (iheart_borns = 'raw_stat_v2/daily_born.csv',
